@@ -4,9 +4,13 @@
 ### scripts (for devs)
 
 downloader.py: **run this first** downloads the latest supported item data from ankama's cdn
+
 compressed_data_gen.py: generates a small bz2 compressed file for minimal redistribution if you only care about stats
+
 sqlify.py: generates an sqlite db from downloaded item data for use in either application or manual querying.
+
 object_parsing.py: some rough handling of objects.
+
 solver.py: a work in progress mastery optimizing constraint based set solver.
 
 ### Just want to try it now anyhow?
