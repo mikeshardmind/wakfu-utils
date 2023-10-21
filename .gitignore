@@ -166,3 +166,4 @@ cython_debug/
 
 *.json
 *.bz2
+*.db
