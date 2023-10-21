@@ -19,6 +19,8 @@ from functools import cached_property
 from typing import Any, Literal, Self, TypedDict, TypeVar
 
 import msgspec
+from item_conditions import NEGCRIT, conditions
+from restructured_types import SetMaximums, SetMinimums, Stats
 
 
 class PosData(TypedDict):
@@ -662,3 +664,46 @@ class EquipableItem:
             + self._resistance_3_elements * 3
             + self._elemental_resistance * 4
         )
+
+    @cached_property
+    def as_stats(self) -> Stats:
+        return Stats(
+            ap=self._ap,
+            mp=self._mp,
+            wp=self._wp,
+            ra=self._range,
+            crit=self._critical_hit,
+            crit_mastery=self._critical_mastery,
+            elemental_mastery=self._elemental_mastery,
+            one_element_mastery=self._mastery_1_element,
+            two_element_mastery=self._mastery_2_elements,
+            three_element_mastery=self._mastery_3_elements,
+            distance_mastery=self._distance_mastery,
+            rear_mastery=self._rear_mastery,
+            heal_mastery=self._healing_mastery,
+            beserk_mastery=self._berserk_mastery,
+            melee_mastery=self._melee_mastery,
+            control=self._control,
+            block=self._block,
+            lock=self._lock,
+            dodge=self._dodge,
+            fd=0,
+            heals_performed=0,
+        )
+
+    @cached_property
+    def get_conditions(self) -> tuple[list[SetMinimums], list[SetMaximums]]:
+        item_conds = conditions.get(self._item_id, [])
+        set_mins: list[SetMinimums] = []
+        set_maxs: list[SetMaximums] = []
+
+        if self._critical_hit < 0:
+            set_mins.append(NEGCRIT)
+        
+        for item in item_conds:
+            if isinstance(item, SetMinimums):
+                set_mins.append(item)
+            elif isinstance(item, SetMaximums):
+                set_maxs.append(item)
+
+        return set_mins, set_maxs

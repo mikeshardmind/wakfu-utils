@@ -47,8 +47,9 @@ changed until a proper build system is setup to automate this.
 - Optimizing defensive stats
 - User provided stat weights mode
 - Better support for stat minimums (ie. optimizing fire res specifically for ALS Gerbean s8)
-- a nice GUI (there are too many cli flags...)
-- Weighting res based on enchanemtent system (long term goal)
+- a nice GUI (there are too many cli flags...).
+- Floating stat points that can be allocated by the solver.
+- Weighting res based on enchanemtent system (l.ong term goal)
 
 
 ### Quick notes on current optimization strategy

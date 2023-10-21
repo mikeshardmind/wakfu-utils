@@ -169,7 +169,6 @@ def solve(
             "DigiArv Belt",
             "Amon Amarth Breastplate",
             "Broken Sword",  # pathalogical decision making with -res item undesirable
-            "Rigid Cire Momore's Spaulders",
             "Ancient Trool Warrior Spikes",
             "Beach Bandage",  # pathalogical decision making with -res item undesirable
         ]
