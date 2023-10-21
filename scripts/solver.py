@@ -24,32 +24,8 @@ from pprint import pprint as p_print
 
 from object_parsing import EquipableItem, _locale
 
-parser = argparse.ArgumentParser(
-    description="Keeper of Time's wakfu set solver beta 1",
-)
 
-parser.add_argument("--lv", dest="lv", type=int, choices=list(range(20, 231, 15)), required=True)
-parser.add_argument("--ap", dest="ap", type=int, default=5)
-parser.add_argument("--mp", dest="mp", type=int, default=2)
-parser.add_argument("--wp", dest="wp", type=int, default=0)
-parser.add_argument("--ra", dest="ra", type=int, default=0)
-parser.add_argument("--num-mastery", type=int, choices=[1, 2, 3, 4], default=3)
-parser.add_argument("--distance", dest="dist", action="store_true", default=False)
-parser.add_argument("--melee", dest="melee", action="store_true", default=False)
-parser.add_argument("--beserk", dest="zerk", action="store_true", default=False)
-parser.add_argument("--rear", dest="rear", action="store_true", default=False)
-parser.add_argument("--heal", dest="heal", action="store_true", default=False)
-parser.add_argument("--unraveling", dest="unraveling", action="store_true", default=False)
-parser.add_argument("--no-skip-shields", dest="skipshields", action="store_false", default=True)
-parser.add_argument("--try-light-weapon-expert", dest="lwx", action="store_true", default=False)
-parser.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
-parser.add_argument("--my-base-crit", dest="bcrit", type=int, default=0)
-parser.add_argument("--my-base-mastery", dest="bmast", type=int, default=0)
-parser.add_argument("--my-base-crit-mastery", dest="bcmast", type=int, default=0)
-parser.add_argument("--forbid", dest="forbid", type=str, action="extend", nargs="+")
-
-
-def one_off(
+def solve(
     ns: argparse.Namespace | None = None, no_print_log: bool = False,
 ) -> list[tuple[float, str, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
@@ -410,7 +386,11 @@ def one_off(
         if z := DAGGERS + SHIELDS:
             aprint("Considering off-hands:", *z, sep=" ")
 
-    for relic, epic in (*itertools.product(relics, epics), *extra_pairs):
+    number = len(relics) * len(epics) + len(extra_pairs)
+
+    for idx, (relic, epic) in enumerate((*itertools.product(relics, epics), *extra_pairs), 0):
+        prog = int(idx * 100 / number)
+        print(f"Progress: {prog}%")
         if relic is not None:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
                 continue
@@ -552,5 +532,31 @@ def one_off(
     return BEST_LIST
 
 
+def entrypoint() -> None:
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--lv", dest="lv", type=int, choices=list(range(20, 231, 15)), required=True)
+    parser.add_argument("--ap", dest="ap", type=int, default=5)
+    parser.add_argument("--mp", dest="mp", type=int, default=2)
+    parser.add_argument("--wp", dest="wp", type=int, default=0)
+    parser.add_argument("--ra", dest="ra", type=int, default=0)
+    parser.add_argument("--num-mastery", type=int, choices=[1, 2, 3, 4], default=2)
+    parser.add_argument("--distance", dest="dist", action="store_true", default=False)
+    parser.add_argument("--melee", dest="melee", action="store_true", default=False)
+    parser.add_argument("--beserk", dest="zerk", action="store_true", default=False)
+    parser.add_argument("--rear", dest="rear", action="store_true", default=False)
+    parser.add_argument("--heal", dest="heal", action="store_true", default=False)
+    parser.add_argument("--unraveling", dest="unraveling", action="store_true", default=False)
+    parser.add_argument("--no-skip-shields", dest="skipshields", action="store_false", default=True)
+    parser.add_argument("--try-light-weapon-expert", dest="lwx", action="store_true", default=False)
+    parser.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
+    parser.add_argument("--my-base-crit", dest="bcrit", type=int, default=0)
+    parser.add_argument("--my-base-mastery", dest="bmast", type=int, default=0)
+    parser.add_argument("--my-base-crit-mastery", dest="bcmast", type=int, default=0)
+    parser.add_argument("--forbid", dest="forbid", type=str, action="extend", nargs="+")
+
+    solve(parser.parse_args())
+
+
 if __name__ == "__main__":
-    one_off(parser.parse_args())
+    entrypoint()
