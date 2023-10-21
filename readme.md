@@ -40,10 +40,44 @@ changed until a proper build system is setup to automate this.
   (needs thought about handling, users can exclude by name currently)
 - Doesn't weight higher lv items higher based on runes possible (TODO)
 
+
+### Not Yet Implemented (planned)
+
+- Full support for sublimations which have math based solutions
+- Optimizing defensive stats
+- User provided stat weights mode
+- Better support for stat minimums (ie. optimizing fire res specifically for ALS Gerbean s8)
+- a nice GUI (there are too many cli flags...)
+- Weighting res based on enchanemtent system (long term goal)
+
+
+### Quick notes on current optimization strategy
+
+- Current optimization strategy handles heals and damage properly, but makes a suboptimal decision around healing.
+  This will be fixed soon-ish
+- Current optimization strategy is inappropriate for optimizing a tank or shielder
+  and does not handle armor given/recieved equipment. This may be fixed if there is demand for it.
+- Optimization strategy assumes that due to the item revamp, solving just the damage formula is appropriate for damage dealers.
+  This can be improved slightly due to the enchantment system putting a higher value on fire res for ranged, air res for melee (for example) due to shared stat doubling on belts and capes between res and a desired secondary.
+- Optimization strategy is fine for healers, but current over-values crit on healers.
+  Crit isn't good for consistent healing output. Healing consistency is more important than damage as damage will work out on average over time, if you heal more than you need to due to a crit, you can mess up beserk. Even without beserk in play, crit is still a
+  damage stat, not a heal stat, as any ap left over after healing should be spent on damage.
+  There will be a toggle for optimizing healing with consistency focus that
+  will be on by default if you enable healing as a secondary in the future.
+
+
+### Notes on marginal utility
+
+- Res has constant-ish marginal utility.
+  In theory, Gaining 50 res is a 10.5% reduction damage taken.
+  Reality is that due to rounding and a res cap, there are important breakpoints. The tooling is currently blind to this.
+- Mastery has decreasing marginal utility. This should be emphasized in planned future output modes that allow comparing sets.
+
 ### Performance and planned improvements
 
 The downloader and data gen tools will likely remain written in python
 The solver will be rewritten in something faster at a later date.
+Any GUI may be written in whatever I want later and just call the solver on the backend.
 When this is done, the data gen tools with recieve updates to write a more efficient binary format
 rather than just strip and compress what ankama provides.
 
