@@ -109,7 +109,7 @@ Speeding this up would be with the purpose of
 
 ### Contributions?
 
-At this point in time, I'm not looking for outside contributors, but please open an issue if you'd like to contribute.
+At this point in time, I'm not actively looking for outside contributors, but please open an issue if you'd like to contribute, especially if you're interested in building a standalone website which runs this in a user's browser, or help design a more intuitive front-end for this.
 
 
 ### Feedback
