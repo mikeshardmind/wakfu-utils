@@ -110,3 +110,8 @@ Speeding this up would be with the purpose of
 ### Contributions?
 
 At this point in time, I'm not looking for outside contributors, but please open an issue if you'd like to contribute.
+
+
+### Feedback
+
+Issue or discord: TXNKsWhhut

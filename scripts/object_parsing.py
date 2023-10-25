@@ -692,7 +692,7 @@ class EquipableItem:
         )
 
     @cached_property
-    def get_conditions(self) -> tuple[list[SetMinimums], list[SetMaximums]]:
+    def get_conditions(self) -> tuple[tuple[SetMinimums, ...], tuple[SetMaximums, ...]]:
         item_conds = conditions.get(self._item_id, [])
         set_mins: list[SetMinimums] = []
         set_maxs: list[SetMaximums] = []
@@ -706,4 +706,4 @@ class EquipableItem:
             elif isinstance(item, SetMaximums):
                 set_maxs.append(item)
 
-        return set_mins, set_maxs
+        return tuple(set_mins), tuple(set_maxs)
