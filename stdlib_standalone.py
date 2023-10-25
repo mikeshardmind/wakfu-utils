@@ -795,8 +795,13 @@ def one_off(
             # + item._rear_mastery
         )
 
-    def sort_key_initial(item: EquipableItem) -> int:
-        return sort_key(item) + 100 * (item._ap + max(item._mp, 0)) + 50 * (item._range + (max(item._wp, 0)))
+    def sort_key_initial(item: EquipableItem) -> float:
+        return (
+            sort_key(item)
+            + 100 * (max(item._mp + item._ap, 0))
+            + 50 * (max(item._wp + item._range, 0))
+            + ((BASE_CRIT_CHANCE + 20) / 100) * item._critical_mastery
+        )
 
     NATIONS = ("Bonta", "Brakmar", "Sufokia", "Amakna")
     WEIRD_ONES = ("Ring", "Sword")
