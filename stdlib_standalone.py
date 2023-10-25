@@ -634,6 +634,11 @@ class EquipableItem:
     def is_legendary_or_souvenir(self) -> bool:
         """Here for quick selection of "best" versions"""
         return self._item_rarity in (4, 6)
+    
+    @cached_property
+    def is_souvenir(self) -> bool:
+        """ meh """
+        return self._item_rarity == 6
 
     @cached_property
     def beserk_penalty(self) -> int:
@@ -725,11 +730,12 @@ def one_off(
     WP = 0
     CRIT = -10
 
+    LV_TOLERANCE = 45
     BASE_CRIT_CHANCE = 3 + 20
     BASE_CRIT_MASTERY = 26 * 4
     BASE_RELEV_MASTERY = 40 * 8 + 5 * 6 + 40
     HIGH_BOUND = 185
-    LOW_BOUND = HIGH_BOUND - 45
+    LOW_BOUND = HIGH_BOUND - LV_TOLERANCE
     LIGHT_WEAPON_EXPERT = True
     SKIP_SHIELDS = True
     UNRAVELING = False
@@ -742,7 +748,7 @@ def one_off(
         RA = ns.ra
         WP = ns.wp
         HIGH_BOUND = ns.lv
-        LOW_BOUND = HIGH_BOUND - 45
+        LOW_BOUND = HIGH_BOUND - LV_TOLERANCE
         UNRAVELING = ns.unraveling
         SKIP_SHIELDS = ns.skipshields
         LIGHT_WEAPON_EXPERT = ns.lwx
@@ -800,7 +806,7 @@ def one_off(
             sort_key(item)
             + 100 * (max(item._mp + item._ap, 0))
             + 50 * (max(item._wp + item._range, 0))
-            + ((BASE_CRIT_CHANCE + 20) / 100) * item._critical_mastery
+            + item._critical_mastery * (min(BASE_CRIT_MASTERY + 20, 100)) / 100
         )
 
     NATIONS = ("Bonta", "Brakmar", "Sufokia", "Amakna")
@@ -883,7 +889,7 @@ def one_off(
         )
     ]
 
-    CANIDATES: dict[str, list[EquipableItem]] = {k: v[:ITEM_SEARCH_DEPTH] for k, v in AOBJS.items()}
+    CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
     rings = AOBJS["LEFT_HAND"]
     filtered_rings: list[EquipableItem] = []
@@ -896,11 +902,6 @@ def one_off(
 
     if filtered_rings:
         CANIDATES["LEFT_HAND"] = filtered_rings
-
-    try:
-        CANIDATES["ACCESSORY"] = CANIDATES["ACCESSORY"][:ITEM_SEARCH_DEPTH]
-    except KeyError:
-        pass  # accessories dont exist at all levels
 
     # Weapons need a bit of special handling
     # to prevent 2H weapons from sorting out 1Hs
@@ -959,6 +960,38 @@ def one_off(
                 items.remove(item)
             except ValueError:
                 pass
+        
+        if len(items) > ITEM_SEARCH_DEPTH:
+            to_rem = []
+            counter: collections.Counter[Hashable] = collections.Counter()
+            key_func: Callable[[EquipableItem], Hashable]
+            seen_names_souv: set[Hashable] = set()
+            if _slot in ("HEAD", "NECK"):
+                key_func = lambda i: (bool(i._range > 0), i._ap, i._mp)
+            elif _slot == "CHEST":
+                key_func = lambda i: (i._ap, i._mp)
+            elif _slot == "FIRST_WEAPON":
+                key_func = lambda i: i.disables_second_weapon
+            else:
+                key_func = lambda i: True
+            
+            for item in items:
+                k = key_func(item)
+                sn = (item.name, item.is_souvenir)
+                if sn in seen_names_souv:
+                    to_rem.append(item)
+                    continue
+
+                counter[k] += 1
+                if counter[k] > ITEM_SEARCH_DEPTH:
+                    to_rem.append(item)
+                else:
+                    seen_names_souv.add(sn)
+
+            for item in to_rem:
+                items.remove(item)
+
+    p_print(CANIDATES)
 
     # ring diversity
     kcounts: collections.Counter[Hashable] = collections.Counter()

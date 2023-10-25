@@ -646,6 +646,12 @@ class EquipableItem:
         """Here for quick selection of "best" versions"""
         return self._item_rarity in (4, 6)
 
+    
+    @cached_property
+    def is_souvenir(self) -> bool:
+        """ meh """
+        return self._item_rarity == 6
+
     @cached_property
     def beserk_penalty(self) -> int:
         """Quick for classes that care only about the negative"""
