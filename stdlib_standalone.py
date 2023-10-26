@@ -685,7 +685,6 @@ parser.add_argument("--my-base-crit", dest="bcrit", type=int, default=0)
 parser.add_argument("--my-base-mastery", dest="bmast", type=int, default=0)
 parser.add_argument("--my-base-crit-mastery", dest="bcmast", type=int, default=0)
 parser.add_argument("--forbid", dest="forbid", type=str, action="extend", nargs="+")
-parser.add_argument("--force", dest="force", type=int, action="extend", nargs="+", help=argparse.SUPPRESS)
 two_h = parser.add_mutually_exclusive_group()
 two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
 two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
@@ -745,7 +744,6 @@ def one_off(
     ITEM_SEARCH_DEPTH = 1  # this increases time significantly to increase, increase with care.
     WEILD_TYPE_TWO_HANDED = False
     SKIP_TWO_HANDED = not WEILD_TYPE_TWO_HANDED
-    FORCED_IDS: list[int] = []
 
     if ns is not None:
         AP = ns.ap
@@ -762,7 +760,6 @@ def one_off(
         BASE_CRIT_MASTERY = ns.bcmast
         BASE_RELEV_MASTERY = ns.bmast
         SKIP_TWO_HANDED = ns.skiptwo_hand
-        FORCED_IDS = ns.force or []
 
     # TODO: ELEMENTAL_CONCENTRATION = False
 
@@ -858,7 +855,7 @@ def one_off(
         FORBIDDEN.extend(ns.forbid)
 
     def initial_filter(item: EquipableItem) -> bool:
-        return item._item_id in FORCED_IDS or bool(
+        return bool(
             HIGH_BOUND >= item._item_lv >= max(LOW_BOUND, 1)
             and (not (item.is_epic or item.is_relic))
             and (item.name not in FORBIDDEN)
@@ -877,33 +874,7 @@ def one_off(
     for stu in AOBJS.values():
         stu.sort(key=sort_key_initial, reverse=True)
 
-    forced_items = [i for i in OBJS if i._item_id in FORCED_IDS]
-    forced_relics = [i for i in forced_items if i.is_relic]
-    forced_epics = [i for i in forced_items if i.is_epic]
-
-    forced_others: collections.defaultdict[str, list[EquipableItem]] = collections.defaultdict(list)
-    for item in forced_items:
-        if (item in forced_relics) or (item in forced_epics):
-            continue
-        forced_others[item.item_slot].append(item)
-    
-    for k, v in forced_others.items():
-        mx = 2 if k == "LEFT_HAND" else 1
-        if len(v) > mx:
-            msg = "Can't force that many items in the same slot"
-            raise RuntimeError(msg)
-        if v:
-            AOBJS[k] = v
-
-    if len(forced_relics) > 1:
-        msg = "Can only force 1 relic"
-        raise RuntimeError(msg)
-    
-    if len(forced_epics) > 1:
-        msg = "Can only force 1 epic"
-        raise RuntimeError(msg)
-
-    relics = forced_relics or [
+    relics = [
         item
         for item in ALL_OBJS
         if item.is_relic
@@ -912,7 +883,7 @@ def one_off(
             or (item.name == "Gelano" and 155 >= HIGH_BOUND >= 65)
         )
     ]
-    epics = forced_epics or [
+    epics = [
         item
         for item in ALL_OBJS
         if item.is_epic
