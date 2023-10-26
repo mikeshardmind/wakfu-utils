@@ -114,4 +114,4 @@ At this point in time, I'm not actively looking for outside contributors, but pl
 
 ### Feedback
 
-Issue or discord: TXNKsWhhut
+Issue or join the wakfu optimization discord: https://discord.gg/TXNKsWhhut

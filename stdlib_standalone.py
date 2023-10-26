@@ -664,7 +664,7 @@ class EquipableItem:
 
 
 parser = argparse.ArgumentParser(
-    description="Keeper of Time's wakfu set solver beta 1",
+    description="Keeper of Time's wakfu set solver beta 2",
 )
 
 parser.add_argument("--lv", dest="lv", type=int, choices=list(range(20, 231, 15)), required=True)
