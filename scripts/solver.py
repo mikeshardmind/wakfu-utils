@@ -221,11 +221,14 @@ def solve(
     del ALL_OBJS
 
     forced_slots: collections.Counter[str] = collections.Counter()
-    if ns and ns.idforce:
-        forced_items = [i for i in OBJS if i._item_id in ns.idforce]
-        if len(forced_items) < len(ns.idforce):
+    if ns and (ns.idforce or ns.nameforce):
+        _fids = ns.idforce or ()
+        _fns = ns.nameforce or ()
+
+        forced_items = [i for i in OBJS if i._item_id in _fids or i.name in _fns]
+        if len(forced_items) < len(_fids) + len(_fns):
             log.info("Unable to force some of these items with your other conditions")
-            msg = f"Attempted ids {ns.idforce}, found {' '.join(map(str, forced_items))}"
+            msg = f"Attempted ids {ns.idforce}, names {ns.nameforce}, found {' '.join(map(str, forced_items))}"
             log.info(msg)
             sys_exit(1)
 
@@ -237,7 +240,8 @@ def solve(
         forced_ring: Iterable[EquipableItem] = ()
         if forced_relics:
             relic = forced_relics[0]
-            aprint("Forced relic: ", relic)
+            if ns and ns.debug:
+                aprint("Forced relic: ", relic)
             forced_slots[relic.item_slot] += 1
             try:
                 sword_idx = NATION_RELIC_EPIC_IDS.index(relic._item_id)
@@ -258,7 +262,8 @@ def solve(
             sys_exit(1)
         if forced_epics:
             epic = forced_epics[0]
-            aprint("Forced epic: ", epic)
+            if ns and ns.debug:
+                aprint("Forced epic: ", epic)
             forced_slots[epic.item_slot] += 1
 
             try:
@@ -373,7 +378,8 @@ def solve(
             for item in to_rem:
                 items.remove(item)
 
-    pprint(CANIDATES)
+    if ns and ns.debug:
+        pprint(CANIDATES)
 
     ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
     TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
@@ -416,8 +422,9 @@ def solve(
     srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
     canidate_weapons = ordered_unique_by_key(srt_w, weapon_key_func)
 
-    pprint(f"Weapons: {len(canidate_weapons)}")
-    pprint(canidate_weapons)
+    if ns and ns.debug:
+        pprint(f"Weapons: {len(canidate_weapons)}")
+        pprint(canidate_weapons)
 
     BEST_LIST: list[tuple[float, str, list[EquipableItem]]] = []
 
@@ -455,19 +462,20 @@ def solve(
             }
         )
 
-        if relics:
-            aprint("Considering relics:")
-            pprint(relics, width=120)
-        if epics:
-            aprint("Considering epics:")
-            pprint(epics, width=120)
+        if ns and ns.debug:
+            if relics:
+                aprint("Considering relics:")
+                pprint(relics, width=120)
+            if epics:
+                aprint("Considering epics:")
+                pprint(epics, width=120)
 
-        if TWOH:
-            aprint("Considering two-handed weapons:", *TWOH, sep=" ")
-        if ONEH:
-            aprint("Considering one-handed weapons:", *ONEH, sep=" ")
-        if z := DAGGERS + SHIELDS:
-            aprint("Considering off-hands:", *z, sep=" ")
+            if TWOH:
+                aprint("Considering two-handed weapons:", *TWOH, sep=" ")
+            if ONEH:
+                aprint("Considering one-handed weapons:", *ONEH, sep=" ")
+            if z := DAGGERS + SHIELDS:
+                aprint("Considering off-hands:", *z, sep=" ")
 
     epics.sort(key=sort_key_initial, reverse=True)
     relics.sort(key=sort_key_initial, reverse=True)
@@ -654,10 +662,12 @@ def entrypoint() -> None:
     parser.add_argument("--my-base-crit", dest="bcrit", type=int, default=0)
     parser.add_argument("--my-base-mastery", dest="bmast", type=int, default=0)
     parser.add_argument("--my-base-crit-mastery", dest="bcmast", type=int, default=0)
-    parser.add_argument("--forbid", dest="forbid", type=str, action="extend", nargs="+")
+    parser.add_argument("--forbid", dest="forbid", type=str, action="store", nargs="+")
     parser.add_argument("--id-forbid", dest="idforbid", type=int, action="store", nargs="+")
     parser.add_argument("--id-force", dest="idforce", type=int, action="store", nargs="+")
+    parser.add_argument("--name-force", dest="nameforce", type=str, action="store", nargs="+")
     parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
+    parser.add_argument("--debug", dest="debug", action="store_true", default=False)
     two_h = parser.add_mutually_exclusive_group()
     two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
