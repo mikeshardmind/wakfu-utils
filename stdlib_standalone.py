@@ -21,10 +21,11 @@ import logging
 import sys
 from base64 import b85decode
 from collections.abc import Callable, Hashable, Iterable, Iterator
+from dataclasses import dataclass, field
 from functools import cached_property, lru_cache
 from operator import attrgetter, itemgetter
 from pprint import pprint as p_print
-from typing import Any, Final, Literal, TypedDict, TypeVar
+from typing import Any, Final, Literal, NoReturn, TypedDict, TypeVar
 
 T = TypeVar("T")
 
@@ -698,9 +699,41 @@ two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", defa
 two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
 
 
+@dataclass(frozen=True, kw_only=True)
+class Config:
+    lv: int
+    ap: int = 5
+    mp: int = 2
+    wp: int = 0
+    ra: int = 0
+    num_mastery: int = 3
+    dist: bool = False
+    melee: bool = False
+    zerk: bool = False
+    rear: bool = False
+    heal: bool = False
+    unraveling: bool = False
+    skipshields: bool = True
+    lwx: bool = False
+    bcrit: int = 0
+    bmast: int = 0
+    bcmast: int = 0
+    forbid: list[str] = field(default_factory=list)
+    idforbid: list[int] = field(default_factory=list)
+    idforce: list[int] = field(default_factory=list)
+    twoh: bool = False
+    skiptwo_hand: bool = False
+    locale: Literal["en"] = "en"
+
+
+class Exc(RuntimeError):
+    pass
+
+
 def solve(
-    ns: argparse.Namespace | None = None,
+    ns: argparse.Namespace | Config | None = None,
     no_print_log: bool = False,
+    no_sys_exit: bool = False,
 ) -> list[tuple[float, str, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
@@ -708,6 +741,16 @@ def solve(
         _locale.set(ns.locale)
 
     log = logging.getLogger("Set Builder")
+
+    if no_sys_exit:
+
+        def sys_exit(msg: str) -> NoReturn:
+            raise Exc(msg)
+    else:
+
+        def sys_exit(msg: str) -> NoReturn:
+            log.critical(msg)
+            sys.exit(1)
 
     def null_printer(*args: object, **kwargs: object) -> object:
         pass
@@ -889,13 +932,12 @@ def solve(
         if len(forced_items) < len(ns.idforce):
             log.info("Unable to force some of these items with your other conditions")
             msg = f"Attempted ids {ns.idforce}, found {' '.join(map(str, forced_items))}"
-            log.info(msg)
-            sys.exit(1)
+            sys_exit(msg)
 
         forced_relics = [i for i in forced_items if i.is_relic]
         if len(forced_relics) > 1:
-            log.info("Unable to force multiple relics into one set")
-            sys.exit(1)
+            msg = "Unable to force multiple relics into one set"
+            sys_exit(msg)
 
         forced_ring: Iterable[EquipableItem] = ()
         if forced_relics:
@@ -911,14 +953,12 @@ def solve(
                 fr = next((i for i in OBJS if i._item_id == ring_idx), None)
                 if fr is None:
                     msg = "Couldn't force corresponding nation ring?"
-                    log.info(msg)
-                    sys.exit(1)
+                    sys_exit(msg)
                 forced_ring = (fr,)
 
         forced_epics = [*(i for i in forced_items if i.is_epic), *forced_ring]
         if len(forced_epics) > 1:
-            log.info("Unable to force multiple epics into one set")
-            sys.exit(1)
+            sys_exit("Unable to force multiple epics into one set")
         if forced_epics:
             epic = forced_epics[0]
             aprint("Forced epic: ", epic)
@@ -933,14 +973,12 @@ def solve(
                 forced_sword = next((i for i in OBJS if i._item_id == sword_idx), None)
                 if forced_sword is None:
                     msg = "Couldn't force corresponding nation sword?"
-                    log.info(msg)
-                    sys.exit(1)
+                    sys_exit(msg)
                 elif forced_sword in forced_relics:
                     pass
                 elif forced_relics:
                     msg = "Can't force a nation ring with a non-nation sowrd relic"
-                    log.info(msg)
-                    sys.exit(1)
+                    sys_exit(msg)
                 else:
                     forced_relics.append(forced_sword)
                     forced_slots[forced_sword.item_slot] += 1
@@ -955,8 +993,7 @@ def solve(
             mx = 2 if slot == "LEFT_HAND" else 1
             if slot_count > mx:
                 msg = f"Too many forced items in position: {slot}"
-                log.info(msg)
-                sys.exit(1)
+                sys_exit(msg)
 
         for item in (*forced_relics, *forced_epics):
             forced_slots[item.item_slot] -= 1
@@ -8128,3 +8165,70 @@ eAg;`e)(_t)tA%koIheE26uy}Z<(zvVtMK#(U2D{AM;J(?W#+D1k~eg+Pcq@F-8L;R?H-N4sI$F}hP%
 
 if __name__ == "__main__":
     solve(parser.parse_args())
+
+ClassNames = Literal[
+    "Feca",
+    "Osa",
+    "Enu",
+    "Sram",
+    "Xel",
+    "Eca",
+    "Eni",
+    "Iop",
+    "Cra",
+    "Sadi",
+    "Sac",
+    "Panda",
+    "Rogue",
+    "Masq",
+    "Ougi",
+    "Fog",
+    "Elio",
+]
+
+#: (ReturnValue, Error)
+Result = tuple[list[int] | None, str | None]
+
+
+def solve_config(config: Config) -> Result:
+    try:
+        solution = solve(config, no_sys_exit=True, no_print_log=True)
+    except Exc as e:
+        return (None, e.args[0])
+    else:
+        if solution:
+            best = solution[0]
+            _score, _text, items = best
+            return [i._item_id for i in items], None
+        return None, "No possible solution found"
+
+
+def v1_lv_class_solve(level: int, class_: ClassNames, force_items: list[int], forbid_items: list[int]) -> Result:
+    """
+    Quick thing provided for wakforge to be "quickly up and running" with pyiodide before the monoserver launch
+    """
+
+    if level not in range(20, 230, 15):
+        return (None, "autosolver only solves on als levels currently")
+
+    crit = 0 if class_ in ("Panda", "Feca") else 20
+    ap = 5
+    mp = 2
+    ra = 0
+    if class_ == "Xel":
+        mp = 1
+    if class_ in ("Xel", "Enu", "Eni", "Cra", "Sadi"):
+        if level >= 155:
+            ra = 3
+        elif level >= 125:
+            ra = 2
+        elif level >= 50:
+            ra = 1
+
+    if level < 50:
+        ap = 3
+        mp = 1
+
+    config = Config(lv=level, bcrit=crit, ap=ap, mp=mp, ra=ra, wp=0, idforce=force_items.copy(), idforbid=forbid_items.copy())
+
+    return solve_config(config)
