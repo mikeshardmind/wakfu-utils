@@ -21,7 +21,7 @@ from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache
 from operator import attrgetter, itemgetter
 from pprint import pprint as p_print
-from typing import Final, TypeVar
+from typing import Final, NoReturn, TypeVar, assert_never
 
 from object_parsing import EquipableItem, _locale
 from unobs import get_unobtainable_ids
@@ -37,8 +37,18 @@ def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list
 def solve(
     ns: argparse.Namespace | None = None,
     no_print_log: bool = False,
+    no_sys_exit: bool = False,
 ) -> list[tuple[float, str, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
+
+    if no_sys_exit:
+        def sys_exit(code: int) -> NoReturn:
+            raise RuntimeError
+    else:
+        sys_exit = sys.exit
+
+    if ns:
+        _locale.set(ns.locale)
 
     log = logging.getLogger("Set Builder")
 
@@ -217,12 +227,12 @@ def solve(
             log.info("Unable to force some of these items with your other conditions")
             msg = f"Attempted ids {ns.idforce}, found {' '.join(map(str, forced_items))}"
             log.info(msg)
-            sys.exit(1)
+            sys_exit(1)
 
         forced_relics = [i for i in forced_items if i.is_relic]
         if len(forced_relics) > 1:
             log.info("Unable to force multiple relics into one set")
-            sys.exit(1)
+            sys_exit(1)
 
         forced_ring: Iterable[EquipableItem] = ()
         if forced_relics:
@@ -239,13 +249,13 @@ def solve(
                 if fr is None:
                     msg = "Couldn't force corresponding nation ring?"
                     log.info(msg)
-                    sys.exit(1)
+                    assert_never(sys_exit(1))
                 forced_ring = (fr,)
 
         forced_epics = [*(i for i in forced_items if i.is_epic), *forced_ring]
         if len(forced_epics) > 1:
             log.info("Unable to force multiple epics into one set")
-            sys.exit(1)
+            sys_exit(1)
         if forced_epics:
             epic = forced_epics[0]
             aprint("Forced epic: ", epic)
@@ -261,13 +271,13 @@ def solve(
                 if forced_sword is None:
                     msg = "Couldn't force corresponding nation sword?"
                     log.info(msg)
-                    sys.exit(1)
+                    sys_exit(1)
                 elif forced_sword in forced_relics:
                     pass
                 elif forced_relics:
                     msg = "Can't force a nation ring with a non-nation sowrd relic"
                     log.info(msg)
-                    sys.exit(1)
+                    sys_exit(1)
                 else:
                     forced_relics.append(forced_sword)
                     forced_slots[forced_sword.item_slot] += 1
@@ -283,7 +293,7 @@ def solve(
             if slot_count > mx:
                 msg = f"Too many forced items in position: {slot}"
                 log.info(msg)
-                sys.exit(1)
+                sys_exit(1)
 
         for item in (*forced_relics, *forced_epics):
             forced_slots[item.item_slot] -= 1

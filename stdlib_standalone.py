@@ -692,6 +692,7 @@ parser.add_argument("--my-base-crit-mastery", dest="bcmast", type=int, default=0
 parser.add_argument("--forbid", dest="forbid", type=str, action="extend", nargs="+")
 parser.add_argument("--id-forbid", dest="idforbid", type=int, action="store", nargs="+")
 parser.add_argument("--id-force", dest="idforce", type=int, action="store", nargs="+")
+parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
 two_h = parser.add_mutually_exclusive_group()
 two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
 two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
@@ -702,6 +703,9 @@ def solve(
     no_print_log: bool = False,
 ) -> list[tuple[float, str, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
+
+    if ns:
+        _locale.set(ns.locale)
 
     log = logging.getLogger("Set Builder")
 
@@ -1038,13 +1042,13 @@ def solve(
     TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
     DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]
 
+    lw = EquipableItem()
+    lw._elemental_mastery = int(HIGH_BOUND * 1.5)
+    lw._title_strings[_locale.get()] = "LIGHT WEAPON EXPERT PLACEHOLDER"
+    lw._item_lv = HIGH_BOUND
+    lw._item_rarity = 4
+    lw._item_type = 112
     if LIGHT_WEAPON_EXPERT:
-        lw = EquipableItem()
-        lw._elemental_mastery = int(HIGH_BOUND * 1.5)
-        lw._title_strings[_locale.get()] = "LIGHT WEAPON EXPERT PLACEHOLDER"
-        lw._item_lv = HIGH_BOUND
-        lw._item_rarity = 4
-        lw._item_type = 112
         DAGGERS.append(lw)
 
     SHIELDS = [] if SKIP_SHIELDS else [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 189][:ITEM_SEARCH_DEPTH]
@@ -1265,7 +1269,8 @@ def solve(
                     components.append(f"Epic: {epic}")
 
                 for item in sorted(items, key=lambda item: item.item_slot):
-                    components.append(f"{item.item_type_name.title()}: {item}")
+                    if item is not lw:
+                        components.append(f"{item.item_type_name.title()}: {item}")
 
                 text_repr = "\n".join(components)
 
