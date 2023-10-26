@@ -22,6 +22,8 @@ ignore = [
     "PLR",     # more complexity things
     "COM812",  # trailing commmas
     "ERA001", # commented out code
+    "E731", # No, I think I'll keep my lambdas when I feel they are the right call
+    "B905", # zip without explicit strict=
 ]
 unfixable = [
     "ERA"  # I don't want anything erroneously detected deleted by this.

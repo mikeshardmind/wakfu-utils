@@ -5,4 +5,4 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
-__version__ = "2023.10.25"
+__version__ = "2023.10.26"

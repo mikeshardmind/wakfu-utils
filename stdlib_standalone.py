@@ -22,7 +22,7 @@ import sys
 from base64 import b85decode
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import cached_property, lru_cache
-from operator import itemgetter
+from operator import attrgetter, itemgetter
 from pprint import pprint as p_print
 from typing import Any, Literal, TypedDict, TypeVar
 
@@ -681,11 +681,14 @@ parser.add_argument("--heal", dest="heal", action="store_true", default=False)
 parser.add_argument("--unraveling", dest="unraveling", action="store_true", default=False)
 parser.add_argument("--no-skip-shields", dest="skipshields", action="store_false", default=True)
 parser.add_argument("--try-light-weapon-expert", dest="lwx", action="store_true", default=False)
-parser.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
 parser.add_argument("--my-base-crit", dest="bcrit", type=int, default=0)
 parser.add_argument("--my-base-mastery", dest="bmast", type=int, default=0)
 parser.add_argument("--my-base-crit-mastery", dest="bcmast", type=int, default=0)
 parser.add_argument("--forbid", dest="forbid", type=str, action="extend", nargs="+")
+parser.add_argument("--force", dest="force", type=int, action="extend", nargs="+", help=argparse.SUPPRESS)
+two_h = parser.add_mutually_exclusive_group()
+two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
+two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
 
 
 def one_off(
@@ -730,7 +733,7 @@ def one_off(
     WP = 0
     CRIT = -10
 
-    LV_TOLERANCE = 45
+    LV_TOLERANCE = 30
     BASE_CRIT_CHANCE = 3 + 20
     BASE_CRIT_MASTERY = 26 * 4
     BASE_RELEV_MASTERY = 40 * 8 + 5 * 6 + 40
@@ -739,8 +742,10 @@ def one_off(
     LIGHT_WEAPON_EXPERT = True
     SKIP_SHIELDS = True
     UNRAVELING = False
-    ITEM_SEARCH_DEPTH = 3  # this increases time significantly to increase, increase with care.
+    ITEM_SEARCH_DEPTH = 1  # this increases time significantly to increase, increase with care.
     WEILD_TYPE_TWO_HANDED = False
+    SKIP_TWO_HANDED = not WEILD_TYPE_TWO_HANDED
+    FORCED_IDS: list[int] = []
 
     if ns is not None:
         AP = ns.ap
@@ -756,6 +761,8 @@ def one_off(
         BASE_CRIT_CHANCE = 3 + ns.bcrit
         BASE_CRIT_MASTERY = ns.bcmast
         BASE_RELEV_MASTERY = ns.bmast
+        SKIP_TWO_HANDED = ns.skiptwo_hand
+        FORCED_IDS = ns.force or []
 
     # TODO: ELEMENTAL_CONCENTRATION = False
 
@@ -851,8 +858,8 @@ def one_off(
         FORBIDDEN.extend(ns.forbid)
 
     def initial_filter(item: EquipableItem) -> bool:
-        return bool(
-            HIGH_BOUND >= item._item_lv >= LOW_BOUND
+        return item._item_id in FORCED_IDS or bool(
+            HIGH_BOUND >= item._item_lv >= max(LOW_BOUND, 1)
             and (not (item.is_epic or item.is_relic))
             and (item.name not in FORBIDDEN)
             and ("Makabra" not in (item.name or ""))
@@ -870,7 +877,33 @@ def one_off(
     for stu in AOBJS.values():
         stu.sort(key=sort_key_initial, reverse=True)
 
-    relics = [
+    forced_items = [i for i in OBJS if i._item_id in FORCED_IDS]
+    forced_relics = [i for i in forced_items if i.is_relic]
+    forced_epics = [i for i in forced_items if i.is_epic]
+
+    forced_others: collections.defaultdict[str, list[EquipableItem]] = collections.defaultdict(list)
+    for item in forced_items:
+        if (item in forced_relics) or (item in forced_epics):
+            continue
+        forced_others[item.item_slot].append(item)
+    
+    for k, v in forced_others.items():
+        mx = 2 if k == "LEFT_HAND" else 1
+        if len(v) > mx:
+            msg = "Can't force that many items in the same slot"
+            raise RuntimeError(msg)
+        if v:
+            AOBJS[k] = v
+
+    if len(forced_relics) > 1:
+        msg = "Can only force 1 relic"
+        raise RuntimeError(msg)
+    
+    if len(forced_epics) > 1:
+        msg = "Can only force 1 epic"
+        raise RuntimeError(msg)
+
+    relics = forced_relics or [
         item
         for item in ALL_OBJS
         if item.is_relic
@@ -878,8 +911,8 @@ def one_off(
             (HIGH_BOUND >= item._item_lv >= LOW_BOUND and item.name not in FORBIDDEN)
             or (item.name == "Gelano" and 155 >= HIGH_BOUND >= 65)
         )
-    ] or [None]
-    epics = [
+    ]
+    epics = forced_epics or [
         item
         for item in ALL_OBJS
         if item.is_epic
@@ -891,57 +924,10 @@ def one_off(
 
     CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
-    rings = AOBJS["LEFT_HAND"]
-    filtered_rings: list[EquipableItem] = []
-    for ring in rings:
-        if any((ring.name == r.name) and (ring._item_rarity in (1, 2, 3, 4)) for r in filtered_rings):
-            continue
-        filtered_rings.append(ring)
-        if len(filtered_rings) >= ITEM_SEARCH_DEPTH:
-            break
-
-    if filtered_rings:
-        CANIDATES["LEFT_HAND"] = filtered_rings
-
-    # Weapons need a bit of special handling
-    # to prevent 2H weapons from sorting out 1Hs
-    ONEH = [i for i in AOBJS["FIRST_WEAPON"] if not i.disables_second_weapon][:ITEM_SEARCH_DEPTH]
-
-    TWOH = [i for i in AOBJS["FIRST_WEAPON"] if i.disables_second_weapon][:ITEM_SEARCH_DEPTH]
-
-    # Same with breastplates....
-    AP_BPS = [i for i in AOBJS["CHEST"] if i._ap == 1][:ITEM_SEARCH_DEPTH]
-    MP_BPS = [i for i in AOBJS["CHEST"] if i._mp == 1][:ITEM_SEARCH_DEPTH]
-
-    seen_key: set[Hashable] = set()
-    _seen_add = seen_key.add
-
-    # with/without range
-    for item_key in ("HEAD", "NECK"):
-        wr: list[EquipableItem] = []
-        wor: list[EquipableItem] = []
-        for i in CANIDATES[item_key]:
-            if i._range > 0:
-                wr.append(i)
-            else:
-                wor.append(i)
-
-        CANIDATES[item_key] = wr[:ITEM_SEARCH_DEPTH] + wor[:ITEM_SEARCH_DEPTH]
-
-    CANIDATES["CHEST"] = [  # keep best few of each type of chest
-        i
-        for i in (*AP_BPS, *MP_BPS, *list(AOBJS["CHEST"])[:ITEM_SEARCH_DEPTH])
-        if not (i in seen_key or _seen_add(i))
-    ]  # todo: similar treatment for cloaks, weapons, boots for 200+
-
-    # Shields and daggers diverge in a way that makes them need it too
-    # if a shield is overall best in slot,
-    # but a dagger hits the benchmarks more comfortably...
-
     def needs_full_sim_key(item: EquipableItem) -> tuple[int, ...]:
         return (item._ap, item._mp, item._critical_hit, item._critical_mastery, item._wp)
-
-    kept_rings = CANIDATES["LEFT_HAND"].copy()
+    consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon")
+    key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
 
     for _slot, items in CANIDATES.items():
         seen_key: set[Hashable] = set()
@@ -960,21 +946,14 @@ def one_off(
                 items.remove(item)
             except ValueError:
                 pass
-        
-        if len(items) > ITEM_SEARCH_DEPTH:
+
+        depth = ITEM_SEARCH_DEPTH if _slot != "LEFT_HAND" else ITEM_SEARCH_DEPTH + 1
+
+        if len(items) > depth:
             to_rem = []
             counter: collections.Counter[Hashable] = collections.Counter()
-            key_func: Callable[[EquipableItem], Hashable]
             seen_names_souv: set[Hashable] = set()
-            if _slot in ("HEAD", "NECK"):
-                key_func = lambda i: (bool(i._range > 0), i._ap, i._mp)
-            elif _slot == "CHEST":
-                key_func = lambda i: (i._ap, i._mp)
-            elif _slot == "FIRST_WEAPON":
-                key_func = lambda i: i.disables_second_weapon
-            else:
-                key_func = lambda i: True
-            
+
             for item in items:
                 k = key_func(item)
                 sn = (item.name, item.is_souvenir)
@@ -983,7 +962,7 @@ def one_off(
                     continue
 
                 counter[k] += 1
-                if counter[k] > ITEM_SEARCH_DEPTH:
+                if counter[k] > depth:
                     to_rem.append(item)
                 else:
                     seen_names_souv.add(sn)
@@ -991,20 +970,11 @@ def one_off(
             for item in to_rem:
                 items.remove(item)
 
-    p_print(CANIDATES)
+    pprint(CANIDATES)
 
-    # ring diversity
-    kcounts: collections.Counter[Hashable] = collections.Counter()
-    kept_rings.sort(key=sort_key, reverse=True)
-    to_rem = []
-    for ring in kept_rings:
-        key = needs_full_sim_key(ring)
-        kcounts[key] += 1
-        if kcounts[key] > 2:
-            to_rem.append(ring)
-    CANIDATES["LEFT_HAND"] = [ring for ring in kept_rings if ring not in to_rem]
-
-    DAGGERS = [i for i in AOBJS["SECOND_WEAPON"] if i._item_type == 112][:ITEM_SEARCH_DEPTH]
+    ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
+    TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
+    DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]
 
     if LIGHT_WEAPON_EXPERT:
         lw = EquipableItem()
@@ -1015,16 +985,19 @@ def one_off(
         lw._item_type = 112
         DAGGERS.append(lw)
 
-    SHIELDS = [] if SKIP_SHIELDS else [i for i in AOBJS["SECOND_WEAPON"] if i._item_type == 189][:ITEM_SEARCH_DEPTH]
+    SHIELDS = [] if SKIP_SHIELDS else [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 189][:ITEM_SEARCH_DEPTH]
 
     del CANIDATES["FIRST_WEAPON"]
     del CANIDATES["SECOND_WEAPON"]
 
     # Tt be reused below
-    canidate_weapons = (*((two_hander,) for two_hander in TWOH), *itertools.product(ONEH, (DAGGERS + SHIELDS)))
 
     if WEILD_TYPE_TWO_HANDED:
         canidate_weapons = (*((two_hander,) for two_hander in TWOH),)
+    elif SKIP_TWO_HANDED:
+        canidate_weapons = (*itertools.product(ONEH, (DAGGERS + SHIELDS)),)
+    else:
+        canidate_weapons = (*((two_hander,) for two_hander in TWOH), *itertools.product(ONEH, (DAGGERS + SHIELDS)))
 
     def tuple_expander(seq: Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]) -> Iterator[EquipableItem]:
         for item in seq:
@@ -1032,6 +1005,19 @@ def one_off(
                 yield from item
             else:
                 yield item
+
+    weapon_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
+    weapon_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
+    weapon_key_func = lambda w: (*(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),)
+    weapon_score_func = lambda w: sum(map(sort_key_initial, tuple_expander(w)))
+    seen_weapons: set[Hashable] = set()
+    canidate_weapons = (*(
+        ws for ws in sorted(canidate_weapons, key=weapon_score_func, reverse=True)
+        if not ((key:= weapon_key_func(ws)) in seen_weapons or seen_weapons.add(key))
+    ),)
+
+    pprint(f"Weapons: {len(canidate_weapons)}")
+    pprint(canidate_weapons)
 
     BEST_LIST: list[tuple[float, str, list[EquipableItem]]] = []
 
@@ -1082,7 +1068,28 @@ def one_off(
         if z := DAGGERS + SHIELDS:
             aprint("Considering off-hands:", *z, sep=" ")
 
-    for relic, epic in (*itertools.product(relics, epics), *extra_pairs):
+    epics.sort(key=sort_key_initial, reverse=True)
+    relics.sort(key=sort_key_initial, reverse=True)
+    seen: set[Hashable] = set()
+    kf: Callable[[EquipableItem], Hashable] = lambda i: (i.item_slot, needs_full_sim_key(i))
+    epics = [e for e in epics if not ((key:=kf(e)) in seen or seen.add(e))]
+    seen = set()
+    relics = [r for r in relics if not ((key:=kf(r)) in seen or seen.add(r))]
+
+    re_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
+    re_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
+    re_key_func = lambda w: ((*(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),), "-".join(sorted(i.item_slot for i in tuple_expander(w))))
+    re_score_func = lambda w: sum(map(sort_key_initial, tuple_expander(w)))
+    seen_re_pairs: set[Hashable] = set()
+
+    canidate_re_pairs = (*(
+        ws for ws in sorted((*itertools.product(relics, epics), *extra_pairs), key=re_score_func, reverse=True)
+        if not ((key:= re_key_func(ws)) in seen_re_pairs or seen_re_pairs.add(key))
+    ),) if relics else (*itertools.product(relics or [None], epics), *extra_pairs)
+
+
+#    for relic, epic in (*itertools.product(relics or [None], epics), *extra_pairs):
+    for relic, epic in canidate_re_pairs:
         if relic is not None:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
                 continue
