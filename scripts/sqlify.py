@@ -167,7 +167,8 @@ if __name__ == "__main__":
     conn.executemany(QUERY, data)
 
     titles = [
-        {"item_id": item._item_id, **item._title_strings} for item in items  # pyright: ignore[reportPrivateUsage]
+        {"item_id": item._item_id, **item._title_strings}
+        for item in items  # pyright: ignore[reportPrivateUsage]
     ]
 
     conn.executemany(

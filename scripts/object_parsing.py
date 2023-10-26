@@ -441,9 +441,10 @@ class RawEffectInnerParams(TypedDict):
     params: list[int]
     actionId: int
 
+
 class RawEffectInner(TypedDict):
     definition: RawEffectInnerParams
-    
+
 
 class RawEffectType(TypedDict):
     effect: RawEffectInner
@@ -646,10 +647,9 @@ class EquipableItem:
         """Here for quick selection of "best" versions"""
         return self._item_rarity in (4, 6)
 
-    
     @cached_property
     def is_souvenir(self) -> bool:
-        """ meh """
+        """meh"""
         return self._item_rarity == 6
 
     @cached_property
@@ -708,7 +708,7 @@ class EquipableItem:
         # precombat should be items which have this condition
         # if self._critical_hit < 0:
         #    set_mins.append(NEGCRIT)
-        
+
         for item in item_conds:
             if isinstance(item, SetMinimums):
                 set_mins.append(item)

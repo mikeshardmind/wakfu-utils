@@ -28,9 +28,10 @@ from unobs import get_unobtainable_ids
 
 T = TypeVar("T")
 
+
 def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list[T]:
     seen_set: set[Hashable] = set()
-    return [i for i in it if not ((k:=key(i)) in seen_set or seen_set.add(k))]
+    return [i for i in it if not ((k := key(i)) in seen_set or seen_set.add(k))]
 
 
 def solve(

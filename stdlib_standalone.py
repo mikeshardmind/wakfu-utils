@@ -28,9 +28,10 @@ from typing import Any, Final, Literal, TypedDict, TypeVar
 
 T = TypeVar("T")
 
+
 def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list[T]:
     seen_set: set[Hashable] = set()
-    return [i for i in it if not ((k:=key(i)) in seen_set or seen_set.add(k))]
+    return [i for i in it if not ((k := key(i)) in seen_set or seen_set.add(k))]
 
 
 class PosData(TypedDict):
@@ -451,9 +452,10 @@ class RawEffectInnerParams(TypedDict):
     params: list[int]
     actionId: int
 
+
 class RawEffectInner(TypedDict):
     definition: RawEffectInnerParams
-    
+
 
 class RawEffectType(TypedDict):
     effect: RawEffectInner
@@ -640,10 +642,10 @@ class EquipableItem:
     def is_legendary_or_souvenir(self) -> bool:
         """Here for quick selection of "best" versions"""
         return self._item_rarity in (4, 6)
-    
+
     @cached_property
     def is_souvenir(self) -> bool:
-        """ meh """
+        """meh"""
         return self._item_rarity == 6
 
     @cached_property
@@ -664,7 +666,6 @@ class EquipableItem:
             + self._resistance_3_elements * 3
             + self._elemental_resistance * 4
         )
-
 
 
 parser = argparse.ArgumentParser(

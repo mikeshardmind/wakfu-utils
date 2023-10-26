@@ -12,7 +12,6 @@ Manually tracked items that aren't currently obtainable, grouped by reason if kn
 """
 
 
-
 # https://www.wakfu.com/en/forum/8-general-discussions/239875-nemotilus-weapons
 """
 │ 20790   │ Nemotilus Harpoon    │
@@ -87,6 +86,7 @@ def get_unobtainable_info() -> Iterator[tuple[int, str]]:
     for reason, item_ids in _item_map.items():
         for item_id in item_ids:
             yield (item_id, reason)
+
 
 def get_unobtainable_ids() -> Iterator[int]:
     for item_ids in _item_map.values():

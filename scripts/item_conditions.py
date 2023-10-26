@@ -79,12 +79,12 @@ mp_lt_eq_5 = [rst.SetMaximums(mp=5)]
 for item_id in (27449, 27450, 26997, 26998, 26289, 26310, 27693):
     conditions[item_id] = mp_lt_eq_5
 
-#World Maps, Hairpin, Art'And Cards
+# World Maps, Hairpin, Art'And Cards
 ra_lt_eq_3 = [rst.SetMaximums(ra=3)]
 for item_id in (27299, 27300, 26295, 26316, 27377, 27378):
     conditions[item_id] = ra_lt_eq_3
 
-#Ax of Reason
+# Ax of Reason
 ra_lt_eq_3 = [rst.SetMinimums(ra=2)]
 for item_id in (27287, 27288):
     conditions[item_id] = ra_lt_eq_3
@@ -96,5 +96,5 @@ for item_id in (26298,):
 
 # Tell-Tale Boots, Laughing Shovel
 wp_gt_eq_8 = [rst.SetMinimums(wp=8)]
-for item_id in (26994,26995,26996,26300,26319):
+for item_id in (26994, 26995, 26996, 26300, 26319):
     conditions[item_id] = wp_gt_eq_8

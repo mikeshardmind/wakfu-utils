@@ -41,7 +41,6 @@ class Stats(Struct, frozen=True, gc=True):
     lock: int
     dodge: int
 
-
     def __sub__(self, other: object) -> Stats:
         if not isinstance(other, Stats):
             return NotImplemented
@@ -57,6 +56,7 @@ class Stats(Struct, frozen=True, gc=True):
 
 DUMMY_MIN: int = -1_000_000
 DUMMY_MAX: int = 1_000_000
+
 
 class SetMinimums(Stats, frozen=True, gc=False):
     ap: int = 5
@@ -115,10 +115,8 @@ def effective_mastery(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> 
 
     rel_mastery = rel_mastery_key(stats)
 
-    return (
-        (rel_mastery * (100 - crit_rate) / 100) * fd
-        + ((rel_mastery + stats.crit_mastery) * crit_rate * (fd + .25))
-    )
+    return (rel_mastery * (100 - crit_rate) / 100) * fd + ((rel_mastery + stats.crit_mastery) * crit_rate * (fd + 0.25))
+
 
 def effective_healing(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> float:
     """
@@ -132,27 +130,22 @@ def effective_healing(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> 
 
 
 def apply_w2h(stats: Stats) -> Stats:
-    return replace(stats, ap=stats.ap+2, mp=stats.mp-2)
+    return replace(stats, ap=stats.ap + 2, mp=stats.mp - 2)
 
 
 def apply_unravel(stats: Stats) -> Stats:
     if stats.crit >= 40:
-        return replace(stats, elemental_mastery=stats.elemental_mastery+stats.crit_mastery, crit_mastery=0)
+        return replace(stats, elemental_mastery=stats.elemental_mastery + stats.crit_mastery, crit_mastery=0)
     return stats
 
 
 def apply_elementalism(stats: Stats) -> Stats:
     if (stats.one_element_mastery == stats.two_element_mastery == 0) and stats.three_element_mastery != 0:
-        return replace(stats, fd=stats.fd+30, heals_performed=stats.heals_performed+30)
+        return replace(stats, fd=stats.fd + 30, heals_performed=stats.heals_performed + 30)
     return stats
 
 
-
-def generate_filter(
-    base_stats: Stats,
-    maximums: list[Stats],
-    minimums: list[Stats]
-) -> Callable[[list[Stats]], bool]:
+def generate_filter(base_stats: Stats, maximums: list[Stats], minimums: list[Stats]) -> Callable[[list[Stats]], bool]:
     min_clamp = Stats(*(max(items) for items in zip(*map(astuple, minimums), strict=True))) - base_stats
     max_clamp = Stats(*(min(items) for items in zip(*map(astuple, maximums), strict=True))) + base_stats
 
@@ -160,9 +153,8 @@ def generate_filter(
     max_tup = astuple(max_clamp)
 
     def f(item_set: list[Stats]) -> bool:
-
         stat_tup = astuple(reduce(operator.add, item_set))
 
         return all(mn <= s <= mx for mn, s, mx in zip(min_tup, stat_tup, max_tup, strict=True))
-    
+
     return f
