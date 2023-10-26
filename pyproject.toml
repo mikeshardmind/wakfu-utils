@@ -1,6 +1,6 @@
 [tool.ruff]
 
-line-length = 120
+line-length = 130
 target-version = "py311"
 select = [
     "F", "E", "I", "UP", "YTT", "ANN", "S", "BLE", "B", "A", "COM", "C4", "DTZ",
@@ -24,11 +24,11 @@ ignore = [
     "ERA001", # commented out code
     "E731", # No, I think I'll keep my lambdas when I feel they are the right call
     "B905", # zip without explicit strict=
+    "COM819",  # reccomended by ruff when using ruff format
+    "E501",  # reccomended by ruff when using ruff format
+    "ISC001",  # reccomended by ruff when using ruff format
+    "Q003",  # reccomended by ruff when using ruff format
 ]
-unfixable = [
-    "ERA"  # I don't want anything erroneously detected deleted by this.
-]
-
 
 [project]
 license = "MPL-2.0"

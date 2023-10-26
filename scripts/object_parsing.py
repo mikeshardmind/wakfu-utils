@@ -19,7 +19,7 @@ from functools import cached_property
 from typing import Any, Literal, Self, TypedDict, TypeVar
 
 import msgspec
-from item_conditions import NEGCRIT, conditions
+from item_conditions import conditions
 from restructured_types import SetMaximums, SetMinimums, Stats
 
 
@@ -698,13 +698,16 @@ class EquipableItem:
         )
 
     @cached_property
-    def get_conditions(self) -> tuple[tuple[SetMinimums, ...], tuple[SetMaximums, ...]]:
+    def conditions(self) -> tuple[tuple[SetMinimums, ...], tuple[SetMaximums, ...]]:
         item_conds = conditions.get(self._item_id, [])
         set_mins: list[SetMinimums] = []
         set_maxs: list[SetMaximums] = []
 
-        if self._critical_hit < 0:
-            set_mins.append(NEGCRIT)
+        # We'll revisit this if needed, but I think a global min of
+        # -10 works since the only way to get negative crit
+        # precombat should be items which have this condition
+        # if self._critical_hit < 0:
+        #    set_mins.append(NEGCRIT)
         
         for item in item_conds:
             if isinstance(item, SetMinimums):

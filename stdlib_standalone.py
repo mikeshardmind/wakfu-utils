@@ -24,7 +24,13 @@ from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import cached_property, lru_cache
 from operator import attrgetter, itemgetter
 from pprint import pprint as p_print
-from typing import Any, Literal, TypedDict, TypeVar
+from typing import Any, Final, Literal, TypedDict, TypeVar
+
+T = TypeVar("T")
+
+def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list[T]:
+    seen_set: set[Hashable] = set()
+    return [i for i in it if not ((k:=key(i)) in seen_set or seen_set.add(k))]
 
 
 class PosData(TypedDict):
@@ -661,8 +667,6 @@ class EquipableItem:
 
 
 
-
-
 parser = argparse.ArgumentParser(
     description="Keeper of Time's wakfu set solver beta 2",
 )
@@ -685,13 +689,16 @@ parser.add_argument("--my-base-crit", dest="bcrit", type=int, default=0)
 parser.add_argument("--my-base-mastery", dest="bmast", type=int, default=0)
 parser.add_argument("--my-base-crit-mastery", dest="bcmast", type=int, default=0)
 parser.add_argument("--forbid", dest="forbid", type=str, action="extend", nargs="+")
+parser.add_argument("--id-forbid", dest="idforbid", type=int, action="store", nargs="+")
+parser.add_argument("--id-force", dest="idforce", type=int, action="store", nargs="+")
 two_h = parser.add_mutually_exclusive_group()
 two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
 two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
 
 
-def one_off(
-    ns: argparse.Namespace | None = None, no_print_log: bool = False,
+def solve(
+    ns: argparse.Namespace | None = None,
+    no_print_log: bool = False,
 ) -> list[tuple[float, str, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
@@ -805,6 +812,16 @@ def one_off(
             # + item._rear_mastery
         )
 
+    def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
+        # fmt: off
+        return item._item_id in [
+            18691, 26289, 26290, 26291, 26292, 26293, 26295, 26296, 26298, 26299, 26300, 26302,
+            26303, 26304, 26310, 26311, 26312, 26313, 26314, 26316, 26317, 26318, 26319, 26322,
+            26324, 26953, 26954, 26994, 26995, 26996, 26997, 26998, 27287, 27288, 27289, 27290,
+            27293, 27294, 27297, 27298, 27299, 27300, 27303, 27304, 27377, 27378, 27409, 27410,
+            27443, 27444, 27445, 27446, 27447, 27448, 27449, 27450, 27693, 27695, 27747, 30138]
+        # fmt: on
+
     def sort_key_initial(item: EquipableItem) -> float:
         return (
             sort_key(item)
@@ -813,90 +830,163 @@ def one_off(
             + item._critical_mastery * (min(BASE_CRIT_MASTERY + 20, 100)) / 100
         )
 
-    NATIONS = ("Bonta", "Brakmar", "Sufokia", "Amakna")
-    WEIRD_ONES = ("Ring", "Sword")
+    #    │ 26494   │ Amakna Sword  │
+    #    │ 26495   │ Sufokia Sword │
+    #    │ 26496   │ Bonta Sword   │
+    #    │ 26497   │ Brakmar Sword │
+    #    │ 26575   │ Amakna Ring   │
+    #    │ 26576   │ Sufokia Ring  │
+    #    │ 26577   │ Bonta Ring    │
+    #    │ 26578   │ Brakmar Ring  │
 
-    EXTRA_ITEMS = [f"{n} {t}" for (n, t) in itertools.product(NATIONS, WEIRD_ONES)]
+    #: don't modify this list without keeping the indices aligned so that sword_id+4=same nation ring id
+    # or without modifying uses
+    NATION_RELIC_EPIC_IDS = [26494, 26495, 26496, 26497, 26575, 26576, 26577, 26578]
 
-    FORBIDDEN = (
-        [  # noqa: RUF005
-            # Ankama doesn't include conditions in item data, need special handling for some items later
-            "Maj'Hic Cloak",
-            "Worn to a Shadow",
-            "Mocking Cap",
-            "Kroraging Epaulettes",
-            "Belt of Shadows",
-            "Prismatic Dofus",
-            "Shadowed Boots",
-            "Shademail",
-            "Dehydrated Breastplate",
-            "Brrr Belt",
-            "Bubuckle",
-            "Spicy Belt",
-            "Trool Warrior Spikes",
-            "Breastplate of Shadows",
-            "Jeering Epaulettes",
-            "Cape Hillary",
-            "Salty Cape",
-            "Kroraging Epaulettes",
-            "DigiArv Belt",
-            "Amon Amarth Breastplate",
-            "Broken Sword",  # pathalogical decision making with -res item undesirable
-            "Rigid Cire Momore's Spaulders",
-            "Ancient Trool Warrior Spikes",
-            "Beach Bandage",  # pathalogical decision making with -res item undesirable
-        ]
-        + EXTRA_ITEMS
-        # and things that aren't marked unobtainable, but appear to be
-        + ["Fuzzy Cards", "Nemotilus Harpoon", "Nemotilus Bolt Screw"]
-    )
+    # fmt: off
+    FORBIDDEN = [15284, 15285, 15286, 15287, 15288, 15289, 15290, 15291, 15292, 15293, 
+                 15294, 15295, 15296, 15297, 15298, 15299, 12836, 20790, 20791]
+    # fmt: on
 
-    if ns and ns.forbid:
-        FORBIDDEN.extend(ns.forbid)
+    if ns and ns.idforbid:
+        FORBIDDEN.extend(ns.idforbid)
+
+    # locale based, only works if user is naming it in locale used and case sensitive currently.
+    FORBIDDEN_NAMES: list[str] = ns.forbid if (ns and ns.forbid) else []
 
     def initial_filter(item: EquipableItem) -> bool:
         return bool(
-            HIGH_BOUND >= item._item_lv >= max(LOW_BOUND, 1)
-            and (not (item.is_epic or item.is_relic))
-            and (item.name not in FORBIDDEN)
-            and ("Makabra" not in (item.name or ""))
+            (item._item_id not in FORBIDDEN)
+            and (item.name not in FORBIDDEN_NAMES)
+            and (not has_currently_unhandled_item_condition(item))
         )
 
-    OBJS = list(filter(initial_filter, ALL_OBJS))
+    def level_filter(item: EquipableItem) -> bool:
+        return HIGH_BOUND >= item._item_lv >= max(LOW_BOUND, 1)
+
+    def relic_epic_level_filter(item: EquipableItem) -> bool:
+        """The unreasonable effectiveness of these two rings extends them a bit"""
+        if item._item_id == 9723:  # gelano
+            return 140 >= HIGH_BOUND >= 65
+        if item._item_id == 27281:  # bagus shushu
+            return 185 >= HIGH_BOUND >= 125
+        return HIGH_BOUND >= item._item_lv >= LOW_BOUND
+
+    def minus_relicepic(item: EquipableItem) -> bool:
+        return not (item.is_epic or item.is_relic)
+
+    OBJS: Final[list[EquipableItem]] = list(filter(initial_filter, ALL_OBJS))
+    del ALL_OBJS
+
+    forced_slots: collections.Counter[str] = collections.Counter()
+    if ns and ns.idforce:
+        forced_items = [i for i in OBJS if i._item_id in ns.idforce]
+        if len(forced_items) < len(ns.idforce):
+            log.info("Unable to force some of these items with your other conditions")
+            msg = f"Attempted ids {ns.idforce}, found {' '.join(map(str, forced_items))}"
+            log.info(msg)
+            sys.exit(1)
+
+        forced_relics = [i for i in forced_items if i.is_relic]
+        if len(forced_relics) > 1:
+            log.info("Unable to force multiple relics into one set")
+            sys.exit(1)
+
+        forced_ring: Iterable[EquipableItem] = ()
+        if forced_relics:
+            relic = forced_relics[0]
+            aprint("Forced relic: ", relic)
+            forced_slots[relic.item_slot] += 1
+            try:
+                sword_idx = NATION_RELIC_EPIC_IDS.index(relic._item_id)
+            except ValueError:
+                pass
+            else:
+                ring_idx = NATION_RELIC_EPIC_IDS[sword_idx + 4]
+                fr = next((i for i in OBJS if i._item_id == ring_idx), None)
+                if fr is None:
+                    msg = "Couldn't force corresponding nation ring?"
+                    log.info(msg)
+                    sys.exit(1)
+                forced_ring = (fr,)
+
+        forced_epics = [*(i for i in forced_items if i.is_epic), *forced_ring]
+        if len(forced_epics) > 1:
+            log.info("Unable to force multiple epics into one set")
+            sys.exit(1)
+        if forced_epics:
+            epic = forced_epics[0]
+            aprint("Forced epic: ", epic)
+            forced_slots[epic.item_slot] += 1
+
+            try:
+                ring_idx = NATION_RELIC_EPIC_IDS.index(epic._item_id)
+            except ValueError:
+                pass
+            else:
+                sword_idx = NATION_RELIC_EPIC_IDS[ring_idx - 4]
+                forced_sword = next((i for i in OBJS if i._item_id == sword_idx), None)
+                if forced_sword is None:
+                    msg = "Couldn't force corresponding nation sword?"
+                    log.info(msg)
+                    sys.exit(1)
+                elif forced_sword in forced_relics:
+                    pass
+                elif forced_relics:
+                    msg = "Can't force a nation ring with a non-nation sowrd relic"
+                    log.info(msg)
+                    sys.exit(1)
+                else:
+                    forced_relics.append(forced_sword)
+                    forced_slots[forced_sword.item_slot] += 1
+
+        for item in (*forced_epics, *forced_relics):
+            forced_items.remove(item)
+
+        for item in forced_items:
+            forced_slots[item.item_slot] += 1
+
+        for slot, slot_count in forced_slots.items():
+            mx = 2 if slot == "LEFT_HAND" else 1
+            if slot_count > mx:
+                msg = f"Too many forced items in position: {slot}"
+                log.info(msg)
+                sys.exit(1)
+
+        for item in (*forced_relics, *forced_epics):
+            forced_slots[item.item_slot] -= 1
+
+    else:
+        forced_items = []
+        forced_relics = []
+        forced_epics = []
 
     AOBJS: collections.defaultdict[str, list[EquipableItem]] = collections.defaultdict(list)
 
     log.info("Culling items that aren't up to scratch.")
 
-    for item in filter(initial_filter, OBJS):
+    for item in filter(level_filter, filter(minus_relicepic, OBJS)):
         AOBJS[item.item_slot].append(item)
 
     for stu in AOBJS.values():
         stu.sort(key=sort_key_initial, reverse=True)
 
-    relics = [
+    relics = forced_relics or [
         item
-        for item in ALL_OBJS
-        if item.is_relic
-        and (
-            (HIGH_BOUND >= item._item_lv >= LOW_BOUND and item.name not in FORBIDDEN)
-            or (item.name == "Gelano" and 155 >= HIGH_BOUND >= 65)
-        )
+        for item in OBJS
+        if item.is_relic and initial_filter(item) and relic_epic_level_filter(item) and item._item_id not in NATION_RELIC_EPIC_IDS
     ]
-    epics = [
+    epics = forced_epics or [
         item
-        for item in ALL_OBJS
-        if item.is_epic
-        and (
-            (HIGH_BOUND >= item._item_lv >= LOW_BOUND and item.name not in FORBIDDEN)
-            or (item.name == "Bagus Shushu" and 185 >= HIGH_BOUND >= 125)
-        )
+        for item in OBJS
+        if item.is_epic and initial_filter(item) and relic_epic_level_filter(item) and item._item_id not in NATION_RELIC_EPIC_IDS
     ]
 
     CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
     def needs_full_sim_key(item: EquipableItem) -> tuple[int, ...]:
         return (item._ap, item._mp, item._critical_hit, item._critical_mastery, item._wp)
+
     consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon")
     key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
 
@@ -981,11 +1071,8 @@ def one_off(
     weapon_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
     weapon_key_func = lambda w: (*(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),)
     weapon_score_func = lambda w: sum(map(sort_key_initial, tuple_expander(w)))
-    seen_weapons: set[Hashable] = set()
-    canidate_weapons = (*(
-        ws for ws in sorted(canidate_weapons, key=weapon_score_func, reverse=True)
-        if not ((key:= weapon_key_func(ws)) in seen_weapons or seen_weapons.add(key))
-    ),)
+    srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
+    canidate_weapons = ordered_unique_by_key(srt_w, weapon_key_func)
 
     pprint(f"Weapons: {len(canidate_weapons)}")
     pprint(canidate_weapons)
@@ -996,12 +1083,13 @@ def one_off(
 
     extra_pairs: list[tuple[EquipableItem, EquipableItem]] = []
 
-    if LOW_BOUND <= 200 <= HIGH_BOUND:
-        for n in NATIONS:
-            if n == "Brakmar":
-                relic = next(i for i in ALL_OBJS if i.name == f"{n} Sword" and i.is_relic)
-                epic = next(i for i in ALL_OBJS if i.name == f"{n} Ring" and i.is_epic)
-                extra_pairs.append((relic, epic))
+    if not (forced_relics or forced_epics) and (LOW_BOUND <= 200 <= HIGH_BOUND):
+        for i in range(4):
+            sword_id, ring_id = NATION_RELIC_EPIC_IDS[i], NATION_RELIC_EPIC_IDS[i + 4]
+            sword = next((i for i in OBJS if i._item_id == sword_id), None)
+            ring = next((i for i in OBJS if i._item_id == ring_id), None)
+            if sword and ring:
+                extra_pairs.append((sword, ring))
 
     aprint("Considering some items... This may take a few moments")
     if ns is None:
@@ -1043,23 +1131,23 @@ def one_off(
     relics.sort(key=sort_key_initial, reverse=True)
     seen: set[Hashable] = set()
     kf: Callable[[EquipableItem], Hashable] = lambda i: (i.item_slot, needs_full_sim_key(i))
-    epics = [e for e in epics if not ((key:=kf(e)) in seen or seen.add(e))]
+    epics = [e for e in epics if not ((key := kf(e)) in seen or seen.add(e))]
     seen = set()
-    relics = [r for r in relics if not ((key:=kf(r)) in seen or seen.add(r))]
+    relics = [r for r in relics if not ((key := kf(r)) in seen or seen.add(r))]
 
     re_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
     re_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
-    re_key_func = lambda w: ((*(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),), "-".join(sorted(i.item_slot for i in tuple_expander(w))))
+    re_key_func = lambda w: (
+        (*(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),),
+        "-".join(sorted(i.item_slot for i in tuple_expander(w))),
+    )
     re_score_func = lambda w: sum(map(sort_key_initial, tuple_expander(w)))
-    seen_re_pairs: set[Hashable] = set()
+    if relics:
+        sorted_pairs = sorted((*itertools.product(relics, epics), *extra_pairs), key=re_score_func, reverse=True)
+        canidate_re_pairs = ordered_unique_by_key(sorted_pairs, re_key_func)
+    else:
+        canidate_re_pairs = (*itertools.product(relics or [None], epics), *extra_pairs)
 
-    canidate_re_pairs = (*(
-        ws for ws in sorted((*itertools.product(relics, epics), *extra_pairs), key=re_score_func, reverse=True)
-        if not ((key:= re_key_func(ws)) in seen_re_pairs or seen_re_pairs.add(key))
-    ),) if relics else (*itertools.product(relics or [None], epics), *extra_pairs)
-
-
-#    for relic, epic in (*itertools.product(relics or [None], epics), *extra_pairs):
     for relic, epic in canidate_re_pairs:
         if relic is not None:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
@@ -1085,6 +1173,10 @@ def one_off(
             "NECK",
             "ACCESSORY",
         ]
+
+        for slot, count in forced_slots.items():
+            for _ in range(count):
+                REM_SLOTS.remove(slot)
 
         main_hand_disabled = False
         off_hand_disabled = False
@@ -1118,7 +1210,7 @@ def one_off(
         RING_CHECK_NEEDED = REM_SLOTS.count("LEFT_HAND") > 1
 
         for raw_items in itertools.product(*[CANIDATES[k] for k in REM_SLOTS]):
-            items = list(tuple_expander(raw_items))
+            items = [*tuple_expander(raw_items), *forced_items]
 
             if RING_CHECK_NEEDED:
                 rings: list[EquipableItem] = [i for i in items if i.item_slot == "LEFT_HAND"]
@@ -1158,9 +1250,7 @@ def one_off(
             crit_chance = min(crit_chance, 100)
 
             score = sum(sort_key(i) for i in items) + partial_score + BASE_RELEV_MASTERY
-            score = (score + (crit_mastery if UNRAVELING else 0)) * ((100 - crit_chance) / 100) + (
-                score + crit_mastery
-            ) * (
+            score = (score + (crit_mastery if UNRAVELING else 0)) * ((100 - crit_chance) / 100) + (score + crit_mastery) * (
                 crit_chance / 80
             )  # 1.25 * .01, includes crit math
 
@@ -8031,4 +8121,4 @@ eAg;`e)(_t)tA%koIheE26uy}Z<(zvVtMK#(U2D{AM;J(?W#+D1k~eg+Pcq@F-8L;R?H-N4sI$F}hP%
 """
 
 if __name__ == "__main__":
-    one_off(parser.parse_args())
+    solve(parser.parse_args())

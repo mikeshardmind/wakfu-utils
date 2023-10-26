@@ -87,3 +87,7 @@ def get_unobtainable_info() -> Iterator[tuple[int, str]]:
     for reason, item_ids in _item_map.items():
         for item_id in item_ids:
             yield (item_id, reason)
+
+def get_unobtainable_ids() -> Iterator[int]:
+    for item_ids in _item_map.values():
+        yield from item_ids
