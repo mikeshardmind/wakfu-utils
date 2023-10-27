@@ -38,6 +38,7 @@ def solve(
     ns: argparse.Namespace | None = None,
     no_print_log: bool = False,
     no_sys_exit: bool = False,
+    dry_run: bool = False,
 ) -> list[tuple[float, str, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
@@ -507,6 +508,29 @@ def solve(
         canidate_re_pairs = ordered_unique_by_key(sorted_pairs, re_key_func)
     else:
         canidate_re_pairs = (*itertools.product(relics or [None], epics), *extra_pairs)
+
+    if dry_run:
+        ret: list[EquipableItem] = []
+        ret.extend(relics)
+        ret.extend(epics)
+        for pair in extra_pairs:
+            ret.extend(pair)
+        for k, v in CANIDATES.items():
+            if k in ("LEGS",
+            "BACK",
+            "HEAD",
+            "CHEST",
+            "SHOULDERS",
+            "BELT",
+            "LEFT_HAND",
+            "LEFT_HAND",
+            "NECK",
+            "ACCESSORY",):
+                ret.extend(v)
+        
+        for weps in canidate_weapons:
+            ret.extend(tuple_expander(weps))
+        return [(0, "Dry Run", ordered_unique_by_key(ret, attrgetter("_item_id")))]
 
     for relic, epic in canidate_re_pairs:
         if relic is not None:

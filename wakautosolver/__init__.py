@@ -9,4 +9,4 @@ from .stdlib_standalone import Config as Config  # noqa: PLC0414
 from .stdlib_standalone import solve_config as solve_config  # noqa: PLC0414
 from .stdlib_standalone import v1_lv_class_solve as v1_lv_class_solve  # noqa: PLC0414
 
-__version__ = "2023.10.27.post3"
+__version__ = "2023.10.28"
