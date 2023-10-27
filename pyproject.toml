@@ -31,16 +31,33 @@ ignore = [
 ]
 
 [project]
+name="wakautosolver"
 license = "MPL-2.0"
 requires-python = ">=3.11"
 authors = [{ name = "Michael Hall", email = "michael@michaelhall.tech" }]
 dynamic = ["version"]
-dependencies = [
-    "apsw>=3.43.0.0",
-    "msgspec>=0.18.2",
-]
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pyright]
-include = ["src", "scripts", "stdlib_standalone.py"]
+include = ["src", "scripts", "wakautosolver"]
 typeCheckingMode = "strict"
 pythonVersion = "3.11"
+
+[project.urls]
+Homepage = "https://github.com/mikeshardmind/wakfu-utils"
+
+[tool.hatch.version]
+path = "wakautosolver/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/wakautosolver",
+    "/LICENSE",
+]
+
+[tool.hatch.build.targets.wheel]
+include = ["/wakautosolver/*"]
