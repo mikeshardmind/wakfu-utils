@@ -8184,6 +8184,7 @@ ClassNames = Literal[
     "Ougi",
     "Fog",
     "Elio",
+    "Hupper",
 ]
 
 #: (ReturnValue, Error)
