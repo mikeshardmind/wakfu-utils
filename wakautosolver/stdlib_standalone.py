@@ -8203,10 +8203,19 @@ def solve_config(config: Config) -> Result:
         return None, "No possible solution found"
 
 
-def v1_lv_class_solve(level: int, dist: bool, melee: bool, class_: ClassNames, force_items: list[int], forbid_items: list[int]) -> Result:
+def v1_lv_class_solve(
+    level: int,
+    class_: ClassNames,
+    dist: bool = False,
+    melee: bool = False,
+    force_items: list[int] | None = None,
+    forbid_items: list[int] | None = None,
+) -> Result:
     """
     Quick thing provided for wakforge to be "quickly up and running" with pyiodide before the monoserver launch
     """
+    force_items = force_items if force_items is not None else []
+    forbid_items = forbid_items if forbid_items is not None else []
 
     if level not in range(20, 230, 15):
         return (None, "autosolver only solves on als levels currently")
@@ -8229,6 +8238,17 @@ def v1_lv_class_solve(level: int, dist: bool, melee: bool, class_: ClassNames, f
         ap = 3
         mp = 1
 
-    config = Config(lv=level, bcrit=crit, dist=dist, melee=melee, ap=ap, mp=mp, ra=ra, wp=0, idforce=force_items.copy(), idforbid=forbid_items.copy())
+    config = Config(
+        lv=level,
+        bcrit=crit,
+        dist=dist,
+        melee=melee,
+        ap=ap,
+        mp=mp,
+        ra=ra,
+        wp=0,
+        idforce=force_items.copy(),
+        idforbid=forbid_items.copy(),
+    )
 
     return solve_config(config)
