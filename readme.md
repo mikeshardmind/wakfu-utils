@@ -16,18 +16,11 @@ solver.py: a work in progress mastery optimizing constraint based set solver.
 ### Just want to try it now anyhow?
 
 If you don't know what you're doing, you probably shouldn't use this yet.
-you can download python and run stdlib_standalone.py if you know enough to do that.
 
-The standalone script will not be not updated with all changes to the WIP solver.
+I'm working with [wakforge.org](https://github.com/Tmktahu/wakforge)
+to incorporate the autosolver's logic into their builder.
 
-for windows(x86_64) users, you can grab an executable from the releases tab. 
-
-The executable was generated from stdlib_standalone using the following:
-```
-py -3.11 -m nuitka --onefile .\stdlib_standalone.py
-```
-It will be updated when that file is meaningfully
-changed until a proper build system is setup to automate this.
+There may be a standalone app in the future.
 
 ### Known limitations
 
