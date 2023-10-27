@@ -20,7 +20,10 @@ If you don't know what you're doing, you probably shouldn't use this yet.
 I'm working with [wakforge.org](https://github.com/Tmktahu/wakforge)
 to incorporate the autosolver's logic into their builder.
 
-There may be a standalone app in the future.
+Note: Not all of the features of the autobuilder are currently available
+in wakforge, and there may be a standalone app in the future.
+
+Any standalone GUI app will probbaly include an export button to allow taking it into a full builder to tweak.
 
 ### Known limitations
 
