@@ -724,6 +724,7 @@ class Config:
     twoh: bool = False
     skiptwo_hand: bool = False
     locale: Literal["en"] = "en"
+    dry_run: bool = False
 
 
 class Exc(RuntimeError):
@@ -1208,22 +1209,23 @@ def solve(
         for pair in extra_pairs:
             ret.extend(pair)
         for k, v in CANIDATES.items():
-            if k in ("LEGS",
-            "BACK",
-            "HEAD",
-            "CHEST",
-            "SHOULDERS",
-            "BELT",
-            "LEFT_HAND",
-            "LEFT_HAND",
-            "NECK",
-            "ACCESSORY",):
+            if k in (
+                "LEGS",
+                "BACK",
+                "HEAD",
+                "CHEST",
+                "SHOULDERS",
+                "BELT",
+                "LEFT_HAND",
+                "LEFT_HAND",
+                "NECK",
+                "ACCESSORY",
+            ):
                 ret.extend(v)
 
         for weps in canidate_weapons:
             ret.extend(tuple_expander(weps))
         return [(0, "Dry Run", ordered_unique_by_key(ret, attrgetter("_item_id")))]
-
 
     for relic, epic in canidate_re_pairs:
         if relic is not None:
@@ -8260,7 +8262,7 @@ def v1_lv_class_solve(
     """
     Quick thing provided for wakforge to be "quickly up and running" with pyiodide before the monoserver launch
     """
-    #: This is this way because pyodide proxies aren't lists, 
+    #: This is this way because pyodide proxies aren't lists,
     #: and I want this to work pyodide or python caller
     force_items = [*(i for i in (force_items if force_items else []))]
     forbid_items = [*(i for i in (forbid_items if forbid_items else []))]
@@ -8292,7 +8294,7 @@ def v1_lv_class_solve(
     if level < 50:
         ap = 2
         mp = 1
-    
+
     rear = bool(class_ == "Sram")
     zerk = bool(class_ == "Sac")
     heal = bool(class_ == "Eni" and level >= 125)

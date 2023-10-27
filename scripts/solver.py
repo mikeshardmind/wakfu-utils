@@ -42,7 +42,10 @@ def solve(
 ) -> list[tuple[float, str, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
+    dry_run = ns.dry_run if ns else dry_run
+
     if no_sys_exit:
+
         def sys_exit(code: int) -> NoReturn:
             raise RuntimeError
     else:
@@ -511,23 +514,22 @@ def solve(
 
     if dry_run:
         ret: list[EquipableItem] = []
-        ret.extend(relics)
-        ret.extend(epics)
-        for pair in extra_pairs:
-            ret.extend(pair)
+        ret.extend(filter(None, itertools.chain.from_iterable(canidate_re_pairs)))
         for k, v in CANIDATES.items():
-            if k in ("LEGS",
-            "BACK",
-            "HEAD",
-            "CHEST",
-            "SHOULDERS",
-            "BELT",
-            "LEFT_HAND",
-            "LEFT_HAND",
-            "NECK",
-            "ACCESSORY",):
+            if k in (
+                "LEGS",
+                "BACK",
+                "HEAD",
+                "CHEST",
+                "SHOULDERS",
+                "BELT",
+                "LEFT_HAND",
+                "LEFT_HAND",
+                "NECK",
+                "ACCESSORY",
+            ):
                 ret.extend(v)
-        
+
         for weps in canidate_weapons:
             ret.extend(tuple_expander(weps))
         return [(0, "Dry Run", ordered_unique_by_key(ret, attrgetter("_item_id")))]
@@ -703,11 +705,26 @@ def entrypoint() -> None:
     parser.add_argument("--name-force", dest="nameforce", type=str, action="store", nargs="+")
     parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
     parser.add_argument("--debug", dest="debug", action="store_true", default=False)
+    parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
     two_h = parser.add_mutually_exclusive_group()
     two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
 
-    solve(parser.parse_args())
+    ns = parser.parse_args()
+    result = solve(ns)
+    if ns.dry_run:
+        best = result[0]
+        _score, _repr, items = best
+        items.sort(key=lambda i: (i.item_slot, i.name))
+
+        relics = [i for i in items if i.is_relic]
+        if relics:
+            print("Relics", "---", *relics, sep="\n")
+        epics = [i for i in items if i.is_epic]
+        print("Epics", "---", *epics, sep="\n")
+
+        for group, it in itertools.groupby((i for i in items if not (i.is_epic or i.is_relic)), lambda i: i.item_slot):
+            print(group.title(), "---", *it, sep="\n")
 
 
 if __name__ == "__main__":
