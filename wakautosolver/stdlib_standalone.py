@@ -8267,12 +8267,19 @@ def v1_lv_class_solve(
     if level < 50:
         ap = 2
         mp = 1
+    
+    rear = bool(class_ == "Sram")
+    zerk = bool(class_ == "Sac")
+    heal = bool(class_ == "Eni" and level >= 125)
 
     config = Config(
         lv=level,
         bcrit=crit,
         dist=dist,
         melee=melee,
+        rear=rear,
+        zerk=zerk,
+        heal=heal,
         ap=ap,
         mp=mp,
         ra=ra,
