@@ -8240,7 +8240,7 @@ def v1_lv_class_solve(
     force_items = [*(i for i in (force_items if force_items else []))]
     forbid_items = [*(i for i in (forbid_items if forbid_items else []))]
 
-    if level not in range(20, 230, 15):
+    if level not in range(20, 231, 15):
         return (None, "autosolver only solves on als levels currently")
 
     crit = 0 if class_ in ("Panda", "Feca") else 20
