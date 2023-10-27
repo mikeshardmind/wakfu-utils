@@ -8207,6 +8207,7 @@ def solve_config(config: Config) -> Result:
 def v1_lv_class_solve(
     level: int,
     class_: ClassNames,
+    num_elements: int = 3,
     dist: bool = False,
     melee: bool = False,
     force_items: list[int] | None = None,
@@ -8248,6 +8249,7 @@ def v1_lv_class_solve(
         mp=mp,
         ra=ra,
         wp=0,
+        num_mastery=num_elements,
         idforce=force_items.copy(),
         idforbid=forbid_items.copy(),
     )
