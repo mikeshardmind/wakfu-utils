@@ -13,7 +13,7 @@ from typing import Any, Optional
 
 import aiohttp
 
-_DEFAULT_VERSION = "1.81.1.13"
+_DEFAULT_VERSION = "1.81.1.15"
 _FTYPES = (
     "items",
     "actions",
@@ -30,7 +30,7 @@ _FTYPES = (
 
 
 #: Available for checking if version is known to work with object_parsing code
-VERSIONS_TESTED = ("1.81.1.13",)
+VERSIONS_TESTED = ("1.81.1.13", "1.81.1.15")
 
 
 async def _grab_file(
