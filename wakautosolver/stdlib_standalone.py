@@ -1038,11 +1038,21 @@ def solve(
 
         items.sort(key=sort_key, reverse=True)
 
-        for item in items:
-            key = needs_full_sim_key(item)
-            if key in seen_key:
-                to_rem.append(item)
-            seen_key.add(key)
+        if _slot != "LEFT_HAND":
+            for item in items:
+                key = needs_full_sim_key(item)
+                if key in seen_key:
+                    to_rem.append(item)
+                seen_key.add(key)
+        else:
+            seen_overflow: set[Hashable] = set()
+            for item in items:
+                key = needs_full_sim_key(item)
+                if key in seen_key:
+                    if key in seen_overflow:
+                        to_rem.append(item)
+                    seen_overflow.add(key)
+                seen_key.add(key)
 
         for item in to_rem:
             try:
@@ -1050,7 +1060,7 @@ def solve(
             except ValueError:
                 pass
 
-        depth = ITEM_SEARCH_DEPTH if _slot != "LEFT_HAND" else ITEM_SEARCH_DEPTH + 1
+        depth = ITEM_SEARCH_DEPTH if _slot != "LEFT_HAND" else ITEM_SEARCH_DEPTH + 3
 
         if len(items) > depth:
             to_rem = []
@@ -8237,7 +8247,7 @@ def v1_lv_class_solve(
             ra = 1
 
     if level < 50:
-        ap = 3
+        ap = 2
         mp = 1
 
     config = Config(
