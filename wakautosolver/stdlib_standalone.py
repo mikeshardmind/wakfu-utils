@@ -8226,8 +8226,10 @@ def v1_lv_class_solve(
     """
     Quick thing provided for wakforge to be "quickly up and running" with pyiodide before the monoserver launch
     """
-    force_items = force_items if force_items is not None else []
-    forbid_items = forbid_items if forbid_items is not None else []
+    #: This is this way because pyodide proxies aren't lists, 
+    #: and I want this to work pyodide or python caller
+    force_items = [*(i for i in (force_items if force_items else []))]
+    forbid_items = [*(i for i in (forbid_items if forbid_items else []))]
 
     if level not in range(20, 230, 15):
         return (None, "autosolver only solves on als levels currently")
@@ -8260,8 +8262,8 @@ def v1_lv_class_solve(
         ra=ra,
         wp=0,
         num_mastery=num_elements,
-        idforce=force_items.copy(),
-        idforbid=forbid_items.copy(),
+        idforce=force_items,
+        idforbid=forbid_items,
     )
 
     return solve_config(config)
