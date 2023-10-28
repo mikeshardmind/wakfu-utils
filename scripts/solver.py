@@ -562,6 +562,9 @@ def solve(
             ret.extend(tuple_expander(weps))
         return [(0, "Dry Run", ordered_unique_by_key(ret, attrgetter("_item_id")))]
 
+    # everything below this line is performance sensitive, and runtime is based on how much the above
+    # managed to reduce the permuations of possible gear.
+
     for relic, epic in canidate_re_pairs:
         if relic is not None:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
