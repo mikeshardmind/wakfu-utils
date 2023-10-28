@@ -695,6 +695,7 @@ parser.add_argument("--id-forbid", dest="idforbid", type=int, action="store", na
 parser.add_argument("--id-force", dest="idforce", type=int, action="store", nargs="+")
 parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
 parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
+parser.add_argument("--hard-cap-depth", dest="hard_cap_depth", type=int, default=100)
 two_h = parser.add_mutually_exclusive_group()
 two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
 two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
@@ -726,6 +727,7 @@ class Config:
     skiptwo_hand: bool = False
     locale: Literal["en"] = "en"
     dry_run: bool = False
+    hard_cap_depth: int = 100
 
 
 class Exc(RuntimeError):
@@ -1203,12 +1205,15 @@ def solve(
         sorted_pairs = sorted((*itertools.product(relics, epics), *extra_pairs), key=re_score_func, reverse=True)
         canidate_re_pairs = ordered_unique_by_key(sorted_pairs, re_key_func)
     else:
-        canidate_re_pairs = (*itertools.product(relics or [None], epics), *extra_pairs)
+        canidate_re_pairs = (*itertools.product(relics or [None], epics), *extra_pairs,)
+
+    if ns:
+        canidate_re_pairs = canidate_re_pairs[:ns.hard_cap_depth * 2]
+        CANIDATES = {k: v[:ns.hard_cap_depth] for k,v in CANIDATES.items()}
+        canidate_weapons = canidate_weapons[:ns.hard_cap_depth]
 
     if dry_run:
         ret: list[EquipableItem] = []
-        ret.extend(relics)
-        ret.extend(epics)
         for pair in extra_pairs:
             ret.extend(pair)
         for k, v in CANIDATES.items():
@@ -8317,6 +8322,7 @@ def v1_lv_class_solve(
         num_mastery=num_elements,
         idforce=force_items,
         idforbid=forbid_items,
+        hard_cap_depth=7,
     )
 
     return solve_config(config)
