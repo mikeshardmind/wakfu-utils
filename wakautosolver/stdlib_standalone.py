@@ -694,6 +694,7 @@ parser.add_argument("--forbid", dest="forbid", type=str, action="extend", nargs=
 parser.add_argument("--id-forbid", dest="idforbid", type=int, action="store", nargs="+")
 parser.add_argument("--id-force", dest="idforce", type=int, action="store", nargs="+")
 parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
+parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
 two_h = parser.add_mutually_exclusive_group()
 two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
 two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
