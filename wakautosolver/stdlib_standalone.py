@@ -740,6 +740,8 @@ def solve(
 ) -> list[tuple[float, str, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
+    dry_run = ns.dry_run if ns else dry_run
+
     if ns:
         _locale.set(ns.locale)
 
