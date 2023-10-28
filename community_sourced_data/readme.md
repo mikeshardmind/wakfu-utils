@@ -7,10 +7,10 @@ reach out in discord and I'll be happy to help include community sourced data he
 the item *id* belongs on a single line for each of the below.
 If you don't know the item id, getting me a combination of name, locale the name is in, and rarity is sufficient.
 
-craftable.txt: if the item is craftable (including upgrades from drops) the item id belongs here
-droppable.txt: if the item is a drop (Regardless of source) it belongs here
-riftable: if it can drop in a rift, it belongs here (as well)
-dungeon: if it drops in a dungeon, it goes here
+- craftable.txt: if the item is craftable (including upgrades from drops) the item id belongs here
+- droppable.txt: if the item is a drop (Regardless of source) it belongs here
+- riftable: if it can drop in a rift, it belongs here (as well)
+- dungeon: if it drops in a dungeon, it goes here
 
 (and so on)
 
