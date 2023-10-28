@@ -837,7 +837,7 @@ def solve(
         MP += 2
 
     @lru_cache
-    def sort_key(item: EquipableItem) -> int:
+    def sort_key(item: EquipableItem) -> float:
         if ns is not None:
             score = item._elemental_mastery
             if ns.melee:

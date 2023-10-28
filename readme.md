@@ -111,3 +111,8 @@ At this point in time, I'm not actively looking for outside contributors, but pl
 ### Feedback
 
 Issue or join the wakfu optimization discord: https://discord.gg/TXNKsWhhut
+
+
+### Disclaimer
+
+WAKFU is an MMORPG published by Ankama. The tools here are not published by or affiliated with Ankama.
