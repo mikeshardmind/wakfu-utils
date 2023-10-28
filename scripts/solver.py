@@ -139,8 +139,30 @@ def solve(
                 score += item._distance_mastery
             if ns.zerk:
                 score += item._berserk_mastery
+            else:
+                if item._berserk_mastery < 0:
+                    if ns.negzerk == "full":
+                        mul = 1
+                    elif ns.negzerk == "half":
+                        mul = 0.5
+                    else:
+                        mul = 0
+                    
+                    score += item._berserk_mastery * mul
+
             if ns.rear:
                 score += item._rear_mastery
+            else:
+                if item._rear_mastery < 0:
+                    if ns.negrear == "full":
+                        mul = 1
+                    elif ns.negrear == "half":
+                        mul = 0.5
+                    else:
+                        mul = 0
+
+                    score += item._rear_mastery * mul
+
             if ns.heal:
                 score += item._healing_mastery
 
@@ -493,11 +515,9 @@ def solve(
 
     epics.sort(key=sort_key_initial, reverse=True)
     relics.sort(key=sort_key_initial, reverse=True)
-    seen: set[Hashable] = set()
     kf: Callable[[EquipableItem], Hashable] = lambda i: (i.item_slot, needs_full_sim_key(i))
-    epics = [e for e in epics if not ((key := kf(e)) in seen or seen.add(e))]
-    seen = set()
-    relics = [r for r in relics if not ((key := kf(r)) in seen or seen.add(r))]
+    epics = ordered_unique_by_key(epics, kf)
+    relics = ordered_unique_by_key(relics, kf)
 
     re_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
     re_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
@@ -510,12 +530,15 @@ def solve(
         sorted_pairs = sorted((*itertools.product(relics, epics), *extra_pairs), key=re_score_func, reverse=True)
         canidate_re_pairs = ordered_unique_by_key(sorted_pairs, re_key_func)
     else:
-        canidate_re_pairs = (*itertools.product(relics or [None], epics), *extra_pairs,)
+        canidate_re_pairs = (
+            *itertools.product(relics or [None], epics),
+            *extra_pairs,
+        )
 
     if ns:
-        canidate_re_pairs = canidate_re_pairs[:ns.hard_cap_depth * 2]
-        CANIDATES = {k: v[:ns.hard_cap_depth] for k,v in CANIDATES.items()}
-        canidate_weapons = canidate_weapons[:ns.hard_cap_depth]
+        canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth * 2]
+        CANIDATES = {k: v[: ns.hard_cap_depth] for k, v in CANIDATES.items()}
+        canidate_weapons = canidate_weapons[: ns.hard_cap_depth]
 
     if dry_run:
         ret: list[EquipableItem] = []
@@ -712,6 +735,8 @@ def entrypoint() -> None:
     parser.add_argument("--debug", dest="debug", action="store_true", default=False)
     parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
     parser.add_argument("--hard-cap-depth", dest="hard_cap_depth", type=int, default=100)
+    parser.add_argument("--count-negative-zerk", dest="negzerk", type=str, choices=("full", "half", "none"), default="half")
+    parser.add_argument("--count-negative-rear", dest="negrear", type=str, choices=("full", "half", "none"), default="none")
     two_h = parser.add_mutually_exclusive_group()
     two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
