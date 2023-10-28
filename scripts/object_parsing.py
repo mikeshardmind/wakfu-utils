@@ -421,11 +421,11 @@ _EFFECT_MAP: dict[int, Callable[[list[int]], list[tuple[str, int]]]] = {
     1051: lambda d: [("_single_target_mastery", d[0])],
     1052: lambda d: [("_melee_mastery", d[0])],
     1053: lambda d: [("_distance_mastery", d[0])],
-    1055: lambda d: [("_beserk_mastery", d[0])],
+    1055: lambda d: [("_berserk_mastery", d[0])],
     1056: lambda d: [("_critical_mastery", 0 - d[0])],
     1059: lambda d: [("_melee_mastery", 0 - d[0])],
     1060: lambda d: [("_distance_mastery", 0 - d[0])],
-    1061: lambda d: [("_beserk_mastery", 0 - d[0])],
+    1061: lambda d: [("_berserk_mastery", 0 - d[0])],
     1062: lambda d: [("_critical_resistance", 0 - d[0])],
     1063: lambda d: [("_rear_resistance", 0 - d[0])],
     1068: type1068,  # requires a bit more logic
