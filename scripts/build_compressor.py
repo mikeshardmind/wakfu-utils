@@ -100,6 +100,7 @@ class Item(NamedTuple):
     sublimation: int
     assigned_mastery: Elements
     assigned_res: Elements
+    ...  # todo, slot stats
 
 
 class Build(NamedTuple):
