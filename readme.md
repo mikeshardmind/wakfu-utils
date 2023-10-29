@@ -43,7 +43,7 @@ Any standalone GUI app will probbaly include an export button to allow taking it
 - Optimizing defensive stats
 - User provided stat weights mode
 - Better support for stat minimums (ie. optimizing fire res specifically for ALS Gerbean s8)
-- a nice GUI (there are too many cli flags...).
+- ~~a nice GUI (there are too many cli flags...).~~ [wakforge.org](https://github.com/Tmktahu/wakforge)
 - Floating stat points that can be allocated by the solver.
 - Weighting res based on enchanemtent system (l.ong term goal)
 
@@ -105,7 +105,10 @@ Speeding this up would be with the purpose of
 
 ### Contributions?
 
-At this point in time, I'm not actively looking for outside contributors, but please open an issue if you'd like to contribute, especially if you're interested in building a standalone website which runs this in a user's browser, or help design a more intuitive front-end for this.
+*especially* when it comes to the stuff in community_sourced_data , could use help.
+
+Please reach out prior to contribution if you want to avoid duplicating work,
+not everyone helping with this is git-savvy
 
 
 ### Feedback
