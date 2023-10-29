@@ -1,27 +1,28 @@
-import base2048
+"""
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
+"""
+from __future__ import annotations
+
 import enum
-import struct
-from typing import NamedTuple
+
+import base2048
+from msgspec import Struct, msgpack
 
 
-class Slots(enum.IntEnum):
+class SlotColor(enum.IntEnum):
     R = 0
-    W = 1
-    G = 2
-    B = 3
-    RW = 4
-    GR = 5
-    BR = 6
-    GW = 7
-    BW = 8
-    BG = 9
-    GRW = 10
-    BRW = 11
-    BGR = 12
-    BGW = 13
-    BGRW = 14
-    unset = 15
+    G = 1
+    B = 2
+    W = 3
 
+class Slot(Struct, frozen=True, array_like=True):
+    color: SlotColor
+    stat_id: int | None = None
+    shard_lv: int = 0
 
 class Elements(enum.IntEnum):
     A = 0
@@ -62,81 +63,58 @@ class ClassName(enum.IntEnum):
     Hupper = 17
 
 
-class Stats(NamedTuple):
-    percent_hp: int
-    res: int
-    barrier: int
-    heals_rec: int
-    armor: int
-    elemental_mastery: int
-    melee_mastery: int
-    distance_mastery: int
-    hp: int
-    lock: int
-    dodge: int
-    initiative: int
-    lockdodge: int
-    fow: int
-    crit: int
-    block: int
-    crit_mastery: int
-    rear_mastery: int
-    berserk_mastery: int
-    healing_mastery: int
-    rear_resistence: int
-    critical_resistence: int
-    ap: bool
-    mp: bool
-    ra: bool
-    wp: bool
-    control: bool
-    di: bool
-    major_res: bool
+class Stats(Struct, frozen=True, array_like=True):
+    percent_hp: int = 0
+    res: int = 0
+    barrier: int = 0
+    heals_rec: int = 0
+    armor: int = 0
+    elemental_mastery: int = 0
+    melee_mastery: int = 0
+    distance_mastery: int = 0
+    hp: int = 0
+    lock: int = 0
+    dodge: int = 0
+    initiative: int = 0
+    lockdodge: int = 0
+    fow: int = 0
+    crit: int = 0
+    block: int = 0
+    crit_mastery: int = 0
+    rear_mastery: int = 0
+    berserk_mastery: int = 0
+    healing_mastery: int = 0
+    rear_resistence: int = 0
+    critical_resistence: int = 0
+    ap: bool = False
+    mp: bool = False
+    ra: bool = False
+    wp: bool = False
+    control: bool = False
+    di: bool = False
+    major_res: bool = False
 
 
-class Item(NamedTuple):
+class Item(Struct, frozen=True, array_like=True):
     item_id: int
-    slots: Slots
-    sublimation: int
-    assigned_mastery: Elements
-    assigned_res: Elements
-    ...  # todo, slot stats
+    assigned_mastery: Elements | None
+    assigned_res: Elements | None = None
+    sublimation_id: int | None = None
+    slots: list[Slot] | None = None
 
 
-class Build(NamedTuple):
+class Build(Struct, frozen=True, array_like=True):
     classname: ClassName
     level: int
     stats: Stats
-    relic_sub: int
-    epic_sub: int
+    relic_sub: int | None
+    epic_sub: int | None
     items: list[Item]
 
 
-def v1_pack_build(build: Build) -> bytes:
-
-    return struct.pack(
-        "!bbb22b7?HH%s" % ("HBHBB" * len(build.items)), 1, build.classname, build.level, *build.stats, build.relic_sub, build.epic_sub, *build.items
-    )
-
-def v1_encode_build(build: Build) -> str:
-    packed = v1_pack_build(build)
-    return base2048.encode(packed)
+def encode_build(build: Build) -> str:
+    return base2048.encode(msgpack.encode(build))
 
 
 def decode_build(build_str: str) -> Build:
-
-    decoded = base2048.decode(build_str)
-    
-    offset = 36
-    version, cl, lv, *stats, rs, es, item_len = struct.unpack_from("!bbb22b7?HH", decoded)
-    if version != 1:  # expand as needed
-        msg = "Unknown build version."
-        raise RuntimeError(msg)
-    # split per version later, as needed.
-    items: list[Item] = []
-    for _ in range(item_len):
-        iid, slts, sub, am, ar = struct.unpack_from("!HBHBB", decoded, offset)
-        items.append(Item(iid, Slots(slts), sub, Elements(am), Elements(ar)))
-        offset += 7
-
-    return Build(ClassName(cl), lv, Stats(*stats), rs, es, items)
+    return msgpack.decode(base2048.decode(build_str), type=Build)
