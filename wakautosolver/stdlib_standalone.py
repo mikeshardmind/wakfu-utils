@@ -1060,7 +1060,7 @@ def solve(
     CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
     def needs_full_sim_key(item: EquipableItem) -> Hashable:
-        return (item._ap, item._mp, item._critical_hit, item._critical_mastery, item._wp, item.disables_second_weapon, item.item_slot)
+        return (item._ap, item._mp, item._critical_hit, item._critical_mastery, item._wp, item.disables_second_weapon)
 
     consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon")
     key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
@@ -1118,9 +1118,9 @@ def solve(
 
     pprint(CANIDATES)
 
-    relics.sort(key=sort_key, reverse=True)
+    relics.sort(key=lambda r: (sort_key(r), r.item_slot), reverse=True)
     relics = ordered_unique_by_key(relics, needs_full_sim_key)
-    epics.sort(key=sort_key, reverse=True)
+    epics.sort(key=lambda e: (sort_key(e), e.item_slot), reverse=True)
     epics = ordered_unique_by_key(epics, needs_full_sim_key)
 
     ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
