@@ -598,7 +598,10 @@ def solve(
 
         for slot, count in forced_slots.items():
             for _ in range(count):
-                REM_SLOTS.remove(slot)
+                try:
+                    REM_SLOTS.remove(slot)
+                except ValueError:
+                    pass
 
         main_hand_disabled = False
         off_hand_disabled = False
