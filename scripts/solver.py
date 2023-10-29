@@ -398,6 +398,8 @@ def solve(
             counter: collections.Counter[Hashable] = collections.Counter()
             seen_names_souv: set[Hashable] = set()
 
+            items.sort(key=lambda i: (sort_key(i), i._item_rarity), reverse=True)
+
             for item in items:
                 k = key_func(item)
                 sn = (item.name, item.is_souvenir)
