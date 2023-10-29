@@ -114,12 +114,28 @@ class Build(NamedTuple):
 def v1_pack_build(build: Build) -> bytes:
 
     return struct.pack(
-        "!bbb22b7?HH%s" % ("HBHBB" * len(build.items)), 1, build.classname, build.level, *build.stats, build.relic_sub, build.epic_sub, build.items
+        "!bbb22b7?HH%s" % ("HBHBB" * len(build.items)), 1, build.classname, build.level, *build.stats, build.relic_sub, build.epic_sub, *build.items
     )
 
 def v1_encode_build(build: Build) -> str:
     packed = v1_pack_build(build)
     return base2048.encode(packed)
 
-def v1_decode_build(build_str: str) -> Build:
-    ...
+
+def decode_build(build_str: str) -> Build:
+
+    decoded = base2048.decode(build_str)
+    
+    offset = 36
+    version, cl, lv, *stats, rs, es, item_len = struct.unpack_from("!bbb22b7?HH", decoded)
+    if version != 1:  # expand as needed
+        msg = "Unknown build version."
+        raise RuntimeError(msg)
+    # split per version later, as needed.
+    items: list[Item] = []
+    for _ in range(item_len):
+        iid, slts, sub, am, ar = struct.unpack_from("!HBHBB", decoded, offset)
+        items.append(Item(iid, Slots(slts), sub, Elements(am), Elements(ar)))
+        offset += 7
+
+    return Build(ClassName(cl), lv, Stats(*stats), rs, es, items)
