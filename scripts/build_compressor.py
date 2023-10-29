@@ -24,22 +24,12 @@ class Slot(Struct, frozen=True, array_like=True):
     stat_id: int | None = None
     shard_lv: int = 0
 
-class Elements(enum.IntEnum):
-    A = 0
-    E = 1
-    F = 2
-    W = 3
-    AW = 4
-    EA = 5
-    EW = 6
-    FA = 7
-    FE = 8
-    FW = 9
-    EAW = 10
-    FAW = 11
-    FEA = 12
-    FEW = 13
-    unset = 15
+class Elements(enum.IntFlag):
+    unset = 0
+    AIR = 1
+    EARTH = 2
+    FIRE = 4
+    WATER = 8
 
 
 class ClassName(enum.IntEnum):
