@@ -1060,7 +1060,7 @@ def solve(
     CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
     def needs_full_sim_key(item: EquipableItem) -> tuple[int, ...]:
-        return (item._ap, item._mp, item._critical_hit, item._critical_mastery, item._wp)
+        return (item._ap, item._mp, item._critical_hit, item._critical_mastery, item._wp, item.disables_second_weapon)
 
     consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon")
     key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
