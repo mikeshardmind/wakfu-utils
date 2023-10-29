@@ -41,6 +41,27 @@ class Elements(enum.IntEnum):
     unset = 15
 
 
+class ClassName(enum.IntEnum):
+    Feca = 0
+    Osa = 1
+    Enu = 2
+    Sram = 3
+    Xel = 4
+    Eca = 5
+    Eni = 6
+    Iop = 7
+    Cra = 8
+    Sadi = 9
+    Sac = 10
+    Panda = 11
+    Rogue = 12
+    Masq = 13
+    Ougi = 14
+    Fog = 15
+    Elio = 16
+    Hupper = 17
+
+
 class Stats(NamedTuple):
     percent_hp: int
     res: int
@@ -82,22 +103,23 @@ class Item(NamedTuple):
 
 
 class Build(NamedTuple):
+    classname: ClassName
     level: int
-    items: list[Item]
     stats: Stats
     relic_sub: int
     epic_sub: int
+    items: list[Item]
 
 
-def pack_build(build: Build) -> bytes:
+def v1_pack_build(build: Build) -> bytes:
 
     return struct.pack(
-        "!bb%s22b7?HH" % ("HBHBB" * len(build.items)), build.level, *build.items, build.stats, build.relic_sub, build.epic_sub
+        "!bbb22b7?HH%s" % ("HBHBB" * len(build.items)), 1, build.classname, build.level, *build.stats, build.relic_sub, build.epic_sub, build.items
     )
 
-def encode_build(build: Build) -> str:
-    packed = pack_build(build)
+def v1_encode_build(build: Build) -> str:
+    packed = v1_pack_build(build)
     return base2048.encode(packed)
 
-def decode_build(build_str: str) -> Build:
+def v1_decode_build(build_str: str) -> Build:
     ...
