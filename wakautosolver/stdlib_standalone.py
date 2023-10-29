@@ -1231,12 +1231,6 @@ def solve(
     else:
         canidate_re_pairs = (*itertools.product(relics or [None], epics), *extra_pairs,)
 
-    if ns:
-        hcd = max(20, ns.hard_cap_depth)
-        canidate_re_pairs = canidate_re_pairs[:hcd * 2]
-        CANIDATES = {k: v[:hcd] for k,v in CANIDATES.items()}
-        canidate_weapons = canidate_weapons[:hcd]
-
     if dry_run:
         ret: list[EquipableItem] = []
         for pair in extra_pairs:
@@ -1259,6 +1253,15 @@ def solve(
         for weps in canidate_weapons:
             ret.extend(tuple_expander(weps))
         return [(0, "Dry Run", ordered_unique_by_key(ret, attrgetter("_item_id")))]
+
+    if ns:
+        hcd = max(20, ns.hard_cap_depth)
+        if forced_relics and forced_relics:
+            hcd = hcd * 7
+
+        canidate_re_pairs = canidate_re_pairs[:hcd * 2]
+        CANIDATES = {k: v[:hcd] for k,v in CANIDATES.items()}
+        canidate_weapons = canidate_weapons[:hcd]
 
     for relic, epic in canidate_re_pairs:
         if relic is not None:
