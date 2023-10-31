@@ -10,14 +10,36 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 
 from __future__ import annotations
 
+import enum
 import operator
 from collections.abc import Callable
 from functools import reduce
 from itertools import chain
 
-from msgspec import Struct
+from msgspec import Struct, field
 from msgspec.structs import astuple, replace
 
+
+class Priority(enum.IntEnum):
+    unvalued = 0
+    prioritized = 1
+    full_negative_only = 2
+    half_negative_only = 4
+
+
+class StatPriority(Struct, frozen=True):
+    distance_mastery: Priority = Priority.unvalued
+    rear_mastery: Priority = Priority.unvalued
+    heal_mastery: Priority = Priority.unvalued
+    beserk_mastery: Priority = Priority.unvalued
+    melee_mastery: Priority = Priority.unvalued
+    number_of_elements: int = 3
+
+
+class Sublimation(Struct, frozen=True):
+    sublimation_id: int
+    level: int | None = None
+    
 
 class Stats(Struct, frozen=True, gc=True):
     ap: int = 0
@@ -173,3 +195,42 @@ def generate_filter(
         return all(mn <= s <= mx for mn, s, mx in zip(min_tup, stat_tup, max_tup, strict=True))
 
     return f
+
+
+class SolveConfig(Struct, frozen=True):
+    #: Base stats should also include from shards and unconditional gains in passives
+    #: And sublimations, but should not include any stat transforms!!
+    lv: int = 230
+    base_stats: Stats = field(default_factory=Stats)
+    #: Warning, the more stats you set minimums and maximums for the longer a solution will take!
+    set_minimums: SetMinimums = field(default_factory=SetMinimums)
+    set_maximums: SetMaximums = field(default_factory=SetMaximums)
+    stat_priorities: StatPriority = field(default_factory=StatPriority)
+    forced_item_ids: list[int] = field(default_factory=list)
+    forbidden_item_ids: list[int] = field(default_factory=list)
+    equipped_sublimations: list[Sublimation] = field(default_factory=list)
+    assume_double_damage_only_shards_are_damage: bool = True
+    #: When set to True, the search will be done exhaustively
+    #: When set to False, the search will adaptively determine when to end
+    #: Based on intenrally maintained criteria that attempt to balance
+    #: going through enough of the competitive options to at least find a 
+    #: highly competitive option
+    exhaustive: bool = False
+    skip_shields: bool = True  # speeds up searches
+    dry_run: bool = False
+
+
+class Result(Struct):
+    items: list[int] | None = None
+    stats: Stats | None = None
+    errors: list[str] | None = None
+    eser_errors: list[str] | None = None
+    user_warnings: list[str] | None = None
+
+
+class DryRunResult(Struct):
+    items: list[int] | None = None
+    stats: None = None
+    errors: list[str] | None = None
+    user_errors: list[str] | None = None
+    user_warnings: list[str] | None = None
