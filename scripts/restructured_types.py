@@ -16,7 +16,6 @@ from collections.abc import Callable
 from functools import reduce
 from itertools import chain
 
-import numpy as np
 from msgspec import Struct, field
 from msgspec.structs import astuple, replace
 
@@ -69,13 +68,13 @@ class Stats(Struct, frozen=True, gc=True):
         if not isinstance(other, Stats):
             return NotImplemented
 
-        return Stats(*(np.subtract(*map(astuple, (self, other)))))  # type: ignore
+        return Stats(*(operator.sub(s, o) for s, o in zip(astuple(self), astuple(other), strict=True)))
 
     def __add__(self, other: object) -> Stats:
         if not isinstance(other, Stats):
             return NotImplemented
 
-        return Stats(*(np.add(*map(astuple, (self, other)))))  # type: ignore
+        return Stats(*(operator.add(s, o) for s, o in zip(astuple(self), astuple(other), strict=True)))
 
 
 DUMMY_MIN: int = -1_000_000
@@ -182,19 +181,18 @@ def generate_filter(
     minimums: list[tuple[SetMinimums, ...]],
     maximums: list[tuple[SetMaximums, ...]],
 ) -> Callable[[list[Stats]], bool]:
-    mins = [astuple(i) for i in chain.from_iterable(minimums) if i]
-    maxs = [astuple(i) for i in chain.from_iterable(maximums) if i]
+    mins = filter(None, chain.from_iterable(minimums))
+    maxs = filter(None, chain.from_iterable(maximums))
 
-    if not (mins or maxs):
-        return lambda x: True
-
-    min_clamp = np.minimum.reduce(mins)
-    max_clamp = np.maximum.reduce(maxs)
+    min_clamp = Stats(*(max(items) for items in zip(*map(astuple, mins), strict=True)))
+    max_clamp = Stats(*(min(items) for items in zip(*map(astuple, maxs), strict=True)))
+    min_tup = astuple(min_clamp)
+    max_tup = astuple(max_clamp)
 
     def f(item_set: list[Stats]) -> bool:
         stat_tup = astuple(reduce(operator.add, (base_stats, *item_set)))
 
-        return ((min_clamp <= stat_tup) & (stat_tup <= max_clamp)).all()
+        return all(mn <= s <= mx for mn, s, mx in zip(min_tup, stat_tup, max_tup, strict=True))
 
     return f
 
