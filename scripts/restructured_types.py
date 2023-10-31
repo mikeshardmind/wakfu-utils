@@ -13,33 +13,34 @@ from __future__ import annotations
 import operator
 from collections.abc import Callable
 from functools import reduce
+from itertools import chain
 
 from msgspec import Struct
 from msgspec.structs import astuple, replace
 
 
 class Stats(Struct, frozen=True, gc=True):
-    ap: int
-    mp: int
-    wp: int
-    ra: int
-    crit: int
-    crit_mastery: int
-    elemental_mastery: int
-    one_element_mastery: int
-    two_element_mastery: int
-    three_element_mastery: int
-    distance_mastery: int
-    rear_mastery: int
-    heal_mastery: int
-    beserk_mastery: int
-    melee_mastery: int
-    control: int
-    block: int
-    fd: int
-    heals_performed: int
-    lock: int
-    dodge: int
+    ap: int = 0
+    mp: int = 0
+    wp: int = 0
+    ra: int = 0
+    crit: int = 0
+    crit_mastery: int = 0
+    elemental_mastery: int = 0
+    one_element_mastery: int = 0
+    two_element_mastery: int = 0
+    three_element_mastery: int = 0
+    distance_mastery: int = 0
+    rear_mastery: int = 0
+    heal_mastery: int = 0
+    beserk_mastery: int = 0
+    melee_mastery: int = 0
+    control: int = 0
+    block: int = 0
+    fd: int = 0
+    heals_performed: int = 0
+    lock: int = 0
+    dodge: int = 0
 
     def __sub__(self, other: object) -> Stats:
         if not isinstance(other, Stats):
@@ -59,10 +60,10 @@ DUMMY_MAX: int = 1_000_000
 
 
 class SetMinimums(Stats, frozen=True, gc=False):
-    ap: int = 5
-    mp: int = 2
-    wp: int = 0
-    ra: int = 0
+    ap: int = DUMMY_MIN
+    mp: int = DUMMY_MIN
+    wp: int = DUMMY_MIN
+    ra: int = DUMMY_MIN
     crit: int = DUMMY_MIN
     crit_mastery: int = DUMMY_MIN
     elemental_mastery: int = DUMMY_MIN
@@ -80,6 +81,10 @@ class SetMinimums(Stats, frozen=True, gc=False):
     heals_performed: int = DUMMY_MIN
     lock: int = DUMMY_MIN
     dodge: int = DUMMY_MIN
+
+    def unhandled(self) -> bool:
+        _ap, _mp, wp, _ra, _crit, *rest = astuple(self)
+        return any(stat != DUMMY_MIN for stat in (wp, *rest))
 
 
 class SetMaximums(Stats, frozen=True, gc=False):
@@ -104,6 +109,10 @@ class SetMaximums(Stats, frozen=True, gc=False):
     heals_performed: int = DUMMY_MAX
     lock: int = DUMMY_MAX
     dodge: int = DUMMY_MAX
+
+    def unhandled(self) -> bool:
+        _ap, _mp, wp, _ra, _crit, *rest = astuple(self)
+        return any(stat != DUMMY_MAX for stat in (wp, *rest))
 
 
 def effective_mastery(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> float:
@@ -145,15 +154,21 @@ def apply_elementalism(stats: Stats) -> Stats:
     return stats
 
 
-def generate_filter(base_stats: Stats, maximums: list[Stats], minimums: list[Stats]) -> Callable[[list[Stats]], bool]:
-    min_clamp = Stats(*(max(items) for items in zip(*map(astuple, minimums), strict=True))) - base_stats
-    max_clamp = Stats(*(min(items) for items in zip(*map(astuple, maximums), strict=True))) + base_stats
+def generate_filter(
+    base_stats: Stats,
+    minimums: list[tuple[SetMinimums, ...]],
+    maximums: list[tuple[SetMaximums, ...]],
+) -> Callable[[list[Stats]], bool]:
+    mins = filter(None, chain.from_iterable(minimums))
+    maxs = filter(None, chain.from_iterable(maximums))
 
+    min_clamp = Stats(*(max(items) for items in zip(*map(astuple, mins), strict=True)))
+    max_clamp = Stats(*(min(items) for items in zip(*map(astuple, maxs), strict=True)))
     min_tup = astuple(min_clamp)
     max_tup = astuple(max_clamp)
 
     def f(item_set: list[Stats]) -> bool:
-        stat_tup = astuple(reduce(operator.add, item_set))
+        stat_tup = astuple(reduce(operator.add, (base_stats, *item_set)))
 
         return all(mn <= s <= mx for mn, s, mx in zip(min_tup, stat_tup, max_tup, strict=True))
 

@@ -19,10 +19,12 @@ class SlotColor(enum.IntEnum):
     B = 2
     W = 3
 
+
 class Slot(Struct, frozen=True, array_like=True):
     color: SlotColor
     stat_id: int | None = None
     shard_lv: int = 0
+
 
 class Elements(enum.IntFlag):
     unset = 0

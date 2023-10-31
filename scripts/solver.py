@@ -24,6 +24,7 @@ from pprint import pprint as p_print
 from typing import Final, NoReturn, TypeVar, assert_never
 
 from object_parsing import EquipableItem, _locale
+from restructured_types import Stats, generate_filter
 from unobs import get_unobtainable_ids
 
 T = TypeVar("T")
@@ -147,7 +148,7 @@ def solve(
                         mul = 0.5
                     else:
                         mul = 0
-                    
+
                     score += item._berserk_mastery * mul
 
             if ns.rear:
@@ -188,10 +189,7 @@ def solve(
 
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
         mins, maxs = item.conditions
-
-        if mins or maxs:
-            return True
-        return False
+        return any(condition.unhandled() for condition in filter(None, (*mins, *maxs)))
 
     def sort_key_initial(item: EquipableItem) -> float:
         return (
@@ -572,6 +570,8 @@ def solve(
     # everything below this line is performance sensitive, and runtime is based on how much the above
     # managed to reduce the permuations of possible gear.
 
+    base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit) if ns else Stats()
+
     for relic, epic in canidate_re_pairs:
         if relic is not None:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
@@ -618,7 +618,10 @@ def solve(
             elif item.item_slot == "SECOND_WEAPON":
                 off_hand_disabled = True
             else:
-                REM_SLOTS.remove(item.item_slot)
+                try:
+                    REM_SLOTS.remove(item.item_slot)
+                except ValueError:
+                    pass
 
         if not (main_hand_disabled and off_hand_disabled):
             REM_SLOTS.append("WEAPONS")
@@ -676,6 +679,21 @@ def solve(
 
             crit_chance = min(crit_chance, 100)
 
+            generated_conditions = [
+                (
+                    *item.conditions,
+                    item.as_stats,
+                )
+                for item in (*items, relic, epic)
+                if item
+            ]
+            mns, mxs, stats = zip(*generated_conditions)
+            mns = list(filter(None, mns))
+            mxs = list(filter(None, mxs))
+
+            if (mns or mxs) and not generate_filter(base_stats, mns, mxs)(stats):
+                continue
+
             score = sum(sort_key(i) for i in items) + partial_score + BASE_RELEV_MASTERY
             score = (score + (crit_mastery if UNRAVELING else 0)) * ((100 - crit_chance) / 100) + (score + crit_mastery) * (
                 crit_chance / 80
@@ -728,6 +746,9 @@ def entrypoint() -> None:
     parser.add_argument("--mp", dest="mp", type=int, default=2)
     parser.add_argument("--wp", dest="wp", type=int, default=0)
     parser.add_argument("--ra", dest="ra", type=int, default=0)
+    parser.add_argument("--base-ap", dest="baseap", type=int, default=7)
+    parser.add_argument("--base-mp", dest="basemp", type=int, default=4)
+    parser.add_argument("--base-range", dest="basera", type=int, default=0)
     parser.add_argument("--num-mastery", type=int, choices=[1, 2, 3, 4], default=3)
     parser.add_argument("--distance", dest="dist", action="store_true", default=False)
     parser.add_argument("--melee", dest="melee", action="store_true", default=False)

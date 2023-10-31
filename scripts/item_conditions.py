@@ -66,7 +66,7 @@ for item_id in (26291, 26312):
 
 # mocking cap
 crit_lt_eq_25 = [rst.SetMaximums(crit=25)]
-for item_id in (26303, 26314):
+for item_id in (26303, 26323):
     conditions[item_id] = crit_lt_eq_25
 
 # worn to a shadow
