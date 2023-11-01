@@ -16,6 +16,7 @@ from collections.abc import Callable
 from functools import reduce
 from itertools import chain
 
+from functional import element_wise_apply
 from msgspec import Struct, field
 from msgspec.structs import astuple, replace
 
@@ -176,18 +177,23 @@ def apply_elementalism(stats: Stats) -> Stats:
     return stats
 
 
+_DEFAULT_MIN_TUP: tuple[int, ...] = astuple(SetMinimums())
+_DEFAULT_MAX_TUP: tuple[int, ...] = astuple(SetMaximums())
+
+
 def generate_filter(
     base_stats: Stats,
     minimums: list[tuple[SetMinimums, ...]],
     maximums: list[tuple[SetMaximums, ...]],
 ) -> Callable[[list[Stats]], bool]:
-    mins = filter(None, chain.from_iterable(minimums))
-    maxs = filter(None, chain.from_iterable(maximums))
+    mins: list[tuple[int, ...]] = [astuple(i) for i in filter(None, chain.from_iterable(minimums))]
+    maxs: list[tuple[int, ...]] = [astuple(i) for i in filter(None, chain.from_iterable(maximums))]
 
-    min_clamp = Stats(*(max(items) for items in zip(*map(astuple, mins), strict=True)))
-    max_clamp = Stats(*(min(items) for items in zip(*map(astuple, maxs), strict=True)))
-    min_tup = astuple(min_clamp)
-    max_tup = astuple(max_clamp)
+    if not (mins or maxs):
+        return lambda _: True
+
+    min_tup = element_wise_apply(max, mins) if mins else _DEFAULT_MIN_TUP
+    max_tup = element_wise_apply(min, maxs) if maxs else _DEFAULT_MAX_TUP
 
     def f(item_set: list[Stats]) -> bool:
         stat_tup = astuple(reduce(operator.add, (base_stats, *item_set)))
