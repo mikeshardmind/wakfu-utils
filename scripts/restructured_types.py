@@ -186,8 +186,8 @@ def generate_filter(
     minimums: list[tuple[SetMinimums, ...]],
     maximums: list[tuple[SetMaximums, ...]],
 ) -> Callable[[list[Stats]], bool]:
-    mins: list[tuple[int, ...]] = [astuple(i) for i in filter(None, chain.from_iterable(minimums))]
-    maxs: list[tuple[int, ...]] = [astuple(i) for i in filter(None, chain.from_iterable(maximums))]
+    mins = [astuple(i) for i in filter(None, chain.from_iterable(minimums))]
+    maxs = [astuple(i) for i in filter(None, chain.from_iterable(maximums))]
 
     if not (mins or maxs):
         return lambda _: True
