@@ -7,7 +7,8 @@ select = [
     "EM", "ISC", "G", "INP", "PIE", "T20", "Q003", "RSE", "RET", "SIM", "TID", "PTH", 
     "ERA", "PD", "PLC", "PLE", "PLW", "TRY", "NPY", "RUF"
 ]
-ignore = [
+
+extend-ignore = [
     "G002",  # erroneous issue with %-logging when logging can be confiured for % logging 
     "S101",  # use of assert here is a known quantity, blame typing memes
     "PLR2004",  # Magic value comparison, may remove later
@@ -30,6 +31,10 @@ ignore = [
     "Q003",  # reccomended by ruff when using ruff format
 ]
 
+[tool.ruff.extend-per-file-ignores]
+"src/wakautosolver/b2048/enc_table.py" = ["RUF001"]
+"src/wakautosolver/b2048/dec_table.py" = ["RUF001"]
+
 [project]
 name="wakautosolver"
 license = "MPL-2.0"
@@ -39,7 +44,6 @@ dynamic = ["version"]
 dependencies = [
     "numpy>=1.26,<1.30",
     "msgspec>=0.18.4",
-    "base2048==0.1.3",
 ]
 
 [build-system]

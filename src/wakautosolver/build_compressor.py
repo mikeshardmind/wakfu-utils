@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import enum
 
-import base2048
+import b2048 as base2048
 from msgspec import Struct, msgpack
 
 

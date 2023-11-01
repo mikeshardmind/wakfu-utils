@@ -55,7 +55,8 @@ async def networking(specific_files: Optional[list[str]] = None) -> None:
         coros = {_grab_file(session, results, WAKFU_VERSION, file_type) for file_type in file_types}
         await asyncio.gather(*coros)
 
-    base_path = pathlib.Path(os.environ.get("WRITE_PATH") or os.getcwd())  # noqa: PTH109
+    base_path_env = os.environ.get("WRITE_PATH")
+    base_path = pathlib.Path(base_path_env) if base_path_env else pathlib.Path.cwd() / "json_data"
 
     for name, data in results.items():
         path = base_path / f"{name}.json"
