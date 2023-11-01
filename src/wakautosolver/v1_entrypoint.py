@@ -8,9 +8,13 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Literal
+
+from entrypoint import solve as _esolve
+from restructured_types import Priority, SetMinimums, SolveConfig, StatPriority, Stats
 
 ### Exists for wakforge
+
 
 @dataclass(frozen=True, kw_only=True)
 class Config:
@@ -68,21 +72,63 @@ ClassNames = Literal[
 Result = tuple[list[int] | None, str | None]
 
 
-def solve(*args: Any, **kwargs: Any) -> Any:
-    ...# TODO, wrap new entrypoint for old behavior
+UNRAVELING = 24132
+WT_TWOH = 27186
+LWX3 = 28909
+
+
+def solve(config: Config, no_sys_exit: bool = True, no_print_log: bool = True) -> Result:
+    ...  # TODO, wrap new entrypoint for old behavior
+
+    base_stats = Stats(crit=config.bcrit, elemental_mastery=config.bcmast, crit_mastery=config.bcmast)
+
+    smins = SetMinimums(ap=config.ap, mp=config.mp, wp=config.wp, ra=config.ra)
+
+    LOOKUP = {
+        True: Priority.prioritized,
+        "full": Priority.full_negative_only,
+        "half": Priority.half_negative_only,
+    }
+
+    stat_priority = StatPriority(
+        number_of_elements=config.num_mastery,
+        distance_mastery=LOOKUP.get(config.dist, Priority.unvalued),
+        heal_mastery=LOOKUP.get(config.heal, Priority.unvalued),
+        melee_mastery=LOOKUP.get(config.melee, Priority.unvalued),
+        berserk_mastery=Priority.prioritized if config.zerk else LOOKUP.get(config.negzerk, Priority.unvalued),
+        rear_mastery=Priority.prioritized if config.rear else LOOKUP.get(config.negrear, Priority.unvalued),
+    )
+
+    sublimations: list[int] = []
+    if config.lwx:
+        sublimations.extend((LWX3, LWX3))
+    if config.unraveling:
+        sublimations.append(UNRAVELING)
+    if config.twoh:
+        sublimations.append(WT_TWOH)
+
+    solve_cfg = SolveConfig(
+        lv=config.lv,
+        base_stats=base_stats,
+        set_minimums=smins,
+        stat_priorities=stat_priority,
+        assume_double_damage_only_shards_are_damage=False,
+        skip_shields=config.skipshields,
+        forced_item_ids=[int(i) for i in config.idforce],
+        forbidden_item_ids=[int(i) for i in config.idforbid],
+        equipped_sublimation_ids=sublimations,
+        dry_run=config.dry_run,
+    )
+
+    result = _esolve(solve_cfg)
+
+    if result.items:
+        return (result.items, None)
+    return (None, "No possible solution found")
 
 
 def solve_config(config: Config) -> Result:
-    try:
-        solution = solve(config, no_sys_exit=True, no_print_log=True)
-    except Exception as e:
-        return (None, e.args[0])
-    else:
-        if solution:
-            best = solution[0]
-            _score, _text, items = best
-            return [i._item_id for i in items], None
-        return None, "No possible solution found"
+    return solve(config, no_sys_exit=True, no_print_log=True)
 
 
 def v1_lv_class_solve(

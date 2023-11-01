@@ -32,15 +32,10 @@ class StatPriority(Struct, frozen=True):
     distance_mastery: Priority = Priority.unvalued
     rear_mastery: Priority = Priority.unvalued
     heal_mastery: Priority = Priority.unvalued
-    beserk_mastery: Priority = Priority.unvalued
+    berserk_mastery: Priority = Priority.unvalued
     melee_mastery: Priority = Priority.unvalued
     number_of_elements: int = 3
 
-
-class Sublimation(Struct, frozen=True):
-    sublimation_id: int
-    level: int | None = None
-    
 
 class Stats(Struct, frozen=True, gc=True):
     ap: int = 0
@@ -214,12 +209,12 @@ class SolveConfig(Struct, frozen=True):
     stat_priorities: StatPriority = field(default_factory=StatPriority)
     forced_item_ids: list[int] = field(default_factory=list)
     forbidden_item_ids: list[int] = field(default_factory=list)
-    equipped_sublimations: list[Sublimation] = field(default_factory=list)
+    equipped_sublimation_ids: list[int] = field(default_factory=list)
     assume_double_damage_only_shards_are_damage: bool = True
     #: When set to True, the search will be done exhaustively
     #: When set to False, the search will adaptively determine when to end
     #: Based on intenrally maintained criteria that attempt to balance
-    #: going through enough of the competitive options to at least find a 
+    #: going through enough of the competitive options to at least find a
     #: highly competitive option
     exhaustive: bool = False
     skip_shields: bool = True  # speeds up searches

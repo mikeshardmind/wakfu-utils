@@ -14,7 +14,6 @@ T = TypeVar("T")
 
 
 class Reduction(Protocol[T]):
-
     def __call__(self, args: Iterable[T], /) -> T:
         ...
 
