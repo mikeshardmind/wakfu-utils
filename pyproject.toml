@@ -36,7 +36,11 @@ license = "MPL-2.0"
 requires-python = ">=3.11"
 authors = [{ name = "Michael Hall", email = "michael@michaelhall.tech" }]
 dynamic = ["version"]
-dependencies = []
+dependencies = [
+    "numpy>=1.26,<1.30",
+    "msgspec>=0.18.4",
+    "base2048==0.1.3",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -55,9 +59,9 @@ path = "wakautosolver/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/wakautosolver",
+    "/src",
     "/LICENSE",
 ]
 
 [tool.hatch.build.targets.wheel]
-include = ["/wakautosolver/*"]
+include = ["/src/*.py", "/src/item_data.bz2"]

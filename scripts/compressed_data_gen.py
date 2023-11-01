@@ -27,5 +27,5 @@ if __name__ == "__main__":
     # for this data set, bz2 using highest compression level (which is default)
     # outperforms lzma and gzip,
     # both with defaults and with attempts at adaptive tuning.
-    with open("data.bz2", mode="wb") as fp:
+    with open("item_data.bz2", mode="wb") as fp:
         fp.write(compressed_bz2)
