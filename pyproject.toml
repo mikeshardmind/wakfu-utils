@@ -47,7 +47,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.pyright]
-include = ["src", "scripts", "wakautosolver"]
+include = ["src", "scripts"]
 typeCheckingMode = "strict"
 pythonVersion = "3.11"
 
@@ -55,7 +55,11 @@ pythonVersion = "3.11"
 Homepage = "https://github.com/mikeshardmind/wakfu-utils"
 
 [tool.hatch.version]
-path = "wakautosolver/__init__.py"
+path = "src//wakautosolver/__init__.py"
+
+[tool.hatch.build]
+artifacts = ["*.bz2"]
+
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -64,4 +68,4 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-include = ["/src/*.py", "/src/item_data.bz2"]
+packages = ["src/wakautosolver"]

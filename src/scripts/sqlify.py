@@ -9,8 +9,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 import json
 
 import apsw
-import object_parsing
-import unobs
+from wakautosolver import object_parsing, unobs
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS blueprints (
