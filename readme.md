@@ -13,17 +13,18 @@ object_parsing.py: some rough handling of objects.
 
 solver.py: a work in progress mastery optimizing constraint based set solver.
 
-### Just want to try it now anyhow?
-
-If you don't know what you're doing, you probably shouldn't use this yet.
+### How to use the autosolver provided
 
 I'm working with [wakforge.org](https://github.com/Tmktahu/wakforge)
 to incorporate the autosolver's logic into their builder.
 
 Note: Not all of the features of the autobuilder are currently available
-in wakforge, and there may be a standalone app in the future.
+in wakforge, and there may also be a standalone GUI app in the future.
 
-Any standalone GUI app will probbaly include an export button to allow taking it into a full builder to tweak.
+If you'd like to make use of more of the advanced features prior to them
+being included in wakforge, you'll need a little bit of knowledge on using
+CLI applications, and you'll want to run solver.py after running both
+downloader.py and compressed_data_gen.py
 
 ### Known limitations
 
@@ -73,29 +74,10 @@ Any standalone GUI app will probbaly include an export button to allow taking it
 ### Performance and planned improvements
 
 The downloader and data gen tools will likely remain written in python
-The solver will be rewritten in something faster at a later date.
+The solver may be rewritten in something faster at a later date.
 Any GUI may be written in whatever I want later and just call the solver on the backend.
 When this is done, the data gen tools with recieve updates to write a more efficient binary format
 rather than just strip and compress what ankama provides.
-
-The slowest solve (lv 230, no additional constraints) takes under a minute currently.
-Note: additional constraints speed up the solution due to eager discarding of sets which can't meet a constraint
-
-```
-> Measure-Command { py ./stdlib_standalone.py --lv 230  }
-Days              : 0
-Hours             : 0
-Minutes           : 0
-Seconds           : 24
-Milliseconds      : 662
-Ticks             : 246626187
-TotalDays         : 0.000285446975694444
-TotalHours        : 0.00685072741666667
-TotalMinutes      : 0.411043645
-TotalSeconds      : 24.6626187
-TotalMilliseconds : 24662.6187
-```
-The script only makes use of a single thread as-is (Rel. clock speed 2.7GHz), and does not use any acceleration libraries.
 
 Speeding this up would be with the purpose of
 
@@ -113,7 +95,13 @@ not everyone helping with this is git-savvy
 
 ### Feedback
 
-Issue or join the wakfu optimization discord: https://discord.gg/TXNKsWhhut
+If you have something specific to the CLI use or use of this as a library
+either open an issue or hop into the High End Wakfu server
+we have a dedicated channel for it: https://discord.gg/TXNKsWhhut
+
+If your feedback relates to how this is incoorporated into wakforge,
+you should join their discord: https://discord.gg/k3v2fXQWJp instead
+as some issues may be wakforge specific.
 
 
 ### Disclaimer
