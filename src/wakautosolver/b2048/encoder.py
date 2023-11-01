@@ -116,7 +116,7 @@ def decode(string: str) -> bytes:
                     n_new_bits = need
                     new_bits = index
                 else:
-                    msg = f"Invalid tail character {i}: [{c:}]"
+                    msg = f"Invalid tail character {i}: [{c}]"
                     raise DecodeError(msg)
         else:
             new_bits = DEC_TABLE[numeric]
