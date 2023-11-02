@@ -9,7 +9,6 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 import argparse
-import builtins
 
 # pyright: reportPrivateUsage=false
 # pyright: reportConstantRedefinition=false
@@ -20,14 +19,32 @@ import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache
 from operator import attrgetter, itemgetter
-from pprint import pprint as p_print
-from typing import Final, NoReturn, TypeVar, assert_never
+from typing import Final, NoReturn, Protocol, TypeVar, assert_never
 
 from .object_parsing import EquipableItem, _locale
 from .restructured_types import Stats, generate_filter
 from .unobs import get_unobtainable_ids
+from .utils import only_once
 
 T = TypeVar("T")
+
+log = logging.getLogger("solver")
+
+
+T_contra = TypeVar("T_contra", contravariant=True)
+
+class SupportsWrite(Protocol[T_contra]):
+    def write(self, s: T_contra, /) -> object:
+        ...
+
+
+@only_once
+def setup_logging(output: SupportsWrite[str]) -> None:
+    handler = logging.StreamHandler(output)
+    formatter = logging.Formatter("%(message)s", datefmt="%Y-%m-%d %H:%M:%S", style="%")
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
 
 
 def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list[T]:
@@ -37,10 +54,9 @@ def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list
 
 def solve(
     ns: argparse.Namespace | None = None,
-    no_print_log: bool = False,
     no_sys_exit: bool = False,
     dry_run: bool = False,
-) -> list[tuple[float, str, list[EquipableItem]]]:
+) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
     dry_run = ns.dry_run if ns else dry_run
@@ -54,27 +70,6 @@ def solve(
 
     if ns:
         _locale.set(ns.locale)
-
-    log = logging.getLogger("Set Builder")
-
-    def null_printer(*args: object, **kwargs: object) -> object:
-        pass
-
-    if no_print_log:
-        log.addHandler(logging.NullHandler())
-        aprint = pprint = null_printer
-    else:
-        aprint = builtins.print
-        pprint = p_print
-        handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter(
-            "[%(asctime)s] [%(levelname)s] %(name)s: %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-            style="%",
-        )
-        handler.setFormatter(formatter)
-        log.addHandler(handler)
-    log.setLevel(logging.INFO)
 
     # ## Everything in this needs abstracting into something
     # that can handle user input and be more dynamic.
@@ -264,8 +259,6 @@ def solve(
         forced_ring: Iterable[EquipableItem] = ()
         if forced_relics:
             relic = forced_relics[0]
-            if ns and ns.debug:
-                aprint("Forced relic: ", relic)
             forced_slots[relic.item_slot] += 1
             try:
                 sword_idx = NATION_RELIC_EPIC_IDS.index(relic._item_id)
@@ -286,8 +279,6 @@ def solve(
             sys_exit(1)
         if forced_epics:
             epic = forced_epics[0]
-            if ns and ns.debug:
-                aprint("Forced epic: ", epic)
             forced_slots[epic.item_slot] += 1
 
             try:
@@ -414,9 +405,6 @@ def solve(
             for item in to_rem:
                 items.remove(item)
 
-    if ns and ns.debug:
-        pprint(CANIDATES)
-
     relics.sort(key=lambda r: (sort_key(r), r.item_slot), reverse=True)
     relics = ordered_unique_by_key(relics, needs_full_sim_key)
     epics.sort(key=lambda e: (sort_key(e), e.item_slot), reverse=True)
@@ -463,11 +451,7 @@ def solve(
     srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
     canidate_weapons = ordered_unique_by_key(srt_w, weapon_key_func)
 
-    if ns and ns.debug:
-        pprint(f"Weapons: {len(canidate_weapons)}")
-        pprint(canidate_weapons)
-
-    BEST_LIST: list[tuple[float, str, list[EquipableItem]]] = []
+    BEST_LIST: list[tuple[float, list[EquipableItem]]] = []
 
     log.info("Considering the options...")
 
@@ -481,42 +465,7 @@ def solve(
             if sword and ring:
                 extra_pairs.append((sword, ring))
 
-    aprint("Considering some items... This may take a few moments")
-    if ns is None:
-        pprint(
-            {
-                k: v
-                for k, v in CANIDATES.items()
-                if k
-                in (
-                    "LEGS",
-                    "BACK",
-                    "HEAD",
-                    "CHEST",
-                    "SHOULDERS",
-                    "BELT",
-                    "LEFT_HAND",
-                    "LEFT_HAND",
-                    "NECK",
-                    "ACCESSORY",
-                )
-            }
-        )
-
-        if ns and ns.debug:
-            if relics:
-                aprint("Considering relics:")
-                pprint(relics, width=120)
-            if epics:
-                aprint("Considering epics:")
-                pprint(epics, width=120)
-
-            if TWOH:
-                aprint("Considering two-handed weapons:", *TWOH, sep=" ")
-            if ONEH:
-                aprint("Considering one-handed weapons:", *ONEH, sep=" ")
-            if z := DAGGERS + SHIELDS:
-                aprint("Considering off-hands:", *z, sep=" ")
+    log.info("Considering some items... This may take a few moments")
 
     epics.sort(key=sort_key_initial, reverse=True)
     relics.sort(key=sort_key_initial, reverse=True)
@@ -565,7 +514,7 @@ def solve(
 
         for weps in canidate_weapons:
             ret.extend(tuple_expander(weps))
-        return [(0, "Dry Run", ordered_unique_by_key(ret, attrgetter("_item_id")))]
+        return [(0, ordered_unique_by_key(ret, attrgetter("_item_id")))]
 
     # everything below this line is performance sensitive, and runtime is based on how much the above
     # managed to reduce the permuations of possible gear.
@@ -702,43 +651,24 @@ def solve(
             worst_kept = min(i[0] for i in BEST_LIST) if 0 < len(BEST_LIST) < 3 else 0
 
             if score > worst_kept:
-                components: list[str] = []
-                if relic:
-                    components.append(f"Relic: {relic}")
-                if epic:
-                    components.append(f"Epic: {epic}")
-
-                for item in sorted(items, key=lambda item: item.item_slot):
-                    if item is not lw:
-                        components.append(f"{item.item_type_name.title()}: {item}")
-
-                text_repr = "\n".join(components)
-
-                filtered = [i for i in items if i]
-                if relic:
-                    filtered.append(relic)
-                if epic:
-                    filtered.append(epic)
+                filtered = [i for i in (*items, relic, epic) if i]
                 filtered.sort(key=lambda i: i._item_id)
 
-                tup = (score, text_repr, filtered)
+                tup = (score, filtered)
                 if tup in BEST_LIST:
                     continue
                 BEST_LIST.sort(key=itemgetter(0), reverse=True)
                 BEST_LIST = BEST_LIST[:5]
                 BEST_LIST.append(tup)
-    try:
-        (score, info, _items) = BEST_LIST[0]
-    except IndexError:
-        aprint("No sets matching this were found!")
-    else:
-        aprint("Done searching, here's my top pick\n")
-        aprint(f"Effective average mastery: {score:3g}\nItems:\n{info}\n")
 
     return BEST_LIST
 
 
-def entrypoint() -> None:
+def entrypoint(output: SupportsWrite[str]) -> None:
+
+    def write(*args: object, sep: str = " ", end: str = "\n") -> None:
+        output.write(f"{sep.join(map(repr, args))}{end}")
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--lv", dest="lv", type=int, choices=list(range(20, 231, 15)), required=True)
@@ -766,7 +696,6 @@ def entrypoint() -> None:
     parser.add_argument("--id-force", dest="idforce", type=int, action="store", nargs="+")
     parser.add_argument("--name-force", dest="nameforce", type=str, action="store", nargs="+")
     parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
-    parser.add_argument("--debug", dest="debug", action="store_true", default=False)
     parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
     parser.add_argument("--hard-cap-depth", dest="hard_cap_depth", type=int, default=100)
     parser.add_argument("--count-negative-zerk", dest="negzerk", type=str, choices=("full", "half", "none"), default="half")
@@ -777,20 +706,29 @@ def entrypoint() -> None:
 
     ns = parser.parse_args()
     result = solve(ns)
-    if ns.dry_run:
-        best = result[0]
-        _score, _repr, items = best
-        items.sort(key=lambda i: (i.item_slot, i.name))
+    try:
+        score, items = result[0]
+    except IndexError:
+        write("No sets matching this were found!")
+        return
 
+    items.sort(key=lambda i: (not i.is_relic, not i.is_epic, i.item_slot, i.name))
+    if ns.dry_run:
         relics = [i for i in items if i.is_relic]
         if relics:
-            print("Relics", "---", *relics, sep="\n")
+            write("Relics", "---", *relics, sep="\n")
+
         epics = [i for i in items if i.is_epic]
-        print("Epics", "---", *epics, sep="\n")
+        if relics:
+            write("Epics", "---", *epics, sep="\n")
 
         for group, it in itertools.groupby((i for i in items if not (i.is_epic or i.is_relic)), lambda i: i.item_slot):
-            print(group.title(), "---", *it, sep="\n")
+            write(group.title(), "---", *it, sep="\n")
+    else:
+        write(f"Best set under constraints has effective mastery {score}:")
+        write(*items, sep="\n")
 
 
 if __name__ == "__main__":
-    entrypoint()
+    setup_logging(sys.stdout)
+    entrypoint(sys.stdout)

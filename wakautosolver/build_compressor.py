@@ -15,10 +15,10 @@ from . import b2048 as base2048
 
 
 class SlotColor(enum.IntEnum):
-    R = 0
-    G = 1
-    B = 2
-    W = 3
+    R = 1
+    G = 2
+    B = 3
+    W = 4
 
 
 class Slot(Struct, frozen=True, array_like=True):

@@ -542,7 +542,15 @@ class EquipableItem:
         self._is_shop_item: bool = False
 
     def __repr__(self) -> str:
-        return f"Item id: {self._item_id} Name: {self.name} Lv: {self._item_lv} AP: {self._ap} MP: {self._mp}"
+        rarities = {
+            3: "(Mythic)",
+            4: "(Legendary)",
+            5: "(Relic)",
+            6: "(Souvenir)",
+            7: "(Epic)",
+        }
+        rarity = rarities.get(self._item_rarity, "(Weaksauce)")
+        return f"Item id: {self._item_id} Rarity: {rarity} Name: {self.name} Lv: {self._item_lv}"
 
     def update(self, prop_name: str, modifier: int) -> None:
         v: int = getattr(self, prop_name, 0)
