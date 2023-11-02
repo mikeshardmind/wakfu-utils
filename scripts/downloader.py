@@ -57,6 +57,7 @@ async def networking(specific_files: Optional[list[str]] = None) -> None:
 
     base_path_env = os.environ.get("WRITE_PATH")
     base_path = pathlib.Path(base_path_env) if base_path_env else pathlib.Path.cwd() / "json_data"
+    base_path.mkdir(parents=True, exist_ok=True)
 
     for name, data in results.items():
         path = base_path / f"{name}.json"

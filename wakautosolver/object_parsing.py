@@ -557,21 +557,9 @@ class EquipableItem:
         return self._description_strings.get(_locale.get(), None)
 
     @classmethod
-    def json_from_file_path(cls, file_path: pathlib.Path) -> list[EquipableItem]:
-        with file_path.open(mode="rb") as f:
-            _data = msgspec.json.decode(f.read())
-
-        return [obj for element in _data if (obj := cls.from_json_data(element))]
-
-    @classmethod
-    def from_bundled(cls: type[Self]) -> list[Self]:
-        fp = pathlib.Path() / "items.json"
-
-        return cls.json_from_file_path(fp)
-
-    @classmethod
     def from_bz2_bundled(cls: type[Self]) -> list[Self]:
-        with bz2.open("data.bz2", mode="rb", compresslevel=9) as fp:
+        data_file_path = pathlib.Path(__file__).with_name("item_data.bz2")
+        with bz2.open(str(data_file_path), mode="rb", compresslevel=9) as fp:
             decompressed = msgspec.msgpack.decode(fp.read())
 
         return [obj for element in decompressed if (obj := cls.from_json_data(element))]
