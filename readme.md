@@ -9,9 +9,6 @@ compressed_data_gen.py: generates a small bz2 compressed file for minimal redist
 
 sqlify.py: generates an sqlite db from downloaded item data for use in either application or manual querying.
 
-object_parsing.py: some rough handling of objects.
-
-solver.py: a work in progress mastery optimizing constraint based set solver.
 
 ### How to use the autosolver provided
 
@@ -28,10 +25,6 @@ downloader.py and compressed_data_gen.py
 
 ### Known limitations
 
-- Many items are intentionally excluded at this point in time due to not handling the item conditions
-  These are not in the data ankama provides, and need to be manually collected.
-  I have a collection of these for items pre 215 cap expansion,
-  at a later date I'll be expanding this to cover all current items then implement logic around them
 - Some items are not in the item data that were previously obtainable (won't fix)
 - Some items are in the item data and are no longer obtainable 
   (needs thought about handling, users can exclude by name currently)

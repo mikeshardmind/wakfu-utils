@@ -17,8 +17,8 @@ from collections.abc import Iterable
 from io import StringIO
 from typing import Generic, TypeVar
 
-from dec_table import dec as DEC_TABLE
-from enc_table import enc as ENC_TABLE
+from .dec_table import dec as DEC_TABLE
+from .enc_table import enc as ENC_TABLE
 
 T = TypeVar("T")
 

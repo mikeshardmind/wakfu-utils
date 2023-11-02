@@ -1,3 +1,8 @@
+[tool.pyright]
+include = ["wakautosolver", "scripts"]
+typeCheckingMode = "strict"
+pythonVersion = "3.11"
+
 [tool.ruff]
 
 line-length = 130
@@ -32,8 +37,8 @@ extend-ignore = [
 ]
 
 [tool.ruff.extend-per-file-ignores]
-"src/wakautosolver/b2048/enc_table.py" = ["RUF001"]
-"src/wakautosolver/b2048/dec_table.py" = ["RUF001"]
+"wakautosolver/b2048/enc_table.py" = ["RUF001"]
+"wakautosolver/b2048/dec_table.py" = ["RUF001"]
 
 [project]
 name="wakautosolver"
@@ -42,34 +47,25 @@ requires-python = ">=3.11"
 authors = [{ name = "Michael Hall", email = "michael@michaelhall.tech" }]
 dynamic = ["version"]
 dependencies = [
-    "numpy>=1.26,<1.30",
+    "numpy>=1.25,<1.30",
     "msgspec>=0.18.4",
 ]
+
+[project.urls]
+Homepage = "https://github.com/mikeshardmind/wakfu-utils"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.pyright]
-include = ["src", "scripts"]
-typeCheckingMode = "strict"
-pythonVersion = "3.11"
-
-[project.urls]
-Homepage = "https://github.com/mikeshardmind/wakfu-utils"
-
 [tool.hatch.version]
-path = "src//wakautosolver/__init__.py"
+path = "wakautosolver/__init__.py"
 
 [tool.hatch.build]
 artifacts = ["*.bz2"]
 
-
-[tool.hatch.build.targets.sdist]
+[tool.hatch.build.targets.wheel]
 include = [
-    "/src",
+    "/wakautosolver",
     "/LICENSE",
 ]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/wakautosolver"]

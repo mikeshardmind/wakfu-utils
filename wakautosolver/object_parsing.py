@@ -19,8 +19,9 @@ from functools import cached_property
 from typing import Any, Literal, Self, TypedDict, TypeVar
 
 import msgspec
-from item_conditions import conditions
-from restructured_types import SetMaximums, SetMinimums, Stats
+
+from .item_conditions import conditions
+from .restructured_types import SetMaximums, SetMinimums, Stats
 
 
 class PosData(TypedDict):

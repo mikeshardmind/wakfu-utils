@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-import restructured_types as rst
+from . import restructured_types as rst
 
 # Manually maintained because this isn't in ankama's data.
 # If ankama added items frequently, I'd make this parse a file with something like "locale,item name,lv,stat<x"

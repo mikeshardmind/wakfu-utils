@@ -16,9 +16,10 @@ from collections.abc import Callable
 from functools import reduce
 from itertools import chain
 
-from functional import element_wise_apply
 from msgspec import Struct, field
 from msgspec.structs import astuple, replace
+
+from .functional import element_wise_apply
 
 
 class Priority(enum.IntEnum):

@@ -23,9 +23,9 @@ from operator import attrgetter, itemgetter
 from pprint import pprint as p_print
 from typing import Final, NoReturn, TypeVar, assert_never
 
-from object_parsing import EquipableItem, _locale
-from restructured_types import Stats, generate_filter
-from unobs import get_unobtainable_ids
+from .object_parsing import EquipableItem, _locale
+from .restructured_types import Stats, generate_filter
+from .unobs import get_unobtainable_ids
 
 T = TypeVar("T")
 

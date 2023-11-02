@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-from entrypoint import solve as _esolve
-from restructured_types import Priority, SetMinimums, SolveConfig, StatPriority, Stats
+from .entrypoint import solve as _esolve
+from .restructured_types import Priority, SetMinimums, SolveConfig, StatPriority, Stats
 
 ### Exists for wakforge
 

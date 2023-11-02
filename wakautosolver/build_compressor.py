@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import enum
 
-import b2048 as base2048
 from msgspec import Struct, msgpack
+
+from . import b2048 as base2048
 
 
 class SlotColor(enum.IntEnum):

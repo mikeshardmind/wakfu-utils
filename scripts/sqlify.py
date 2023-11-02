@@ -6,10 +6,15 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
+# pyright: reportPrivateUsage=none
+
 import json
 
 import apsw
+
 from wakautosolver import object_parsing, unobs
+
+ITEM_TYPE_MAP = object_parsing.ITEM_TYPE_MAP
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS blueprints (
@@ -218,8 +223,6 @@ if __name__ == "__main__":
         """,
         list(recipes_limited.values()),
     )
-
-    from object_parsing import ITEM_TYPE_MAP
 
     item_type_data: list[tuple[int, str, bool]] = []
     item_type_name_data: list[dict[str, str]] = []

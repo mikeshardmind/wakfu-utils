@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from restructured_types import DryRunResult, Result, SolveConfig
+from .restructured_types import DryRunResult, Result, SolveConfig
 
 
 class Speed(IntEnum):
