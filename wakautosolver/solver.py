@@ -485,7 +485,7 @@ def solve(
         canidate_re_pairs = ordered_unique_by_key(sorted_pairs, re_key_func)
     else:
         canidate_re_pairs = (
-            *itertools.product(relics or [None], epics),
+            *itertools.product(relics or [None], epics or [None]),
             *extra_pairs,
         )
 
@@ -522,7 +522,7 @@ def solve(
     base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit) if ns else Stats()
 
     for relic, epic in canidate_re_pairs:
-        if relic is not None:
+        if relic and epic:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
                 continue
 
@@ -597,31 +597,17 @@ def solve(
                 if r1._item_id == r2._item_id:
                     continue
 
-            if (relic._ap if relic else 0) + epic._ap + sum(i._ap for i in items) < AP:
+            if sum(i._ap for i in (relic, epic, *items) if i) < AP:
+                continue
+            if sum(i._mp for i in (relic, epic, *items) if i) < MP:
+                continue
+            if sum(i._wp for i in (relic, epic, *items) if i) < WP:
+                continue
+            if sum(i._range for i in (relic, epic, *items) if i) < RA:
                 continue
 
-            if (relic._mp if relic else 0) + epic._mp + sum(i._mp for i in items) < MP:
-                continue
-
-            if (relic._wp if relic else 0) + epic._wp + sum(i._wp for i in items) < WP:
-                continue
-
-            if (relic._range if relic else 0) + epic._range + sum(i._range for i in items) < RA:
-                continue
-
-            crit_chance = (
-                (relic._critical_hit if relic else 0)
-                + epic._critical_hit
-                + sum(i._critical_hit for i in items)
-                + BASE_CRIT_CHANCE
-            )
-
-            crit_mastery = (
-                (relic._critical_mastery if relic else 0)
-                + epic._critical_mastery
-                + sum(i._critical_mastery for i in items)
-                + BASE_CRIT_MASTERY
-            )
+            crit_chance = sum(i._critical_hit for i in (relic, epic, *items) if i) + BASE_CRIT_CHANCE
+            crit_mastery = sum(i._critical_mastery for i in (relic, epic, *items) if i) + BASE_CRIT_MASTERY
 
             if crit_chance < CRIT:
                 continue
@@ -667,7 +653,7 @@ def solve(
 def entrypoint(output: SupportsWrite[str]) -> None:
 
     def write(*args: object, sep: str = " ", end: str = "\n") -> None:
-        output.write(f"{sep.join(map(repr, args))}{end}")
+        output.write(f"{sep.join(map(str, args))}{end}")
 
     parser = argparse.ArgumentParser()
 

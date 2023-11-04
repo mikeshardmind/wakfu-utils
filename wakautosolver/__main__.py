@@ -6,7 +6,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
+import sys
+
 from .solver import entrypoint
 
 if __name__ == "__main__":
-    entrypoint()
+    entrypoint(sys.stdout)
