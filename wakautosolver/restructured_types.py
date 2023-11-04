@@ -14,7 +14,6 @@ import enum
 import operator
 from collections.abc import Callable
 from functools import reduce
-from itertools import chain
 from typing import Literal
 
 from msgspec import Struct, field
@@ -103,8 +102,8 @@ class SetMinimums(Stats, frozen=True, gc=False):
     dodge: int = DUMMY_MIN
 
     def unhandled(self) -> bool:
-        _ap, _mp, wp, _ra, _crit, *rest = astuple(self)
-        return any(stat != DUMMY_MIN for stat in (wp, *rest))
+        _ap, _mp, _wp, _ra, _crit, *rest = astuple(self)
+        return any(stat != DUMMY_MIN for stat in rest)
 
     def __and__(self, other: object) -> SetMinimums:
         if not isinstance(other, SetMinimums):
@@ -137,8 +136,8 @@ class SetMaximums(Stats, frozen=True, gc=False):
     dodge: int = DUMMY_MAX
 
     def unhandled(self) -> bool:
-        _ap, _mp, wp, _ra, _crit, *rest = astuple(self)
-        return any(stat != DUMMY_MAX for stat in (wp, *rest))
+        _ap, _mp, _wp, _ra, _crit, *rest = astuple(self)
+        return any(stat != DUMMY_MAX for stat in rest)
 
     def __and__(self, other: object) -> SetMaximums:
         if not isinstance(other, SetMaximums):
@@ -196,7 +195,6 @@ def generate_filter(
 
     def f(item_set: list[Stats]) -> bool:
         stat_tup = astuple(reduce(operator.add, (base_stats, *item_set)))
-
         return all(mn <= s <= mx for mn, s, mx in zip(min_tup, stat_tup, max_tup, strict=True))
 
     return f

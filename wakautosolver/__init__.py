@@ -11,7 +11,6 @@ __version__ = "2023.11.4"
 from . import object_parsing, solver
 from .b2048 import decode as b2048_decode
 from .b2048 import encode as b2048_encode
-from .build_compressor import decode_build, encode_build
 from .restructured_types import v1Config as Config  # pyright: ignore
 from .unobs import get_unobtainable_ids
 from .v1_entrypoint import solve, solve_config  # pyright: ignore
@@ -21,8 +20,6 @@ from .v1_entrypoint import solve, solve_config  # pyright: ignore
 __all__ = [
     "b2048_decode",
     "b2048_encode",
-    "decode_build",
-    "encode_build",
     "get_unobtainable_ids",
     "object_parsing",
     "solver",

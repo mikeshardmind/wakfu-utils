@@ -59,6 +59,7 @@ class SolveError(Exception):
 
 def solve(
     ns: argparse.Namespace | v1Config,
+    ignore_missing_items: bool = False
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
@@ -203,11 +204,12 @@ def solve(
         _fns = ns.nameforce or ()
 
         forced_items = [i for i in OBJS if i._item_id in _fids or i.name in _fns]
-        if len(forced_items) < len(_fids) + len(_fns):
+        if len(forced_items) < len(_fids) + len(_fns) and not ignore_missing_items:
             msg = (
                 "Unable to force some of these items with your other conditions"
                 f"Attempted ids {ns.idforce}, names {ns.nameforce}, found {' '.join(map(str, forced_items))}"
             )
+            raise SolveError(msg)
 
         forced_relics = [i for i in forced_items if i.is_relic]
         if len(forced_relics) > 1:
