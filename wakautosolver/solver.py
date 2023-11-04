@@ -59,7 +59,6 @@ class SolveError(Exception):
 
 def solve(
     ns: argparse.Namespace | v1Config,
-    dry_run: bool = False,
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
@@ -451,7 +450,7 @@ def solve(
         CANIDATES = {k: v[: ns.hard_cap_depth] for k, v in CANIDATES.items()}
         canidate_weapons = canidate_weapons[: ns.hard_cap_depth]
 
-    if dry_run:
+    if ns.dry_run:
         ret: list[EquipableItem] = []
         ret.extend(filter(None, itertools.chain.from_iterable(canidate_re_pairs)))
         for k, v in CANIDATES.items():
@@ -503,6 +502,13 @@ def solve(
             "NECK",
             "ACCESSORY",
         ]
+
+        # This is a slot we allow building without, sets without will be worse ofc...
+        if "ACCESSORY" not in CANIDATES:
+            try:
+                REM_SLOTS.remove("ACCESSORY")
+            except ValueError:
+                pass
 
         for slot, count in forced_slots.items():
             for _ in range(count):
@@ -665,16 +671,8 @@ def entrypoint(output: SupportsWrite[str]) -> None:
 
     items.sort(key=lambda i: (not i.is_relic, not i.is_epic, i.item_slot, i.name))
     if ns.dry_run:
-        relics = [i for i in items if i.is_relic]
-        if relics:
-            write("Relics", "---", *relics, sep="\n")
-
-        epics = [i for i in items if i.is_epic]
-        if relics:
-            write("Epics", "---", *epics, sep="\n")
-
-        for group, it in itertools.groupby((i for i in items if not (i.is_epic or i.is_relic)), lambda i: i.item_slot):
-            write(group.title(), "---", *it, sep="\n")
+        write("Item pool:")
+        write(*items, sep="\n")
     else:
         write(f"Best set under constraints has effective mastery {score}:")
         write(*items, sep="\n")
