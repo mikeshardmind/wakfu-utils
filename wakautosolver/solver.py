@@ -17,12 +17,12 @@ import itertools
 import logging
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
-from functools import lru_cache
-from operator import attrgetter, itemgetter
+from functools import lru_cache, reduce
+from operator import add, attrgetter, itemgetter
 from typing import Final, Protocol, TypeVar
 
 from .object_parsing import EquipableItem, _locale
-from .restructured_types import Stats, generate_filter
+from .restructured_types import Stats, generate_filter, v1Config
 from .unobs import get_unobtainable_ids
 from .utils import only_once
 
@@ -32,6 +32,7 @@ log = logging.getLogger("solver")
 
 
 T_contra = TypeVar("T_contra", contravariant=True)
+
 
 class SupportsWrite(Protocol[T_contra]):
     def write(self, s: T_contra, /) -> object:
@@ -57,12 +58,10 @@ class SolveError(Exception):
 
 
 def solve(
-    ns: argparse.Namespace,
+    ns: argparse.Namespace | v1Config,
     dry_run: bool = False,
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
-
-    dry_run = ns.dry_run if ns else dry_run
 
     _locale.set(ns.locale)
 
@@ -72,22 +71,8 @@ def solve(
 
     ALL_OBJS = EquipableItem.from_bz2_bundled()
 
-    # Stat minimums
-    # 7ish
-    CRIT = -10
-
     LV_TOLERANCE = 30
-    BASE_CRIT_CHANCE = 3 + 20
-    BASE_CRIT_MASTERY = 26 * 4
-    BASE_RELEV_MASTERY = 40 * 8 + 5 * 6 + 40
-    HIGH_BOUND = 185
-    LOW_BOUND = HIGH_BOUND - LV_TOLERANCE
-    LIGHT_WEAPON_EXPERT = True
-    SKIP_SHIELDS = True
-    UNRAVELING = False
     ITEM_SEARCH_DEPTH = 1  # this increases time significantly to increase, increase with care.
-    WEILD_TYPE_TWO_HANDED = False
-    SKIP_TWO_HANDED = not WEILD_TYPE_TWO_HANDED
 
     AP = ns.ap
     MP = ns.mp
@@ -104,8 +89,6 @@ def solve(
     BASE_RELEV_MASTERY = ns.bmast
     SKIP_TWO_HANDED = ns.skiptwo_hand
 
-    # TODO: ELEMENTAL_CONCENTRATION = False
-
     if WEILD_TYPE_TWO_HANDED:
         AP -= 2
         MP += 2
@@ -114,7 +97,7 @@ def solve(
     def sort_key(item: EquipableItem | None) -> float:
         if not item:
             return 0
-        
+
         score = item._elemental_mastery
         if ns.melee:
             score += item._melee_mastery
@@ -493,7 +476,7 @@ def solve(
     # everything below this line is performance sensitive, and runtime is based on how much the above
     # managed to reduce the permuations of possible gear.
 
-    base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit) if ns else Stats()
+    base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit) if isinstance(ns, argparse.Namespace) else Stats()
 
     for relic, epic in canidate_re_pairs:
         if relic and epic:
@@ -577,19 +560,15 @@ def solve(
                 if r1._item_id == r2._item_id:
                     continue
 
-            if sum(i._ap for i in (relic, epic, *items) if i) < AP:
-                continue
-            if sum(i._mp for i in (relic, epic, *items) if i) < MP:
-                continue
-            if sum(i._wp for i in (relic, epic, *items) if i) < WP:
-                continue
-            if sum(i._range for i in (relic, epic, *items) if i) < RA:
+            statline: Stats = reduce(add, (i.as_stats for i in (relic, epic, *items) if i))
+            if statline.ap < AP or statline.mp < MP or statline.wp < WP or statline.ra < RA:
                 continue
 
-            crit_chance = sum(i._critical_hit for i in (relic, epic, *items) if i) + BASE_CRIT_CHANCE
-            crit_mastery = sum(i._critical_mastery for i in (relic, epic, *items) if i) + BASE_CRIT_MASTERY
+            crit_chance = statline.crit + BASE_CRIT_CHANCE
+            crit_mastery = statline.crit_mastery + BASE_CRIT_MASTERY
 
-            if crit_chance < CRIT:
+            # GLOBAL GAME CONDITION
+            if crit_chance < -10:
                 continue
 
             crit_chance = min(crit_chance, 100)
@@ -631,7 +610,6 @@ def solve(
 
 
 def entrypoint(output: SupportsWrite[str]) -> None:
-
     def write(*args: object, sep: str = " ", end: str = "\n") -> None:
         output.write(f"{sep.join(map(str, args))}{end}")
 
@@ -666,7 +644,7 @@ def entrypoint(output: SupportsWrite[str]) -> None:
     parser.add_argument("--hard-cap-depth", dest="hard_cap_depth", type=int, default=100)
     parser.add_argument("--count-negative-zerk", dest="negzerk", type=str, choices=("full", "half", "none"), default="half")
     parser.add_argument("--count-negative-rear", dest="negrear", type=str, choices=("full", "half", "none"), default="none")
-    parser.add_argument("--forbid-rarity", dest="forbid_rarity", type=int, choices=list(range(1,8)), action="store", nargs="+")
+    parser.add_argument("--forbid-rarity", dest="forbid_rarity", type=int, choices=list(range(1, 8)), action="store", nargs="+")
     two_h = parser.add_mutually_exclusive_group()
     two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)

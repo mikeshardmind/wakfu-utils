@@ -24,7 +24,6 @@ T = TypeVar("T")
 
 
 class Peekable(Generic[T]):
-
     def __init__(self, iterable: Iterable[T]):
         self._it = iter(iterable)
         self._cache: deque[T] = deque()

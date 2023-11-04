@@ -7,44 +7,13 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Literal
 
-from .entrypoint import solve as _esolve
-from .restructured_types import Priority, SetMinimums, SolveConfig, StatPriority, Stats
+from .restructured_types import v1Config as Config
+from .solver import SolveError
+from .solver import solve as _esolve
 
 ### Exists for wakforge
-
-
-@dataclass(frozen=True, kw_only=True)
-class Config:
-    lv: int
-    ap: int = 5
-    mp: int = 2
-    wp: int = 0
-    ra: int = 0
-    num_mastery: int = 3
-    dist: bool = False
-    melee: bool = False
-    zerk: bool = False
-    rear: bool = False
-    heal: bool = False
-    unraveling: bool = False
-    skipshields: bool = True
-    lwx: bool = False
-    bcrit: int = 0
-    bmast: int = 0
-    bcmast: int = 0
-    forbid: list[str] = field(default_factory=list)
-    idforbid: list[int] = field(default_factory=list)
-    idforce: list[int] = field(default_factory=list)
-    twoh: bool = False
-    skiptwo_hand: bool = False
-    locale: Literal["en"] = "en"
-    dry_run: bool = False
-    hard_cap_depth: int = 100
-    negzerk: Literal["full", "half", "none"] = "half"
-    negrear: Literal["full", "half", "none"] = "none"
 
 
 ClassNames = Literal[
@@ -78,53 +47,15 @@ LWX3 = 28909
 
 
 def solve(config: Config, no_sys_exit: bool = True, no_print_log: bool = True) -> Result:
-    ...  # TODO, wrap new entrypoint for old behavior
+    try:
+        result = _esolve(config)
+    except SolveError:
+        return (None, "No possible solution found")
 
-    base_stats = Stats(crit=config.bcrit, elemental_mastery=config.bcmast, crit_mastery=config.bcmast)
-
-    smins = SetMinimums(ap=config.ap, mp=config.mp, wp=config.wp, ra=config.ra)
-
-    LOOKUP = {
-        True: Priority.prioritized,
-        "full": Priority.full_negative_only,
-        "half": Priority.half_negative_only,
-    }
-
-    stat_priority = StatPriority(
-        number_of_elements=config.num_mastery,
-        distance_mastery=LOOKUP.get(config.dist, Priority.unvalued),
-        heal_mastery=LOOKUP.get(config.heal, Priority.unvalued),
-        melee_mastery=LOOKUP.get(config.melee, Priority.unvalued),
-        berserk_mastery=Priority.prioritized if config.zerk else LOOKUP.get(config.negzerk, Priority.unvalued),
-        rear_mastery=Priority.prioritized if config.rear else LOOKUP.get(config.negrear, Priority.unvalued),
-    )
-
-    sublimations: list[int] = []
-    if config.lwx:
-        sublimations.extend((LWX3, LWX3))
-    if config.unraveling:
-        sublimations.append(UNRAVELING)
-    if config.twoh:
-        sublimations.append(WT_TWOH)
-
-    solve_cfg = SolveConfig(
-        lv=config.lv,
-        base_stats=base_stats,
-        set_minimums=smins,
-        stat_priorities=stat_priority,
-        assume_double_damage_only_shards_are_damage=False,
-        skip_shields=config.skipshields,
-        forced_item_ids=[int(i) for i in config.idforce],
-        forbidden_item_ids=[int(i) for i in config.idforbid],
-        equipped_sublimation_ids=sublimations,
-        dry_run=config.dry_run,
-    )
-
-    result = _esolve(solve_cfg)
-
-    if result.items:
-        return (result.items, None)
-    return (None, "No possible solution found")
+    best = result[0]
+    _score, items = best
+    item_ids = [i._item_id for i in items]
+    return (item_ids, None)
 
 
 def solve_config(config: Config) -> Result:

@@ -39,15 +39,16 @@ extend-ignore = [
 [tool.ruff.extend-per-file-ignores]
 "wakautosolver/b2048/enc_table.py" = ["RUF001"]
 "wakautosolver/b2048/dec_table.py" = ["RUF001"]
+"wakautosolver/__init__.py" = ["F401"]  # unused import in __init__
 
 [project]
 name="wakautosolver"
 license = "MPL-2.0"
 requires-python = ">=3.11"
 authors = [{ name = "Michael Hall", email = "michael@michaelhall.tech" }]
+readme = "README.md"
 dynamic = ["version"]
 dependencies = [
-    "numpy>=1.25,<1.30",
     "msgspec>=0.18.4",
 ]
 

@@ -15,6 +15,7 @@ import operator
 from collections.abc import Callable
 from functools import reduce
 from itertools import chain
+from typing import Literal
 
 from msgspec import Struct, field
 from msgspec.structs import astuple, replace
@@ -236,3 +237,35 @@ class DryRunResult(Struct):
     errors: list[str] | None = None
     user_errors: list[str] | None = None
     user_warnings: list[str] | None = None
+
+
+class v1Config(Struct, frozen=True, kw_only=True):
+    lv: int
+    ap: int = 5
+    mp: int = 2
+    wp: int = 0
+    ra: int = 0
+    num_mastery: int = 3
+    dist: bool = False
+    melee: bool = False
+    zerk: bool = False
+    rear: bool = False
+    heal: bool = False
+    unraveling: bool = False
+    skipshields: bool = True
+    lwx: bool = False
+    bcrit: int = 0
+    bmast: int = 0
+    bcmast: int = 0
+    forbid: list[str] = field(default_factory=list)
+    idforbid: list[int] = field(default_factory=list)
+    idforce: list[int] = field(default_factory=list)
+    twoh: bool = False
+    skiptwo_hand: bool = False
+    locale: Literal["en"] = "en"
+    dry_run: bool = False
+    hard_cap_depth: int = 100
+    negzerk: Literal["full", "half", "none"] = "half"
+    negrear: Literal["full", "half", "none"] = "none"
+    forbid_rarity: list[int] = field(default_factory=list)
+    nameforce: list[str] = field(default_factory=list)
