@@ -19,7 +19,7 @@ import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache
 from operator import attrgetter, itemgetter
-from typing import Final, NoReturn, Protocol, TypeVar, assert_never
+from typing import Final, Protocol, TypeVar
 
 from .object_parsing import EquipableItem, _locale
 from .restructured_types import Stats, generate_filter
@@ -52,39 +52,28 @@ def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list
     return [i for i in it if not ((k := key(i)) in seen_set or seen_set.add(k))]
 
 
+class SolveError(Exception):
+    pass
+
+
 def solve(
-    ns: argparse.Namespace | None = None,
-    no_sys_exit: bool = False,
+    ns: argparse.Namespace,
     dry_run: bool = False,
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
     dry_run = ns.dry_run if ns else dry_run
 
-    if no_sys_exit:
-
-        def sys_exit(code: int) -> NoReturn:
-            raise RuntimeError
-    else:
-        sys_exit = sys.exit
-
-    if ns:
-        _locale.set(ns.locale)
+    _locale.set(ns.locale)
 
     # ## Everything in this needs abstracting into something
     # that can handle user input and be more dynamic.
     # ## Could benefit from some optimizations here and there.
 
-    UNOBTAINABLE = [15296]
-
-    ALL_OBJS = [i for i in EquipableItem.from_bz2_bundled() if i._item_id not in UNOBTAINABLE]
+    ALL_OBJS = EquipableItem.from_bz2_bundled()
 
     # Stat minimums
     # 7ish
-    AP = 5
-    MP = 1
-    RA = 2
-    WP = 0
     CRIT = -10
 
     LV_TOLERANCE = 30
@@ -100,87 +89,74 @@ def solve(
     WEILD_TYPE_TWO_HANDED = False
     SKIP_TWO_HANDED = not WEILD_TYPE_TWO_HANDED
 
-    if ns is not None:
-        AP = ns.ap
-        MP = ns.mp
-        RA = ns.ra
-        WP = ns.wp
-        HIGH_BOUND = ns.lv
-        LOW_BOUND = HIGH_BOUND - LV_TOLERANCE
-        UNRAVELING = ns.unraveling
-        SKIP_SHIELDS = ns.skipshields
-        LIGHT_WEAPON_EXPERT = ns.lwx
-        WEILD_TYPE_TWO_HANDED = ns.twoh
-        BASE_CRIT_CHANCE = 3 + ns.bcrit
-        BASE_CRIT_MASTERY = ns.bcmast
-        BASE_RELEV_MASTERY = ns.bmast
-        SKIP_TWO_HANDED = ns.skiptwo_hand
+    AP = ns.ap
+    MP = ns.mp
+    RA = ns.ra
+    WP = ns.wp
+    HIGH_BOUND = ns.lv
+    LOW_BOUND = HIGH_BOUND - LV_TOLERANCE
+    UNRAVELING = ns.unraveling
+    SKIP_SHIELDS = ns.skipshields
+    LIGHT_WEAPON_EXPERT = ns.lwx
+    WEILD_TYPE_TWO_HANDED = ns.twoh
+    BASE_CRIT_CHANCE = 3 + ns.bcrit
+    BASE_CRIT_MASTERY = ns.bcmast
+    BASE_RELEV_MASTERY = ns.bmast
+    SKIP_TWO_HANDED = ns.skiptwo_hand
 
     # TODO: ELEMENTAL_CONCENTRATION = False
-
-    if UNRAVELING:
-        CRIT = min(CRIT, 40)
 
     if WEILD_TYPE_TWO_HANDED:
         AP -= 2
         MP += 2
 
     @lru_cache
-    def sort_key(item: EquipableItem) -> float:
-        if ns is not None:
-            score = item._elemental_mastery
-            if ns.melee:
-                score += item._melee_mastery
-            if ns.dist:
-                score += item._distance_mastery
-            if ns.zerk:
-                score += item._berserk_mastery
-            else:
-                if item._berserk_mastery < 0:
-                    if ns.negzerk == "full":
-                        mul = 1
-                    elif ns.negzerk == "half":
-                        mul = 0.5
-                    else:
-                        mul = 0
+    def sort_key(item: EquipableItem | None) -> float:
+        if not item:
+            return 0
+        
+        score = item._elemental_mastery
+        if ns.melee:
+            score += item._melee_mastery
+        if ns.dist:
+            score += item._distance_mastery
+        if ns.zerk:
+            score += item._berserk_mastery
+        else:
+            if item._berserk_mastery < 0:
+                if ns.negzerk == "full":
+                    mul = 1
+                elif ns.negzerk == "half":
+                    mul = 0.5
+                else:
+                    mul = 0
 
-                    score += item._berserk_mastery * mul
+                score += item._berserk_mastery * mul
 
-            if ns.rear:
-                score += item._rear_mastery
-            else:
-                if item._rear_mastery < 0:
-                    if ns.negrear == "full":
-                        mul = 1
-                    elif ns.negrear == "half":
-                        mul = 0.5
-                    else:
-                        mul = 0
+        if ns.rear:
+            score += item._rear_mastery
+        else:
+            if item._rear_mastery < 0:
+                if ns.negrear == "full":
+                    mul = 1
+                elif ns.negrear == "half":
+                    mul = 0.5
+                else:
+                    mul = 0
 
-                    score += item._rear_mastery * mul
+                score += item._rear_mastery * mul
 
-            if ns.heal:
-                score += item._healing_mastery
+        if ns.heal:
+            score += item._healing_mastery
 
-            if ns.num_mastery == 1:
-                score += item._mastery_1_element
-            if ns.num_mastery <= 2:
-                score += item._mastery_2_elements
-            if ns.num_mastery <= 3:
-                score += item._mastery_3_elements
+        if ns.num_mastery == 1:
+            score += item._mastery_1_element
+        if ns.num_mastery <= 2:
+            score += item._mastery_2_elements
+        if ns.num_mastery <= 3:
+            score += item._mastery_3_elements
 
-            return score
-
-        return (
-            item._elemental_mastery
-            # + item._mastery_1_element
-            # + item._mastery_2_elements
-            + item._mastery_3_elements
-            + item._distance_mastery
-            # + item._healing_mastery
-            # + item._melee_mastery
-            # + item._rear_mastery
-        )
+        return score
 
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
         mins, maxs = item.conditions
@@ -220,6 +196,7 @@ def solve(
             (item._item_id not in FORBIDDEN)
             and (item.name not in FORBIDDEN_NAMES)
             and (not has_currently_unhandled_item_condition(item))
+            and (item._item_rarity not in (ns.forbid_rarity or []))
         )
 
     def level_filter(item: EquipableItem) -> bool:
@@ -246,15 +223,15 @@ def solve(
 
         forced_items = [i for i in OBJS if i._item_id in _fids or i.name in _fns]
         if len(forced_items) < len(_fids) + len(_fns):
-            log.info("Unable to force some of these items with your other conditions")
-            msg = f"Attempted ids {ns.idforce}, names {ns.nameforce}, found {' '.join(map(str, forced_items))}"
-            log.info(msg)
-            sys_exit(1)
+            msg = (
+                "Unable to force some of these items with your other conditions"
+                f"Attempted ids {ns.idforce}, names {ns.nameforce}, found {' '.join(map(str, forced_items))}"
+            )
 
         forced_relics = [i for i in forced_items if i.is_relic]
         if len(forced_relics) > 1:
-            log.info("Unable to force multiple relics into one set")
-            sys_exit(1)
+            msg = "Unable to force multiple relics into one set"
+            raise SolveError(msg)
 
         forced_ring: Iterable[EquipableItem] = ()
         if forced_relics:
@@ -269,14 +246,12 @@ def solve(
                 fr = next((i for i in OBJS if i._item_id == ring_idx), None)
                 if fr is None:
                     msg = "Couldn't force corresponding nation ring?"
-                    log.info(msg)
-                    assert_never(sys_exit(1))
+                    raise SolveError(msg)
                 forced_ring = (fr,)
 
         forced_epics = [*(i for i in forced_items if i.is_epic), *forced_ring]
         if len(forced_epics) > 1:
-            log.info("Unable to force multiple epics into one set")
-            sys_exit(1)
+            msg = "Unable to force multiple epics into one set"
         if forced_epics:
             epic = forced_epics[0]
             forced_slots[epic.item_slot] += 1
@@ -288,16 +263,16 @@ def solve(
             else:
                 sword_idx = NATION_RELIC_EPIC_IDS[ring_idx - 4]
                 forced_sword = next((i for i in OBJS if i._item_id == sword_idx), None)
+
                 if forced_sword is None:
                     msg = "Couldn't force corresponding nation sword?"
-                    log.info(msg)
-                    sys_exit(1)
-                elif forced_sword in forced_relics:
+                    raise SolveError(msg)
+
+                if forced_sword in forced_relics:
                     pass
                 elif forced_relics:
                     msg = "Can't force a nation ring with a non-nation sowrd relic"
-                    log.info(msg)
-                    sys_exit(1)
+                    raise SolveError(msg)
                 else:
                     forced_relics.append(forced_sword)
                     forced_slots[forced_sword.item_slot] += 1
@@ -312,8 +287,7 @@ def solve(
             mx = 2 if slot == "LEFT_HAND" else 1
             if slot_count > mx:
                 msg = f"Too many forced items in position: {slot}"
-                log.info(msg)
-                sys_exit(1)
+                raise SolveError(msg)
 
         for item in (*forced_relics, *forced_epics):
             forced_slots[item.item_slot] -= 1
@@ -588,7 +562,13 @@ def solve(
 
         RING_CHECK_NEEDED = REM_SLOTS.count("LEFT_HAND") > 1
 
-        for raw_items in itertools.product(*[CANIDATES[k] for k in REM_SLOTS]):
+        try:
+            cans = [CANIDATES[k] for k in REM_SLOTS]
+        except KeyError as exc:
+            log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
+            continue
+
+        for raw_items in itertools.product(*cans):
             items = [*tuple_expander(raw_items), *forced_items]
 
             if RING_CHECK_NEEDED:
@@ -686,12 +666,19 @@ def entrypoint(output: SupportsWrite[str]) -> None:
     parser.add_argument("--hard-cap-depth", dest="hard_cap_depth", type=int, default=100)
     parser.add_argument("--count-negative-zerk", dest="negzerk", type=str, choices=("full", "half", "none"), default="half")
     parser.add_argument("--count-negative-rear", dest="negrear", type=str, choices=("full", "half", "none"), default="none")
+    parser.add_argument("--forbid-rarity", dest="forbid_rarity", type=int, choices=list(range(1,8)), action="store", nargs="+")
     two_h = parser.add_mutually_exclusive_group()
     two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
 
     ns = parser.parse_args()
-    result = solve(ns)
+    try:
+        result = solve(ns)
+    except SolveError as exc:
+        msg = exc.args[0]
+        write(msg)
+        sys.exit(1)
+
     try:
         score, items = result[0]
     except IndexError:
