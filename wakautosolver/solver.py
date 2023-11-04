@@ -18,11 +18,11 @@ import logging
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache, reduce
-from operator import add, attrgetter, itemgetter
+from operator import add, and_, attrgetter, itemgetter
 from typing import Final, Protocol, TypeVar
 
 from .object_parsing import EquipableItem, _locale
-from .restructured_types import Stats, generate_filter, v1Config
+from .restructured_types import SetMaximums, SetMinimums, Stats, generate_filter, v1Config
 from .unobs import get_unobtainable_ids
 from .utils import only_once
 
@@ -141,8 +141,7 @@ def solve(
         return score
 
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
-        mins, maxs = item.conditions
-        return any(condition.unhandled() for condition in filter(None, (*mins, *maxs)))
+        return any(condition.unhandled() for condition in item.conditions)
 
     def sort_key_initial(item: EquipableItem) -> float:
         return (
@@ -579,17 +578,10 @@ def solve(
 
             crit_chance = min(crit_chance, 100)
 
-            generated_conditions = [
-                (
-                    *item.conditions,
-                    item.as_stats,
-                )
-                for item in (*items, relic, epic)
-                if item
-            ]
+            generated_conditions = [(*item.conditions, item.as_stats) for item in (*items, relic, epic) if item]
             mns, mxs, stats = zip(*generated_conditions)
-            mns = list(filter(None, mns))
-            mxs = list(filter(None, mxs))
+            mns = reduce(and_, mns, SetMinimums())
+            mxs = reduce(and_, mxs, SetMaximums())
 
             if (mns or mxs) and not generate_filter(base_stats, mns, mxs)(stats):
                 continue

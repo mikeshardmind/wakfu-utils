@@ -15,7 +15,8 @@ import contextvars
 import logging
 import pathlib
 from collections.abc import Callable
-from functools import cached_property
+from functools import cached_property, reduce
+from operator import and_
 from typing import Any, Literal, Self, TypedDict, TypeVar
 
 import msgspec
@@ -698,16 +699,10 @@ class EquipableItem:
         )
 
     @cached_property
-    def conditions(self) -> tuple[tuple[SetMinimums, ...], tuple[SetMaximums, ...]]:
+    def conditions(self) -> tuple[SetMinimums, SetMaximums]:
         item_conds = conditions.get(self._item_id, [])
         set_mins: list[SetMinimums] = []
         set_maxs: list[SetMaximums] = []
-
-        # We'll revisit this if needed, but I think a global min of
-        # -10 works since the only way to get negative crit
-        # precombat should be items which have this condition
-        # if self._critical_hit < 0:
-        #    set_mins.append(NEGCRIT)
 
         for item in item_conds:
             if isinstance(item, SetMinimums):
@@ -715,4 +710,6 @@ class EquipableItem:
             elif isinstance(item, SetMaximums):
                 set_maxs.append(item)
 
-        return tuple(set_mins), tuple(set_maxs)
+        mins = reduce(and_, set_mins, SetMinimums())
+        maxs = reduce(and_, set_maxs, SetMaximums())
+        return mins, maxs

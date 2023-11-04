@@ -106,6 +106,12 @@ class SetMinimums(Stats, frozen=True, gc=False):
         _ap, _mp, wp, _ra, _crit, *rest = astuple(self)
         return any(stat != DUMMY_MIN for stat in (wp, *rest))
 
+    def __and__(self, other: object) -> SetMinimums:
+        if not isinstance(other, SetMinimums):
+            return NotImplemented
+
+        return SetMinimums(*element_wise_apply(max, map(astuple, (self, other))))
+
 
 class SetMaximums(Stats, frozen=True, gc=False):
     ap: int = DUMMY_MAX
@@ -133,6 +139,12 @@ class SetMaximums(Stats, frozen=True, gc=False):
     def unhandled(self) -> bool:
         _ap, _mp, wp, _ra, _crit, *rest = astuple(self)
         return any(stat != DUMMY_MAX for stat in (wp, *rest))
+
+    def __and__(self, other: object) -> SetMaximums:
+        if not isinstance(other, SetMaximums):
+            return NotImplemented
+
+        return SetMaximums(*element_wise_apply(min, map(astuple, (self, other))))
 
 
 def effective_mastery(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> float:
@@ -174,23 +186,13 @@ def apply_elementalism(stats: Stats) -> Stats:
     return stats
 
 
-_DEFAULT_MIN_TUP: tuple[int, ...] = astuple(SetMinimums())
-_DEFAULT_MAX_TUP: tuple[int, ...] = astuple(SetMaximums())
-
-
 def generate_filter(
     base_stats: Stats,
-    minimums: list[tuple[SetMinimums, ...]],
-    maximums: list[tuple[SetMaximums, ...]],
+    minimums: SetMinimums,
+    maximums: SetMaximums,
 ) -> Callable[[list[Stats]], bool]:
-    mins = [astuple(i) for i in filter(None, chain.from_iterable(minimums))]
-    maxs = [astuple(i) for i in filter(None, chain.from_iterable(maximums))]
-
-    if not (mins or maxs):
-        return lambda _: True
-
-    min_tup = element_wise_apply(max, mins) if mins else _DEFAULT_MIN_TUP
-    max_tup = element_wise_apply(min, maxs) if maxs else _DEFAULT_MAX_TUP
+    min_tup = astuple(minimums)
+    max_tup = astuple(maximums)
 
     def f(item_set: list[Stats]) -> bool:
         stat_tup = astuple(reduce(operator.add, (base_stats, *item_set)))
