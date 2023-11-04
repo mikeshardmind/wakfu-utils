@@ -543,14 +543,17 @@ class EquipableItem:
 
     def __repr__(self) -> str:
         rarities = {
-            3: "(Mythic)",
-            4: "(Legendary)",
-            5: "(Relic)",
-            6: "(Souvenir)",
-            7: "(Epic)",
+            1: "Common",
+            2: "Uncommon",
+            3: "Mythic",
+            4: "Legendary",
+            5: "Relic",
+            6: "Souvenir",
+            7: "Epic",
         }
-        rarity = rarities.get(self._item_rarity, "(Weaksauce)")
-        return f"Item id: {self._item_id} Rarity: {rarity} Name: {self.name} Lv: {self._item_lv}"
+        rarity = rarities.get(self._item_rarity, "???")
+        typ = ITEM_TYPE_MAP[self._item_type]["title"][_locale.get()]
+        return f"Item id: {self._item_id:>5} [{rarity:>10}] {typ:>20} Lv: {self._item_lv:>3} {self.name}"
 
     def update(self, prop_name: str, modifier: int) -> None:
         v: int = getattr(self, prop_name, 0)
