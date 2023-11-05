@@ -156,7 +156,7 @@ QUERY = "INSERT INTO ITEMS({}) VALUES({})".format(
 
 
 if __name__ == "__main__":
-    items = object_parsing.EquipableItem.from_bundled()
+    items = object_parsing.EquipableItem.from_bz2_bundled()
     all_item_ids = {i._item_id for i in items}  # pyright: ignore[reportPrivateUsage]
 
     conn = apsw.Connection("items.db")
