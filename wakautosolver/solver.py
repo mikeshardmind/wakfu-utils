@@ -68,7 +68,9 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
 
     ALL_OBJS = EquipableItem.from_bz2_bundled()
 
-    allowed_rarities = [i for i in ns.allowed_rarities if i not in ns.forbid_rarity]
+    allowed_rarities = ns.allowed_rarities or list(range(1,8))
+    if ns.forbid_rarity:
+        allowed_rarities = [i for i in ns.allowed_rarities if i not in ns.forbid_rarity]
 
     LV_TOLERANCE = 30
     ITEM_SEARCH_DEPTH = 1  # this increases time significantly to increase, increase with care.
