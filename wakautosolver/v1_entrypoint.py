@@ -49,10 +49,10 @@ LWX3 = 28909
 def solve(config: Config, no_sys_exit: bool = True, no_print_log: bool = True) -> Result:
     try:
         result = _esolve(config)
-    except SolveError:
+        best = result[0]
+    except (SolveError, IndexError):
         return (None, "No possible solution found")
 
-    best = result[0]
     _score, items = best
     item_ids = [i._item_id for i in items]
     return (item_ids, None)

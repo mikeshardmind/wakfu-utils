@@ -1,0 +1,44 @@
+
+lv = 170
+
+# number of each of these from gear.
+ap = 5
+mp = 1
+wp = 2
+ra = 2
+
+# Set these if you've statted them
+baseap = 7
+basemp = 3
+bawewp = 6
+basera = 0
+
+bcrit = 20  # base crit
+
+num_mastery = 2
+
+# change any/all of these to true if you want them
+dist = true
+melee = false
+zerk = false
+rear = false
+heal = false
+
+# remove any of these if you don't want them
+allowed_rarities = [
+    4,  # yellow
+    5,  # relic
+    6,  # souvenir
+    7,  # epic
+]
+
+# You can force specific items on here, this is case sensitive
+nameforce = [
+    # "Bagus Shushu",  # This line is commented
+    # "Polar Amulet",  # so is this, just here as examples put your own below if you want.
+]
+
+idforbid = [19410, 19430]
+
+hard_cap_depth = 100
+tolerance = 30

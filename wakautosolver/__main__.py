@@ -7,8 +7,19 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 import sys
+import pathlib
 
-from .solver import entrypoint
+import msgspec
+
+from .solver import entrypoint, v1Config
 
 if __name__ == "__main__":
-    entrypoint(sys.stdout)
+
+    ns = None
+    if n := sys.argv[1]:
+        path = pathlib.Path(n).resolve()
+        if path.exists():
+            with path.open(mode="rb") as fp:
+                ns = msgspec.toml.decode(fp.read(), type=v1Config)
+
+    entrypoint(sys.stdout, ns)

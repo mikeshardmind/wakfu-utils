@@ -18,7 +18,7 @@ import logging
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache, reduce
-from operator import add, and_, attrgetter, itemgetter
+from operator import add, and_, attrgetter, itemgetter, mul
 from typing import Final, Protocol, TypeVar
 
 import tqdm
@@ -497,7 +497,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
 
     base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit) if isinstance(ns, argparse.Namespace) else Stats()
 
-    progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pairs")
+    progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pair")
 
     for relic, epic in progress_bar:
         if relic and epic:
@@ -580,11 +580,19 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
 
         try:
             cans = [CANIDATES[k] for k in REM_SLOTS]
+            cn_c = reduce(mul, map(len, cans), 1) /8
+            if RING_CHECK_NEEDED:
+                cn_c *= len(CANIDATES["LEFT_HAND"])
         except KeyError as exc:
             log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
             continue
 
-        for raw_items in itertools.product(*cans):
+        if cn_c > 5000:
+            inner = tqdm.tqdm(itertools.product(*cans), desc="Trying items with that pair", total=cn_c, leave=True)
+        else:
+            inner = itertools.product(*cans)
+
+        for raw_items in inner:
             items = [*tuple_expander(raw_items), *forced_items]
 
             if RING_CHECK_NEEDED:
@@ -635,12 +643,11 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
     return BEST_LIST
 
 
-def entrypoint(output: SupportsWrite[str]) -> None:
+def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
     def write(*args: object, sep: str = " ", end: str = "\n") -> None:
         output.write(f"{sep.join(map(str, args))}{end}")
 
     parser = argparse.ArgumentParser()
-
     parser.add_argument("--lv", dest="lv", type=int, choices=list(range(20, 231, 15)), required=True)
     parser.add_argument("--ap", dest="ap", type=int, default=5)
     parser.add_argument("--mp", dest="mp", type=int, default=2)
@@ -681,7 +688,10 @@ def entrypoint(output: SupportsWrite[str]) -> None:
     parser.add_argument("--exhaustive", dest="exhaustive", default=False, action="store_true")
     parser.add_argument("--tolerance", dest="tolerance", type=int, default=30)
 
-    ns = parser.parse_args(namespace=v1Config())
+
+    if ns is None:
+        ns = parser.parse_args(namespace=v1Config())
+
     try:
         result = solve(ns)
     except SolveError as exc:
