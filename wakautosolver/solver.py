@@ -18,8 +18,10 @@ import logging
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache, reduce
-from operator import add, and_, attrgetter, itemgetter
+from operator import add, and_, attrgetter, itemgetter, mul
 from typing import Final, Protocol, TypeVar
+
+import tqdm
 
 from .object_parsing import EquipableItem, _locale
 from .restructured_types import SetMaximums, SetMinimums, Stats, generate_filter, v1Config
@@ -489,7 +491,9 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
 
     base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit) if isinstance(ns, argparse.Namespace) else Stats()
 
-    for relic, epic in canidate_re_pairs:
+    progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pairs")
+
+    for relic, epic in progress_bar:
         if relic and epic:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
                 continue

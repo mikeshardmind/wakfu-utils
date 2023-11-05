@@ -50,6 +50,7 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "msgspec>=0.18.4",
+    "tqdm>=4.66.1",
 ]
 
 [project.urls]
