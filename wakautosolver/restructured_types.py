@@ -239,8 +239,8 @@ class DryRunResult(Struct):
     user_warnings: list[str] | None = None
 
 
-class v1Config(Struct, frozen=True, kw_only=True):
-    lv: int
+class v1Config(Struct, kw_only=True):
+    lv: int = 230
     ap: int = 5
     mp: int = 2
     wp: int = 0
@@ -274,3 +274,8 @@ class v1Config(Struct, frozen=True, kw_only=True):
     # Don't modify the below in wakforge, too slow
     exhaustive: bool = False
     search_depth: int = 1
+    # dont touch these in wakforge either
+    baseap = 0
+    basemp = 0
+    bawewp = 0
+    basera = 0

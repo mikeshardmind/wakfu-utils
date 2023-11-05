@@ -18,7 +18,7 @@ import logging
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache, reduce
-from operator import add, and_, attrgetter, itemgetter, mul
+from operator import add, and_, attrgetter, itemgetter
 from typing import Final, Protocol, TypeVar
 
 import tqdm
@@ -59,7 +59,7 @@ class SolveError(Exception):
     pass
 
 
-def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False) -> list[tuple[float, list[EquipableItem]]]:
+def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
     _locale.set(ns.locale)
@@ -675,7 +675,7 @@ def entrypoint(output: SupportsWrite[str]) -> None:
     parser.add_argument("--exhaustive", dest="exhaustive", default=False, action="store_true")
     parser.add_argument("--tolerance", dest="tolerance", type=int, default=30)
 
-    ns = parser.parse_args()
+    ns = parser.parse_args(namespace=v1Config())
     try:
         result = solve(ns)
     except SolveError as exc:
