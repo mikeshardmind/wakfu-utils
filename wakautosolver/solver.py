@@ -57,10 +57,7 @@ class SolveError(Exception):
     pass
 
 
-def solve(
-    ns: argparse.Namespace | v1Config,
-    ignore_missing_items: bool = False
-) -> list[tuple[float, list[EquipableItem]]]:
+def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
     _locale.set(ns.locale)
@@ -70,6 +67,8 @@ def solve(
     # ## Could benefit from some optimizations here and there.
 
     ALL_OBJS = EquipableItem.from_bz2_bundled()
+
+    allowed_rarities = [i for i in ns.allowed_rarities if i not in ns.forbid_rarity]
 
     LV_TOLERANCE = 30
     ITEM_SEARCH_DEPTH = 1  # this increases time significantly to increase, increase with care.
@@ -178,7 +177,7 @@ def solve(
             (item._item_id not in FORBIDDEN)
             and (item.name not in FORBIDDEN_NAMES)
             and (not has_currently_unhandled_item_condition(item))
-            and (item._item_rarity not in (ns.forbid_rarity or []))
+            and (item._item_rarity in allowed_rarities)
         )
 
     def level_filter(item: EquipableItem) -> bool:
@@ -645,6 +644,9 @@ def entrypoint(output: SupportsWrite[str]) -> None:
     parser.add_argument("--count-negative-zerk", dest="negzerk", type=str, choices=("full", "half", "none"), default="half")
     parser.add_argument("--count-negative-rear", dest="negrear", type=str, choices=("full", "half", "none"), default="none")
     parser.add_argument("--forbid-rarity", dest="forbid_rarity", type=int, choices=list(range(1, 8)), action="store", nargs="+")
+    parser.add_argument(
+        "--allowed-rarity", dest="allowed_rarities", type=int, choices=list(range(1, 8)), action="store", nargs="+"
+    )
     two_h = parser.add_mutually_exclusive_group()
     two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)

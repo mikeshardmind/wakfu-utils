@@ -268,4 +268,5 @@ class v1Config(Struct, frozen=True, kw_only=True):
     negzerk: Literal["full", "half", "none"] = "half"
     negrear: Literal["full", "half", "none"] = "none"
     forbid_rarity: list[int] = field(default_factory=list)
+    allowed_rarities: list[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6, 7])
     nameforce: list[str] = field(default_factory=list)
