@@ -73,7 +73,7 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
         allowed_rarities = [i for i in ns.allowed_rarities if i not in ns.forbid_rarity]
 
     LV_TOLERANCE = 30
-    ITEM_SEARCH_DEPTH = 1  # this increases time significantly to increase, increase with care.
+    ITEM_SEARCH_DEPTH = ns.search_depth
 
     AP = ns.ap
     MP = ns.mp
@@ -340,6 +340,8 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
                 pass
 
         depth = ITEM_SEARCH_DEPTH if _slot != "LEFT_HAND" else ITEM_SEARCH_DEPTH + 3
+        if ns.exhaustive:
+            depth = len(OBJS)
 
         if len(items) > depth:
             to_rem = []
@@ -448,7 +450,7 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
             *extra_pairs,
         )
 
-    if ns:
+    if ns and not ns.exhaustive:
         canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth * 2]
         CANIDATES = {k: v[: ns.hard_cap_depth] for k, v in CANIDATES.items()}
         canidate_weapons = canidate_weapons[: ns.hard_cap_depth]
@@ -649,6 +651,7 @@ def entrypoint(output: SupportsWrite[str]) -> None:
     parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
     parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
     parser.add_argument("--hard-cap-depth", dest="hard_cap_depth", type=int, default=100)
+    parser.add_argument("--search-depth", dest="search_depth", type=int, default=1)
     parser.add_argument("--count-negative-zerk", dest="negzerk", type=str, choices=("full", "half", "none"), default="half")
     parser.add_argument("--count-negative-rear", dest="negrear", type=str, choices=("full", "half", "none"), default="none")
     parser.add_argument("--forbid-rarity", dest="forbid_rarity", type=int, choices=list(range(1, 8)), action="store", nargs="+")
@@ -658,6 +661,7 @@ def entrypoint(output: SupportsWrite[str]) -> None:
     two_h = parser.add_mutually_exclusive_group()
     two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
+    parser.add_argument("--exhaustive", dest="exhaustive", default=False, action="store_true")
 
     ns = parser.parse_args()
     try:
