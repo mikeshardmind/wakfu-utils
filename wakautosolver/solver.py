@@ -315,7 +315,7 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
             item.disables_second_weapon,
         )
 
-    consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon", "_critical_hit", "_critical_mastery")
+    consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon")
     key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
 
     for _slot, items in CANIDATES.items():
