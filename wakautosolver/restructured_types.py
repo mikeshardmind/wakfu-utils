@@ -275,7 +275,7 @@ class v1Config(Struct, kw_only=True):
     exhaustive: bool = False
     search_depth: int = 1
     # dont touch these in wakforge either
-    baseap = 0
-    basemp = 0
-    bawewp = 0
-    basera = 0
+    baseap: int = 0
+    basemp: int = 0
+    bawewp: int = 0
+    basera: int = 0
