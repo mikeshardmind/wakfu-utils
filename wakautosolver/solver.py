@@ -304,6 +304,7 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
 
     CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
+
     def needs_full_sim_key(item: EquipableItem) -> Hashable:
         return (item._ap, item._mp, item._critical_hit, item._critical_mastery, item._wp, item.disables_second_weapon)
 
@@ -518,6 +519,11 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
                     REM_SLOTS.remove(slot)
                 except ValueError:
                     pass
+
+        if relic and relic.item_slot not in REM_SLOTS:
+            continue
+        if epic and epic.item_slot not in REM_SLOTS:
+            continue
 
         main_hand_disabled = False
         off_hand_disabled = False
