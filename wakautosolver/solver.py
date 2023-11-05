@@ -68,11 +68,11 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
 
     ALL_OBJS = EquipableItem.from_bz2_bundled()
 
-    allowed_rarities = ns.allowed_rarities or list(range(1,8))
+    allowed_rarities = ns.allowed_rarities or list(range(1, 8))
     if ns.forbid_rarity:
-        allowed_rarities = [i for i in ns.allowed_rarities if i not in ns.forbid_rarity]
+        allowed_rarities = [i for i in allowed_rarities if i not in ns.forbid_rarity]
 
-    LV_TOLERANCE = 30
+    LV_TOLERANCE = ns.tolerance
     ITEM_SEARCH_DEPTH = ns.search_depth
 
     AP = ns.ap
@@ -304,11 +304,18 @@ def solve(ns: argparse.Namespace | v1Config, ignore_missing_items: bool = False)
 
     CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
-
     def needs_full_sim_key(item: EquipableItem) -> Hashable:
-        return (item._ap, item._mp, item._critical_hit, item._critical_mastery, item._wp, item.disables_second_weapon)
+        return (
+            item._ap,
+            item._range,
+            item._mp,
+            item._critical_hit,
+            item._critical_mastery,
+            item._wp,
+            item.disables_second_weapon,
+        )
 
-    consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon")
+    consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon", "_critical_hit", "_critical_mastery")
     key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
 
     for _slot, items in CANIDATES.items():
@@ -662,6 +669,7 @@ def entrypoint(output: SupportsWrite[str]) -> None:
     two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
     parser.add_argument("--exhaustive", dest="exhaustive", default=False, action="store_true")
+    parser.add_argument("--tolerance", dest="tolerance", type=int, default=30)
 
     ns = parser.parse_args()
     try:

@@ -270,6 +270,7 @@ class v1Config(Struct, frozen=True, kw_only=True):
     forbid_rarity: list[int] = field(default_factory=list)
     allowed_rarities: list[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6, 7])
     nameforce: list[str] = field(default_factory=list)
+    tolerance: int = 30
     # Don't modify the below in wakforge, too slow
     exhaustive: bool = False
     search_depth: int = 1
