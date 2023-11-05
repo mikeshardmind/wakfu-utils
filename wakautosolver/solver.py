@@ -206,7 +206,13 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
         _fids = ns.idforce or ()
         _fns = ns.nameforce or ()
 
-        forced_items = [i for i in OBJS if i._item_id in _fids or i.name in _fns]
+        forced_items = [i for i in OBJS if i._item_id in _fids]
+        # Handle names a little differently to avoid an issue with duplicate names
+        forced_by_name = [i for i in OBJS if i.name in _fns]
+        forced_by_name.sort(key=sort_key_initial, reverse=True)
+        forced_by_name = ordered_unique_by_key(forced_by_name, key=attrgetter("name", "item_slot"))
+        forced_items.extend(forced_by_name)
+
         if len(forced_items) < len(_fids) + len(_fns) and not ignore_missing_items:
             msg = (
                 "Unable to force some of these items with your other conditions"
