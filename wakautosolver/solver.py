@@ -692,7 +692,7 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
     parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
     parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
     parser.add_argument("--hard-cap-depth", dest="hard_cap_depth", type=int, default=100)
-    parser.add_argument("--search-depth", dest="search_depth", type=int, default=1)
+    parser.add_argument("--search-depth", dest="search_depth", type=int, default=2)
     parser.add_argument("--count-negative-zerk", dest="negzerk", type=str, choices=("full", "half", "none"), default="half")
     parser.add_argument("--count-negative-rear", dest="negrear", type=str, choices=("full", "half", "none"), default="none")
     parser.add_argument("--forbid-rarity", dest="forbid_rarity", type=int, choices=list(range(1, 8)), action="store", nargs="+")
