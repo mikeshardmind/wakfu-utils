@@ -332,15 +332,9 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             item._critical_mastery,
         )
 
-    consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon")
-    hard_key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
-
     ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
     TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
     DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]
-
-
-    # for _slot, items in CANIDATES.items():
 
     for items in (ONEH, TWOH, DAGGERS, *CANIDATES.values()):
 

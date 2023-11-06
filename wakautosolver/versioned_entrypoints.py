@@ -82,5 +82,5 @@ def partial_solve_v1(
 
     best = result[0]
     _score, items = best
-    item_ids = [i._item_id for i in items]
+    item_ids = [i._item_id for i in items]  # pyright: ignore
     return (item_ids, None)
