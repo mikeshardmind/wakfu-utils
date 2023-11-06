@@ -262,7 +262,7 @@ class v1Config(Struct, kw_only=True):
     idforce: list[int] = field(default_factory=list)
     twoh: bool = False
     skiptwo_hand: bool = False
-    locale: Literal["en"] = "en"
+    locale: Literal["en", "fr", "pt", "es"] = "en"
     dry_run: bool = False
     hard_cap_depth: int = 100
     negzerk: Literal["full", "half", "none"] = "half"
