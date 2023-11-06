@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+import msgspec
+
 from .restructured_types import v1Config as Config
 from .solver import SolveError
 from .solver import solve as _esolve
@@ -59,6 +61,7 @@ def solve(config: Config, no_sys_exit: bool = True, no_print_log: bool = True) -
 
 
 def solve_config(config: Config) -> Result:
+    config = msgspec.structs.replace(config, hard_cap_depth=100)
     return solve(config, no_sys_exit=True, no_print_log=True)
 
 
@@ -126,7 +129,6 @@ def v1_lv_class_solve(
         num_mastery=num_elements,
         idforce=force_items,
         idforbid=forbid_items,
-        hard_cap_depth=7,
     )
 
     return solve_config(config)
