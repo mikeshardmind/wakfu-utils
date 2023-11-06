@@ -54,6 +54,16 @@ def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list
     seen_set: set[Hashable] = set()
     return [i for i in it if not ((k := key(i)) in seen_set or seen_set.add(k))]
 
+def ordered_keep_by_key(it: Iterable[T], key: Callable[[T], Hashable], count: int) -> list[T]:
+    seen_counts: collections.Counter[Hashable] = collections.Counter()
+    ret: list[T] = []
+    for i in it:
+        k = key(i)
+        seen_counts[k] += 1
+        if seen_counts[k] <= count:
+            ret.append(i)
+    return ret
+
 
 def inplace_ordered_unique_by_key(it: list[T], key: Callable[[T], Hashable]) -> None:
     uniq = ordered_unique_by_key(it, key)
@@ -335,31 +345,38 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             item._critical_mastery,
         )
 
+    ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
+    TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
+    DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]
+    SHIELDS = [] if SKIP_SHIELDS else [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 189][:ITEM_SEARCH_DEPTH]
+
+    del CANIDATES["FIRST_WEAPON"]
+    del CANIDATES["SECOND_WEAPON"]
+
     if original_forced_counts:
         for slot, count in original_forced_counts.items():
             if (slot != "LEFT_HAND" and count == 1) or (slot == "LEFT_HAND" and count == 2):
-                CANIDATES.pop(slot)
+                CANIDATES.pop(slot, None)
             elif slot == "LEFT_HAND" and count == 1:
                 names = {i.name for i in forced_items if i.name}
                 for canidate in CANIDATES[slot][::-1]:
                     if canidate.name in names:
                         CANIDATES[slot].remove(canidate)
-    
-    ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
-    TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
-    DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]
 
     for items in (ONEH, TWOH, DAGGERS, *CANIDATES.values()):
         if not items:
             continue
         items.sort(key=score_key, reverse=True)
         inplace_ordered_unique_by_key(items, attrgetter("name", "is_souvenir"))
-        uniq = ordered_unique_by_key(items, needs_full_sim_key)
-        items.sort(key=sort_key_initial, reverse=True)
-        
+
         real_depth = ITEM_SEARCH_DEPTH
         if items[0].item_slot == "LEFT_HAND":
             real_depth += 2
+            uniq = ordered_keep_by_key(items, needs_full_sim_key, 2)
+        else:
+            uniq = ordered_unique_by_key(items, needs_full_sim_key)
+            items.sort(key=sort_key_initial, reverse=True)
+
         real_depth = max(3, real_depth)
 
         if len(uniq) > real_depth:
@@ -382,11 +399,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     lw._item_type = 112
     if LIGHT_WEAPON_EXPERT:
         DAGGERS.append(lw)
-
-    SHIELDS = [] if SKIP_SHIELDS else [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 189][:ITEM_SEARCH_DEPTH]
-
-    del CANIDATES["FIRST_WEAPON"]
-    del CANIDATES["SECOND_WEAPON"]
 
     # Tt be reused below
 
@@ -534,7 +546,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         main_hand_disabled = False
         off_hand_disabled = False
 
-        for item in (relic, epic):
+        for item in (relic, epic, *forced_items):
             if item is None:
                 continue
             if item.item_slot == "FIRST_WEAPON":
@@ -543,7 +555,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                     off_hand_disabled = True
             elif item.item_slot == "SECOND_WEAPON":
                 off_hand_disabled = True
-            else:
+            elif item.is_epic or item.is_relic:
                 try:
                     REM_SLOTS.remove(item.item_slot)
                 except ValueError:
