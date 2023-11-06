@@ -211,6 +211,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     del ALL_OBJS
 
     forced_slots: collections.Counter[str] = collections.Counter()
+    original_forced_counts: collections.Counter[str] | None = None
     if ns and (ns.idforce or ns.nameforce):
         _fids = ns.idforce or ()
         _fns = ns.nameforce or ()
@@ -290,6 +291,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 msg = f"Too many forced items in position: {slot}"
                 raise SolveError(msg)
 
+        original_forced_counts = forced_slots.copy()
+
         for item in (*forced_relics, *forced_epics):
             forced_slots[item.item_slot] -= 1
 
@@ -332,12 +335,23 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             item._critical_mastery,
         )
 
+    if original_forced_counts:
+        for slot, count in original_forced_counts.items():
+            if count == 1 or (slot == "LEFT_HAND" and count == 2):
+                CANIDATES.pop(slot)
+            elif slot == "LEFT_HAND" and count == 1:
+                names = {i.name for i in forced_items if i.name}
+                for canidate in CANIDATES[slot][::-1]:
+                    if canidate.name in names:
+                        CANIDATES[slot].remove(canidate)
+    
     ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
     TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
     DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]
 
     for items in (ONEH, TWOH, DAGGERS, *CANIDATES.values()):
-
+        if not items:
+            continue
         items.sort(key=score_key, reverse=True)
         inplace_ordered_unique_by_key(items, attrgetter("name", "is_souvenir"))
         uniq = ordered_unique_by_key(items, needs_full_sim_key)
