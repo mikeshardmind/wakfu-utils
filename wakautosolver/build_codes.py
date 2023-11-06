@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import enum
 
-from msgspec import Struct, msgpack
+from msgspec import Struct, field, msgpack
 
 from . import b2048 as base2048
 
@@ -99,10 +99,11 @@ class Item(Struct, frozen=True, array_like=True):
 class Build(Struct, frozen=True, array_like=True):
     classname: ClassName
     level: int
-    stats: Stats
-    relic_sub: int | None
-    epic_sub: int | None
-    items: list[Item]
+    stats: Stats = field(default_factory=Stats)
+    relic_sub: int | None = None
+    epic_sub: int | None = None
+    items: list[Item] = field(default_factory=list)
+    deck: list[int] = field(default_factory=list)
 
 
 def encode_build(build: Build) -> str:
