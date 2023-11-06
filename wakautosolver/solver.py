@@ -337,7 +337,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
     if original_forced_counts:
         for slot, count in original_forced_counts.items():
-            if count == 1 or (slot == "LEFT_HAND" and count == 2):
+            if (slot != "LEFT_HAND" and count == 1) or (slot == "LEFT_HAND" and count == 2):
                 CANIDATES.pop(slot)
             elif slot == "LEFT_HAND" and count == 1:
                 names = {i.name for i in forced_items if i.name}
