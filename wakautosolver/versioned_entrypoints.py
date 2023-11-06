@@ -64,6 +64,13 @@ def partial_solve_v1(
         mp=mp,
         wp=wp,
         ra=ra,
+        baseap=stats.ap,
+        basemp=stats.mp,
+        basera=stats.ra,
+        bawewp=stats.wp,
+        bcrit=stats.crit,
+        bcmast=stats.crit_mastery,
+        bmast=stats.elemental_mastery,
         num_mastery=num_mastery,
         forbid_rarity=forbidden_rarities,
         idforce=equipped,
@@ -74,6 +81,8 @@ def partial_solve_v1(
         rear=rear,
         dry_run=dry_run,
         hard_cap_depth=50,
+        tolerance=15,
+        search_depth=2,
     )
 
     try:

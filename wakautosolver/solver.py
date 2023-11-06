@@ -369,22 +369,32 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         items.sort(key=score_key, reverse=True)
         inplace_ordered_unique_by_key(items, attrgetter("name", "is_souvenir"))
 
-        real_depth = ITEM_SEARCH_DEPTH
         if items[0].item_slot == "LEFT_HAND":
-            real_depth += 2
             uniq = ordered_keep_by_key(items, needs_full_sim_key, 2)
         else:
-            uniq = ordered_unique_by_key(items, needs_full_sim_key)
-            items.sort(key=sort_key_initial, reverse=True)
+            uniq = ordered_keep_by_key(items, needs_full_sim_key, 1)
 
-        real_depth = max(3, real_depth)
+        if not ns.exhaustive:
+            items.sort(key=lambda i: (i in uniq, sort_key_initial(i)), reverse=True)
+            adaptive_depth = ITEM_SEARCH_DEPTH
+            if items[0].item_slot == "LEFT_HAND":
+                adaptive_depth += 1
 
-        if len(uniq) > real_depth:
-            uniq = uniq[:real_depth]
-            for item in items[::-1]:
-                if item not in uniq:
-                    items.remove(item)
-            continue
+            if HIGH_BOUND < 50:  # Needed due to item design and low level -wp items
+                adaptive_depth += 2
+            if HIGH_BOUND >= 185 and items[0].item_slot in ("FIRST_WEAPON", "NECK", "CHEST"):
+                # Helps find better solves at cost, restricted to the slots where it's most needed.
+                # See interesting_queries.sql for an idea of how these slots were picked
+                adaptive_depth += 1
+            if HIGH_BOUND >= 200 and items[0].item_slot in ("LEGS", "ACCESSORY"):
+                adaptive_depth += 1
+
+            del items[adaptive_depth:]
+        else:
+            # simply keep the uniq without trimming then...
+            for i in items[::-1]:
+                if i not in uniq:
+                    items.remove(i)
 
     relics.sort(key=lambda r: (score_key(r), r.item_slot), reverse=True)
     relics = ordered_unique_by_key(relics, needs_full_sim_key)
