@@ -55,11 +55,17 @@ def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list
     return [i for i in it if not ((k := key(i)) in seen_set or seen_set.add(k))]
 
 
+def inplace_ordered_unique_by_key(it: list[T], key: Callable[[T], Hashable]) -> None:
+    uniq = ordered_unique_by_key(it, key)
+    for v in it[::-1]:
+        if v not in uniq:
+            it.remove(v)
+
 class SolveError(Exception):
     pass
 
 
-def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float, list[EquipableItem]]]:
+def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = False) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
     _locale.set(ns.locale)
@@ -97,7 +103,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
         MP += 2
 
     @lru_cache
-    def sort_key(item: EquipableItem | None) -> float:
+    def score_key(item: EquipableItem | None) -> float:
+        
         if not item:
             return 0
 
@@ -149,9 +156,11 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
 
     def sort_key_initial(item: EquipableItem) -> float:
         return (
-            sort_key(item)
-            + 100 * (max(item._mp + item._ap, 0))
-            + 50 * (max(item._wp + item._range, 0))
+            score_key(item)
+            + 100 * max(1, (ns.ap - 5)) * item._ap
+            + 100 * max(1, (ns.mp - 2)) * item._mp
+            + 50 * ns.ra * item._range
+            + 130 * ns.wp * item._wp
             + item._critical_mastery * (min(BASE_CRIT_MASTERY + 20, 100)) / 100
         )
 
@@ -314,81 +323,48 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
 
     def needs_full_sim_key(item: EquipableItem) -> Hashable:
         return (
+            item.disables_second_weapon,
             item._ap,
             item._range,
             item._mp,
+            item._wp,
             item._critical_hit,
             item._critical_mastery,
-            item._wp,
-            item.disables_second_weapon,
         )
 
     consider_stats = attrgetter("_ap", "_mp", "_range", "disables_second_weapon")
-    key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
-
-    for _slot, items in CANIDATES.items():
-        seen_key: set[Hashable] = set()
-        to_rem: list[EquipableItem] = []
-
-        items.sort(key=sort_key, reverse=True)
-
-        if _slot != "LEFT_HAND":
-            for item in items:
-                key = needs_full_sim_key(item)
-                if key in seen_key:
-                    to_rem.append(item)
-                seen_key.add(key)
-        else:
-            seen_overflow: set[Hashable] = set()
-            for item in items:
-                key = needs_full_sim_key(item)
-                if key in seen_key:
-                    if key in seen_overflow:
-                        to_rem.append(item)
-                    seen_overflow.add(key)
-                seen_key.add(key)
-
-        for item in to_rem:
-            try:
-                items.remove(item)
-            except ValueError:
-                pass
-
-        depth = ITEM_SEARCH_DEPTH if _slot != "LEFT_HAND" else ITEM_SEARCH_DEPTH + 3
-        if ns.exhaustive:
-            depth = len(OBJS)
-
-        if len(items) > depth:
-            to_rem = []
-            counter: collections.Counter[Hashable] = collections.Counter()
-            seen_names_souv: set[Hashable] = set()
-
-            items.sort(key=lambda i: (sort_key(i), i._item_rarity), reverse=True)
-
-            for item in items:
-                k = key_func(item)
-                sn = (item.name, item.is_souvenir)
-                if sn in seen_names_souv:
-                    to_rem.append(item)
-                    continue
-
-                counter[k] += 1
-                if counter[k] > depth:
-                    to_rem.append(item)
-                else:
-                    seen_names_souv.add(sn)
-
-            for item in to_rem:
-                items.remove(item)
-
-    relics.sort(key=lambda r: (sort_key(r), r.item_slot), reverse=True)
-    relics = ordered_unique_by_key(relics, needs_full_sim_key)
-    epics.sort(key=lambda e: (sort_key(e), e.item_slot), reverse=True)
-    epics = ordered_unique_by_key(epics, needs_full_sim_key)
+    hard_key_func: Callable[[EquipableItem], Hashable] = lambda i: tuple(map((0).__lt__, consider_stats(i)))
 
     ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
     TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
     DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]
+
+
+    # for _slot, items in CANIDATES.items():
+
+    for items in (ONEH, TWOH, DAGGERS, *CANIDATES.values()):
+
+        items.sort(key=score_key, reverse=True)
+        inplace_ordered_unique_by_key(items, attrgetter("name", "is_souvenir"))
+        uniq = ordered_unique_by_key(items, needs_full_sim_key)
+        items.sort(key=sort_key_initial, reverse=True)
+        
+        real_depth = ITEM_SEARCH_DEPTH
+        if items[0].item_slot == "LEFT_HAND":
+            real_depth += 2
+        real_depth = max(3, real_depth)
+
+        if len(uniq) > real_depth:
+            uniq = uniq[:real_depth]
+            for item in items[::-1]:
+                if item not in uniq:
+                    items.remove(item)
+            continue
+
+    relics.sort(key=lambda r: (score_key(r), r.item_slot), reverse=True)
+    relics = ordered_unique_by_key(relics, needs_full_sim_key)
+    epics.sort(key=lambda e: (score_key(e), e.item_slot), reverse=True)
+    epics = ordered_unique_by_key(epics, needs_full_sim_key)
 
     lw = EquipableItem()
     lw._elemental_mastery = int(HIGH_BOUND * 1.5)
@@ -422,8 +398,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
 
     weapon_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
     weapon_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
-    weapon_key_func = lambda w: (*(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),)
-    weapon_score_func = lambda w: sum(map(sort_key_initial, tuple_expander(w)))
+    weapon_key_func = lambda w: (isinstance(w, tuple), *(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),)
+    weapon_score_func = lambda w: sum(map(score_key, tuple_expander(w)))
     srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
     canidate_weapons = ordered_unique_by_key(srt_w, weapon_key_func)
 
@@ -443,8 +419,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
 
     log.info("Considering some items... This may take a few moments")
 
-    epics.sort(key=sort_key_initial, reverse=True)
-    relics.sort(key=sort_key_initial, reverse=True)
+    epics.sort(key=score_key, reverse=True)
+    relics.sort(key=score_key, reverse=True)
     kf: Callable[[EquipableItem], Hashable] = lambda i: (i.item_slot, needs_full_sim_key(i))
     epics = ordered_unique_by_key(epics, kf)
     relics = ordered_unique_by_key(relics, kf)
@@ -455,7 +431,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
         (*(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),),
         "-".join(sorted(i.item_slot for i in tuple_expander(w))),
     )
-    re_score_func = lambda w: sum(map(sort_key_initial, tuple_expander(w)))
+    re_score_func = lambda w: sum(map(score_key, tuple_expander(w)))
     if relics:
         sorted_pairs = sorted((*itertools.product(relics, epics), *extra_pairs), key=re_score_func, reverse=True)
         canidate_re_pairs = ordered_unique_by_key(sorted_pairs, re_key_func)
@@ -466,9 +442,9 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
         )
 
     if ns and not ns.exhaustive:
-        canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth * 2]
+        canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth]
         CANIDATES = {k: v[: ns.hard_cap_depth] for k, v in CANIDATES.items()}
-        canidate_weapons = canidate_weapons[: ns.hard_cap_depth]
+        canidate_weapons = canidate_weapons[: int(ns.hard_cap_depth / 2)]
 
     if ns.dry_run:
         ret: list[EquipableItem] = []
@@ -497,9 +473,12 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
 
     base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit) if isinstance(ns, argparse.Namespace) else Stats()
 
-    progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pair")
+    if use_tqdm:
+        maybe_progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pair")
+    else:
+        maybe_progress_bar = canidate_re_pairs
 
-    for relic, epic in progress_bar:
+    for relic, epic in maybe_progress_bar:
         if relic and epic:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
                 continue
@@ -510,7 +489,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
             if epic.disables_second_weapon and relic.item_slot == "SECOND_WEAPON":
                 continue
 
-        partial_score = sort_key(epic) + (sort_key(relic) if relic else 0)
+        partial_score = score_key(epic) + (score_key(relic) if relic else 0)
 
         REM_SLOTS = [
             "LEGS",
@@ -568,26 +547,34 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
             if main_hand_disabled:
                 if WEILD_TYPE_TWO_HANDED:
                     continue
-                CANIDATES["WEAPONS"] = [(i,) for i in (*DAGGERS, *SHIELDS)]  # type: ignore
+                s = [*DAGGERS, *SHIELDS]
+                s.sort(key=score_key, reverse=True)
+                CANIDATES["WEAPONS"] = [  # type: ignore
+                    (i,) for i in ordered_unique_by_key(s, lambda i: (i._ap, i._mp, i._range, i._wp))
+                ]
             elif off_hand_disabled:
                 if WEILD_TYPE_TWO_HANDED:
                     continue
-                CANIDATES["WEAPONS"] = [(i,) for i in ONEH]  # type: ignore
+                CANIDATES["WEAPONS"] = [  # type: ignore
+                    (i,) for i in ordered_unique_by_key(ONEH, lambda i: (i._ap, i._mp, i._range, i._wp))
+                ] 
             else:
-                CANIDATES["WEAPONS"] = canidate_weapons  # type: ignore
+                CANIDATES["WEAPONS"] = canidate_weapons # type: ignore
+            
+            CANIDATES["WEAPONS"].sort(key=weapon_score_func, reverse=True)
 
         RING_CHECK_NEEDED = REM_SLOTS.count("LEFT_HAND") > 1
 
         try:
-            cans = [CANIDATES[k] for k in REM_SLOTS]
-            cn_c = reduce(mul, map(len, cans), 1) /8
+            cans = [CANIDATES[k][:ns.search_depth + 2] for k in REM_SLOTS]
+            cn_c = reduce(mul, map(len, cans), 1) / 3
             if RING_CHECK_NEEDED:
                 cn_c *= len(CANIDATES["LEFT_HAND"])
         except KeyError as exc:
             log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
             continue
 
-        if cn_c > 5000:
+        if cn_c > 5000 and use_tqdm:
             inner = tqdm.tqdm(itertools.product(*cans), desc="Trying items with that pair", total=cn_c, leave=True)
         else:
             inner = itertools.product(*cans)
@@ -622,7 +609,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False) -> list[tuple[float,
             if (mns or mxs) and not generate_filter(base_stats, mns, mxs)(stats):
                 continue
 
-            score = sum(sort_key(i) for i in items) + partial_score + BASE_RELEV_MASTERY
+            score = sum(score_key(i) for i in items) + partial_score + BASE_RELEV_MASTERY
             score = (score + (crit_mastery if UNRAVELING else 0)) * ((100 - crit_chance) / 100) + (score + crit_mastery) * (
                 crit_chance / 80
             )  # 1.25 * .01, includes crit math
@@ -693,7 +680,7 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
         ns = parser.parse_args(namespace=v1Config())
 
     try:
-        result = solve(ns)
+        result = solve(ns, use_tqdm=True)
     except SolveError as exc:
         msg = exc.args[0]
         write(msg)

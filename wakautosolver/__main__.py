@@ -6,8 +6,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
-import sys
 import pathlib
+import sys
 
 import msgspec
 
