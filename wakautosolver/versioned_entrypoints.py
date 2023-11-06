@@ -73,14 +73,15 @@ def partial_solve_v1(
         zerk=zerk,
         rear=rear,
         dry_run=dry_run,
+        hard_cap_depth=50,
     )
 
     try:
         result = solve(cfg, ignore_missing_items=True)
-    except SolveError:
+        best = result[0]
+    except (IndexError, SolveError):
         return (None, "No possible solution found")
 
-    best = result[0]
     _score, items = best
     item_ids = [i._item_id for i in items]  # pyright: ignore
     return (item_ids, None)
