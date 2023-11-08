@@ -1,8 +1,8 @@
 
-lv = 80
+lv = 230
 
 # number of each of these from gear.
-ap = 5
+ap = 6
 mp = 1
 wp = 0
 ra = 1
@@ -10,10 +10,10 @@ ra = 1
 # Set these if you've statted them/passives/sublimations
 baseap = 7
 basemp = 3
-bawewp = 9
-basera = 0
+bawewp = 12
+basera = 1
 
-bcrit = 19  # base crit
+bcrit = 20  # base crit
 
 num_mastery = 2
 
@@ -26,9 +26,6 @@ heal = false
 
 # remove any of these if you don't want them
 allowed_rarities = [
-    1,  # grey
-    2,  # green
-    3,  # orange
     4,  # yellow
     5,  # relic
     6,  # souvenir
@@ -41,7 +38,7 @@ nameforce = [
     # "Polar Amulet",  # so is this, just here as examples put your own below if you want.
 ]
 
-idforbid = [19410, 1943, 30699]
+idforbid = []
 
 hard_cap_depth = 100
 tolerance = 30

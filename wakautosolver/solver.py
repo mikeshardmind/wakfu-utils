@@ -164,16 +164,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
         return any(condition.unhandled() for condition in item.conditions)
 
-    def sort_key_initial(item: EquipableItem) -> float:
-        return (
-            score_key(item)
-            + 100 * max(1, (ns.ap - 5)) * item._ap
-            + 100 * max(1, (ns.mp - 2)) * item._mp
-            + 20 * max(0, ns.ra) * item._range
-            + 20 * max(0, ns.wp) * item._wp
-            + item._critical_mastery * (min(BASE_CRIT_MASTERY + 20, 100)) / 100
-        )
-
     #    │ 26494   │ Amakna Sword  │
     #    │ 26495   │ Sufokia Sword │
     #    │ 26496   │ Bonta Sword   │
@@ -229,7 +219,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         forced_items = [i for i in OBJS if i._item_id in _fids]
         # Handle names a little differently to avoid an issue with duplicate names
         forced_by_name = [i for i in OBJS if i.name in _fns]
-        forced_by_name.sort(key=sort_key_initial, reverse=True)
+        forced_by_name.sort(key=score_key, reverse=True)
         forced_by_name = ordered_unique_by_key(forced_by_name, key=attrgetter("name", "item_slot"))
         forced_items.extend(forced_by_name)
 
@@ -319,7 +309,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         AOBJS[item.item_slot].append(item)
 
     for stu in AOBJS.values():
-        stu.sort(key=sort_key_initial, reverse=True)
+        stu.sort(key=score_key, reverse=True)
 
     relics = forced_relics or [
         item

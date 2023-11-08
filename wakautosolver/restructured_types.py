@@ -273,7 +273,7 @@ class v1Config(Struct, kw_only=True):
     tolerance: int = 30
     # Don't modify the below in wakforge, too slow
     exhaustive: bool = False
-    search_depth: int = 2
+    search_depth: int = 1
     # dont touch these in wakforge either
     baseap: int = 0
     basemp: int = 0
