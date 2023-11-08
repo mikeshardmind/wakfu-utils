@@ -380,24 +380,14 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             inplace_ordered_unique_by_key(bck, needs_full_sim_key)
             del items[adaptive_depth:]
 
-            if ns.ra >= 0 and not any(i._range > 0 for i in items):
-                for item in bck:
-                    if item._range > 0:
-                        items.append(item)
-            if ns.wp > -1:
-                for item in bck:
-                    if item._wp > 0:
-                        items.append(item)
-            
-            for stat in ("_ap", "_mp"):
-                x = attrgetter(stat)
-                if not any(x(i) > 0 for i in items):
-                    for item in bck:
-                        if x(item) > 0:
-                            items.append(item)
-                            break
-
             k = 2 if slot == "LEFT_HAND" else 1
+
+            for stat in ("_ap", "_mp", "_range", "_wp"):  # TODO: Dynamic
+                x = attrgetter(stat)
+                for item in ordered_keep_by_key(bck, x, k):
+                    if x(item) > 0 and item not in items:
+                        items.append(item)
+
             uniq = ordered_keep_by_key(items, needs_full_sim_key, k)
             for i in items[::-1]:
                 if i not in uniq:

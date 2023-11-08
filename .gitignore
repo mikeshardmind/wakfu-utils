@@ -167,3 +167,7 @@ cython_debug/
 *.json
 *.bz2
 *.db
+*.whl
+*.tar.gz
+
+base_cfg.toml
