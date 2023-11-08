@@ -169,8 +169,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             score_key(item)
             + 100 * max(1, (ns.ap - 5)) * item._ap
             + 100 * max(1, (ns.mp - 2)) * item._mp
-            + 50 * ns.ra * item._range
-            + 130 * ns.wp * item._wp
+            + 20 * max(0, ns.ra) * item._range
+            + 20 * max(0, ns.wp) * item._wp
             + item._critical_mastery * (min(BASE_CRIT_MASTERY + 20, 100)) / 100
         )
 
@@ -366,30 +366,52 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     for items in (ONEH, TWOH, DAGGERS, *CANIDATES.values()):
         if not items:
             continue
+        slot = items[0].item_slot
         items.sort(key=score_key, reverse=True)
         inplace_ordered_unique_by_key(items, attrgetter("name", "is_souvenir"))
 
-        if items[0].item_slot == "LEFT_HAND":
+        if slot == "LEFT_HAND":
             uniq = ordered_keep_by_key(items, needs_full_sim_key, 2)
         else:
             uniq = ordered_keep_by_key(items, needs_full_sim_key, 1)
 
         if not ns.exhaustive:
-            items.sort(key=lambda i: (i in uniq, sort_key_initial(i)), reverse=True)
+            
+            items.sort(key=lambda i: (i in uniq, score_key(i)), reverse=True)
             adaptive_depth = ITEM_SEARCH_DEPTH
-            if items[0].item_slot == "LEFT_HAND":
+            if slot == "LEFT_HAND":
                 adaptive_depth += 1
 
             if HIGH_BOUND < 50:  # Needed due to item design and low level -wp items
                 adaptive_depth += 2
-            if HIGH_BOUND >= 185 and items[0].item_slot in ("FIRST_WEAPON", "NECK", "CHEST"):
-                # Helps find better solves at cost, restricted to the slots where it's most needed.
-                # See interesting_queries.sql for an idea of how these slots were picked
-                adaptive_depth += 1
-            if HIGH_BOUND >= 200 and items[0].item_slot in ("LEGS", "ACCESSORY"):
-                adaptive_depth += 1
 
+            bck = items.copy()
+            bck.sort(key=score_key, reverse=True)
+            inplace_ordered_unique_by_key(bck, needs_full_sim_key)
             del items[adaptive_depth:]
+
+            if ns.ra >= 0 and not any(i._range > 0 for i in items):
+                for item in bck:
+                    if item._range > 0:
+                        items.append(item)
+            if ns.wp > -1:
+                for item in bck:
+                    if item._wp > 0:
+                        items.append(item)
+            
+            for stat in ("_ap", "_mp"):
+                x = attrgetter(stat)
+                if not any(x(i) > 0 for i in items):
+                    for item in bck:
+                        if x(item) > 0:
+                            items.append(item)
+                            break
+
+            k = 2 if slot == "LEFT_HAND" else 1
+            uniq = ordered_keep_by_key(items, needs_full_sim_key, k)
+            for i in items[::-1]:
+                if i not in uniq:
+                    items.remove(i)
         else:
             # simply keep the uniq without trimming then...
             for i in items[::-1]:
