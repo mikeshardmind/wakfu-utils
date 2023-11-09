@@ -23,6 +23,7 @@ from typing import Final, Protocol, TypeVar
 
 import tqdm
 
+from .build_codes import Build, Item, encode_build
 from .object_parsing import EquipableItem, _locale
 from .restructured_types import SetMaximums, SetMinimums, Stats, generate_filter, v1Config
 from .unobs import get_unobtainable_ids
@@ -54,6 +55,7 @@ def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list
     seen_set: set[Hashable] = set()
     return [i for i in it if not ((k := key(i)) in seen_set or seen_set.add(k))]
 
+
 def ordered_keep_by_key(it: Iterable[T], key: Callable[[T], Hashable], count: int) -> list[T]:
     seen_counts: collections.Counter[Hashable] = collections.Counter()
     ret: list[T] = []
@@ -70,6 +72,7 @@ def inplace_ordered_unique_by_key(it: list[T], key: Callable[[T], Hashable]) -> 
     for v in it[::-1]:
         if v not in uniq:
             it.remove(v)
+
 
 class SolveError(Exception):
     pass
@@ -114,7 +117,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
     @lru_cache
     def score_key(item: EquipableItem | None) -> float:
-        
         if not item:
             return 0
 
@@ -366,7 +368,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             uniq = ordered_keep_by_key(items, needs_full_sim_key, 1)
 
         if not ns.exhaustive:
-            
             items.sort(key=lambda i: (i in uniq, score_key(i)), reverse=True)
             adaptive_depth = ITEM_SEARCH_DEPTH
             if slot == "LEFT_HAND":
@@ -430,7 +431,10 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
     weapon_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
     weapon_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
-    weapon_key_func = lambda w: (isinstance(w, tuple), *(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),)
+    weapon_key_func = lambda w: (
+        isinstance(w, tuple),
+        *(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),
+    )
     weapon_score_func = lambda w: sum(map(score_key, tuple_expander(w)))
     srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
     canidate_weapons = ordered_unique_by_key(srt_w, weapon_key_func)
@@ -589,16 +593,16 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                     continue
                 CANIDATES["WEAPONS"] = [  # type: ignore
                     (i,) for i in ordered_unique_by_key(ONEH, lambda i: (i._ap, i._mp, i._range, i._wp))
-                ] 
+                ]
             else:
-                CANIDATES["WEAPONS"] = canidate_weapons # type: ignore
-            
+                CANIDATES["WEAPONS"] = canidate_weapons  # type: ignore
+
             CANIDATES["WEAPONS"].sort(key=weapon_score_func, reverse=True)
 
         RING_CHECK_NEEDED = REM_SLOTS.count("LEFT_HAND") > 1
 
         try:
-            cans = [CANIDATES[k][:ns.search_depth + 2] for k in REM_SLOTS]
+            cans = [CANIDATES[k][: ns.search_depth + 2] for k in REM_SLOTS]
             cn_c = reduce(mul, map(len, cans), 1) / 3
             if RING_CHECK_NEEDED:
                 cn_c *= len(CANIDATES["LEFT_HAND"])
@@ -707,7 +711,6 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
     parser.add_argument("--exhaustive", dest="exhaustive", default=False, action="store_true")
     parser.add_argument("--tolerance", dest="tolerance", type=int, default=30)
 
-
     if ns is None:
         ns = parser.parse_args(namespace=v1Config())
 
@@ -731,6 +734,9 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
     else:
         write(f"Best set under constraints has effective mastery {score}:")
         write(*items, sep="\n")
+
+        build = Build(level=ns.lv, items=[Item(i._item_id) for i in items])
+        write("Build code:", encode_build(build))
 
 
 if __name__ == "__main__":

@@ -14,7 +14,6 @@ import msgspec
 from .solver import entrypoint, v1Config
 
 if __name__ == "__main__":
-
     ns = None
     if n := sys.argv[1]:
         path = pathlib.Path(n).resolve()

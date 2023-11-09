@@ -13,6 +13,7 @@ import zlib
 from msgspec import Struct, field, msgpack
 
 from . import b2048 as base2048
+from .restructured_types import Stats as _Stats
 
 
 class SlotColor(enum.IntEnum):
@@ -101,6 +102,32 @@ class Stats(Struct, array_like=True):
     di: bool = False
     major_res: bool = False
 
+    def to_stat_values(self, is_xelor: bool = False) -> _Stats:
+        e_mast = self.elemental_mastery * 5
+        e_mast += self.mp * 20
+        e_mast += (self.ra + self.control) * 40
+        wp = 12 if is_xelor else 6
+        wp += 2 * self.wp
+        return _Stats(
+            ap=6 + self.ap,
+            mp=3 + self.mp,
+            wp=wp,
+            ra=1 * self.ra,
+            crit=self.crit,
+            crit_mastery=4 * self.crit_mastery,
+            elemental_mastery=e_mast,
+            distance_mastery=8 * self.distance_mastery,
+            melee_mastery=8 * self.melee_mastery,
+            rear_mastery=6 * self.rear_mastery,
+            beserk_mastery=8 * self.berserk_mastery,
+            heal_mastery=6 * self.healing_mastery,
+            control=2 * self.control,
+            fd=10 * self.di,
+            lock=6 * self.lock + 4 * self.lockdodge,
+            dodge=6 * self.dodge + 4 * self.lockdodge,
+            block=self.block,
+        )
+
 
 class Item(Struct, array_like=True):
     item_id: int
@@ -111,7 +138,7 @@ class Item(Struct, array_like=True):
 
 
 class Build(Struct, array_like=True):
-    classname: ClassName | None
+    classname: ClassName | None = None
     level: int = 230
     stats: Stats = field(default_factory=Stats)
     relic_sub: int | None = None
@@ -146,8 +173,10 @@ def encode_partialv1(
 
     return encode_build(build)
 
+
 DATA = tuple[ClassName | None, int, list[int]]
 Decodev1Result = tuple[DATA | None, str | None]
+
 
 def decode_partialv1(build_str: str) -> Decodev1Result:
     try:
