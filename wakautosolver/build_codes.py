@@ -21,7 +21,7 @@ class SlotColor(enum.IntEnum):
     W = 4
 
 
-class Slot(Struct, frozen=True, array_like=True):
+class Slot(Struct, array_like=True):
     color: SlotColor
     stat_id: int | None = None
     shard_lv: int = 0
@@ -56,7 +56,7 @@ class ClassName(enum.IntEnum):
     Hupper = 17
 
 
-class Stats(Struct, frozen=True, array_like=True):
+class Stats(Struct, array_like=True):
     percent_hp: int = 0
     res: int = 0
     barrier: int = 0
@@ -88,15 +88,15 @@ class Stats(Struct, frozen=True, array_like=True):
     major_res: bool = False
 
 
-class Item(Struct, frozen=True, array_like=True):
+class Item(Struct, array_like=True):
     item_id: int
-    assigned_mastery: Elements | None
+    assigned_mastery: Elements | None = None
     assigned_res: Elements | None = None
     sublimation_id: int | None = None
     slots: list[Slot] | None = None
 
 
-class Build(Struct, frozen=True, array_like=True):
+class Build(Struct, array_like=True):
     classname: ClassName
     level: int
     stats: Stats = field(default_factory=Stats)
