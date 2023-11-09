@@ -8,7 +8,8 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 
 from msgspec.structs import replace
 
-from wakautosolver.build_codes import Build, ClassName, Elements, Item, Stats, encode_build
+from wakautosolver.build_codes import ClassName, Elements, Item, Stats, encode_build
+from wakautosolver.build_codes import v1Build as Build
 
 if __name__ == "__main__":
     stats = Stats(

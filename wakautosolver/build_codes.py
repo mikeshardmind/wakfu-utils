@@ -137,7 +137,8 @@ class Item(Struct, array_like=True):
     slots: list[Slot] | None = None
 
 
-class Build(Struct, array_like=True):
+class v1Build(Struct, array_like=True):
+    version_number = 1
     classname: ClassName | None = None
     level: int = 230
     stats: Stats = field(default_factory=Stats)
@@ -147,12 +148,12 @@ class Build(Struct, array_like=True):
     deck: list[int] = field(default_factory=list)
 
 
-def encode_build(build: Build) -> str:
+def encode_build(build: v1Build) -> str:
     return base2048.encode(zlib.compress(msgpack.encode(build), level=9, wbits=-15))
 
 
-def decode_build(build_str: str) -> Build:
-    return msgpack.decode(zlib.decompress(base2048.decode(build_str), wbits=-15), type=Build)
+def decode_build(build_str: str) -> v1Build:
+    return msgpack.decode(zlib.decompress(base2048.decode(build_str), wbits=-15), type=v1Build)
 
 
 # TODO: RELEASE-BLOCKER Add element support to the below prior to next release, or remove the code.
