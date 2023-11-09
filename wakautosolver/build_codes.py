@@ -170,7 +170,7 @@ def encode_partialv1(
             return ""
     _items = [Item(item_id=i) for i in items] if items else []
 
-    build = Build(classname=classname, level=level, items=_items)
+    build = v1Build(classname=classname, level=level, items=_items)
 
     return encode_build(build)
 

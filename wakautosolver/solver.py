@@ -23,7 +23,8 @@ from typing import Final, Protocol, TypeVar
 
 import tqdm
 
-from .build_codes import Build, Item, encode_build
+from .build_codes import Item, encode_build
+from .build_codes import v1Build as Build
 from .object_parsing import EquipableItem, _locale
 from .restructured_types import SetMaximums, SetMinimums, Stats, generate_filter, v1Config
 from .unobs import get_unobtainable_ids
