@@ -8,6 +8,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 import enum
+import zlib
 
 from msgspec import Struct, field, msgpack
 
@@ -38,22 +39,35 @@ class Elements(enum.IntFlag):
 class ClassName(enum.IntEnum):
     Feca = 0
     Osa = 1
+    Osamodas = Osa
     Enu = 2
+    Enutrof = Enu
     Sram = 3
     Xel = 4
+    Xelor = Xel
     Eca = 5
+    Ecaflip = Eca
     Eni = 6
+    Eniripsa = Eni
     Iop = 7
     Cra = 8
     Sadi = 9
+    Sadida = Sadi
     Sac = 10
+    Sacrier = Sac
     Panda = 11
+    Pandawa = Panda
     Rogue = 12
     Masq = 13
+    Masqueraiders = Masq
     Ougi = 14
+    Ouginak = Ougi
     Fog = 15
+    Foggernaut = Fog
     Elio = 16
+    Eliotrope = Elio
     Hupper = 17
+    Huppermage = Hupper
 
 
 class Stats(Struct, array_like=True):
@@ -90,15 +104,15 @@ class Stats(Struct, array_like=True):
 
 class Item(Struct, array_like=True):
     item_id: int
-    assigned_mastery: Elements | None = None
-    assigned_res: Elements | None = None
+    assigned_mastery: Elements = Elements.unset
+    assigned_res: Elements = Elements.unset
     sublimation_id: int | None = None
     slots: list[Slot] | None = None
 
 
 class Build(Struct, array_like=True):
-    classname: ClassName
-    level: int
+    classname: ClassName | None
+    level: int = 230
     stats: Stats = field(default_factory=Stats)
     relic_sub: int | None = None
     epic_sub: int | None = None
@@ -107,8 +121,38 @@ class Build(Struct, array_like=True):
 
 
 def encode_build(build: Build) -> str:
-    return base2048.encode(msgpack.encode(build))
+    return base2048.encode(zlib.compress(msgpack.encode(build), level=9, wbits=-15))
 
 
 def decode_build(build_str: str) -> Build:
-    return msgpack.decode(base2048.decode(build_str), type=Build)
+    return msgpack.decode(zlib.decompress(base2048.decode(build_str), wbits=-15), type=Build)
+
+
+# TODO: RELEASE-BLOCKER Add element support to the below prior to next release, or remove the code.
+# Do not version this without element support.
+def encode_partialv1(
+    classname: str | ClassName | None = None,
+    level: int = 230,
+    items: list[int] | None = None,
+) -> str:
+    if isinstance(classname, str):
+        try:
+            classname = ClassName[classname]
+        except KeyError:
+            return ""
+    _items = [Item(item_id=i) for i in items] if items else []
+
+    build = Build(classname=classname, level=level, items=_items)
+
+    return encode_build(build)
+
+DATA = tuple[ClassName | None, int, list[int]]
+Decodev1Result = tuple[DATA | None, str | None]
+
+def decode_partialv1(build_str: str) -> Decodev1Result:
+    try:
+        build = decode_build(build_str)
+    except Exception:  # noqa: BLE001
+        return None, "Invalid Build String"
+
+    return (build.classname, build.level, [item.item_id for item in build.items]), None
