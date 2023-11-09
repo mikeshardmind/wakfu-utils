@@ -11,7 +11,7 @@ from typing import Literal
 
 from .build_codes import Build, ClassName, Item, encode_build
 from .build_codes import Stats as AssignedStatPoints
-from .restructured_types import SetMinimums, Stats
+from .restructured_types import Priority, SetMinimums, StatPriority, Stats
 from .solver import SolveError, solve, v1Config
 
 ClassNames = Literal[
@@ -132,13 +132,8 @@ def partial_solve_v2(
     stats: AssignedStatPoints,
     target_stats: SetMinimums,
     equipped_items: list[int],
-    num_mastery: int,
     allowed_rarities: list[int],
-    dist: bool = False,
-    melee: bool = False,
-    heal: bool = False,
-    zerk: bool = False,
-    rear: bool = False,
+    solve_objectives: StatPriority,
     dry_run: bool = False,
 ) -> v2Result:
     cl = ClassName[classname]
@@ -146,10 +141,18 @@ def partial_solve_v2(
     forbidden_rarities = [i for i in range(1, 8) if i not in allowed_rarities]
     equipped = [i for i in equipped_items if i] if equipped_items else []
 
+    # TODO: refactor solve to not need the math done here
     ap = target_stats.ap - base_stats.ap
     mp = target_stats.mp - base_stats.mp
     ra = target_stats.ra - base_stats.ra
     wp = target_stats.wp - base_stats.wp
+
+    lk: dict[Priority, Literal["full", "half", "none"]] = {
+        Priority.half_negative_only: "half",
+        Priority.full_negative_only: "full",
+    }
+    negrear = lk.get(solve_objectives.rear_mastery, "none")
+    negzerk = lk.get(solve_objectives.berserk_mastery, "none")
 
     cfg = v1Config(
         lv=lv,
@@ -164,18 +167,20 @@ def partial_solve_v2(
         bcrit=base_stats.crit,
         bcmast=base_stats.crit_mastery,
         bmast=base_stats.elemental_mastery,
-        num_mastery=num_mastery,
+        num_mastery=solve_objectives.number_of_elements,
         forbid_rarity=forbidden_rarities,
         idforce=equipped,
-        dist=dist,
-        melee=melee,
-        heal=heal,
-        zerk=zerk,
-        rear=rear,
+        dist=solve_objectives.distance_mastery == Priority.prioritized,
+        melee=solve_objectives.melee_mastery == Priority.prioritized,
+        heal=solve_objectives.heal_mastery == Priority.prioritized,
+        zerk=solve_objectives.berserk_mastery == Priority.prioritized,
+        rear=solve_objectives.rear_mastery == Priority.prioritized,
         dry_run=dry_run,
         hard_cap_depth=50,
         tolerance=15,
         search_depth=1,
+        negrear=negrear,
+        negzerk=negzerk,
     )
 
     try:
