@@ -1,0 +1,329 @@
+# Lines beginning with a '#' are ignored by automated tools
+# A list of items that require an arch drop.
+# Only the first column of data is used
+# Format: item_id info
+
+2395 The Maimpa
+4224 The Jouik Krampe
+7574 Pandawan Hat
+8259 Crobelt
+9359 Strange Wand
+10265 Sargasse
+10278 Table Knives
+10280 Eachure Hat
+11410 Zinit Amulet
+12358 Axeivement
+12602 Clergy Ring
+12605 Clergyman Belt
+12863 Tap Shoes
+14439 Hushed Epaulettes
+14650 Rokau's Club
+14707 Honna Ring
+14732 Luccian's Cloak
+15152 Magmacrak Cloak
+15153 Magmacrak Ring
+15407 The Laughing Rat
+15478 Cockabootsledo
+15498 Epincerettes
+15574 Googoolden Axe
+15578 Enraged Gobball Ring
+15579 Enraged Gobball Amulet
+15634 Uchino Cape
+15739 The Levy Lup
+15740 The Swordex
+16108 Fhenris's Frozen Fang
+16139 Count Harebourg's Clock Hand
+16146 Count Harebourg's Shield
+17214 Zombo
+17744 Troyle's GG Shield
+18386 Troolgodyte Poncho
+18387 Dagger of the Ancestral Spirit
+18541 Nocturnal Stealth Cloak
+18548 The Shock Absorber
+18559 Falling Shadome
+18567 The Shovelone
+18633 The Spin Ache Sword
+18635 The Oldixring
+19061 Pheno-Stem
+19063 Indestructible Boots
+19064 Breath of Life
+19144 New Ancients' Dagger
+19145 The Eternal
+19346 Divine Orrok's Protection
+19356 The Broken Billhook
+19364 K-Plate
+19365 K-Band
+19378 Crobelt
+19496 Unlucky Paw
+19519 Viktorious Rapier
+19858 Palm Charm
+19882 Chopping Maul
+19883 Wind Shield
+19884 Kokutlass
+19885 Sinuous Dagger
+19898 Sitton Defense
+19899 Fright Saber
+19900 Soul Dagger
+20198 The Cardashians
+20199 Slippyneedler
+20200 The Croc'Odaille
+20201 Gold Croc
+20222 Fanged Cards
+20223 Slippyneedle
+20224 The Recssenette
+20954 Plastrong
+20955 Karma Epaulettes
+20956 Black Dreggheadgear
+20971 Imperial Whirly Boots
+20972 Imperial Whirly Cloak
+21148 Kraken Epaulettes
+21149 Kraken Belt
+21150 Amollusky
+21173 Blood-Stained Epaulettes
+21174 Blood-Stained Belt
+21202 Blood-Drenched Axe
+21203 Scarnicarf
+21248 Explorer Hat
+21249 Explorer Jacket
+21252 Blood-Drenched Axe
+21253 Scarnicarf
+21489 Imperial Whirly Boots
+21490 Imperial Whirly Cloak
+21545 Gray XIII Epaulettes
+21546 Gray XIII Belt
+21547 Cloak Orporal
+21567 Gray XIII Epaulettes
+21568 Gray XIII Belt
+21692 Bludring
+21693 Outgrowth Amulet
+21700 Mistaken Boots
+21703 Potanicloakery
+21729 Mistaken Boots
+21730 Potanicloakery
+21789 Gallunctuous
+21802 Caporette
+21840 Plastrong
+21841 Karma Epaulettes
+21867 Ruby Epaulettes
+21869 Glove Dalf
+21870 Glove Dalf
+21884 Mail Har
+21885 Mail Har
+21983 Caporette
+21984 Gallunctuous
+22166 Wind Shield
+22167 Chopping Maul
+22168 Sitton Defense
+22204 Sinuous Dagger
+22205 Fright Saber
+22206 Soul Dagger
+22222 Kokutlass
+22242 Slippyneedler
+22243 The Cardashians
+22244 The Croc'Odaille
+22245 Slippyneedle
+22246 Fanged Cards
+22247 The Recssenette
+22361 Breath of Life
+22362 Pheno-Stem
+22392 New Ancients' Dagger
+22393 The Eternal
+22591 Falling Shadome
+22607 Nocturnal Stealth Cloak
+22628 The Shock Absorber
+22629 The Shovelone
+22806 Dagger of the Ancestral Spirit
+22843 Troyle's GG Shield
+22880 The Oldixring
+22881 The Spin Ache Sword
+23075 Troolgodyte Poncho
+23162 Cold Hunter Boots
+23163 Cold Hunter Boots
+23170 Count Harebourg's Shield
+23171 Count Harebourg's Clock Hand
+23264 Fhenris's Frozen Fang
+23265 White-Paw Epaulettes
+23285 Hunter Bracelet
+23287 Hunter Trunks
+23483 Crobelt
+23484 Crobelt
+23865 Zombo
+24049 Cockabootsledo
+24115 Zinit Amulet
+24124 Pandawan Hat
+24142 The Big Branch
+24143 The Big Branch
+24144 Maj'Hic Cloak
+24145 Maj'Hic Cloak
+24146 Zinit Amulet
+24185 Doray Mifa
+24201 Caplosive
+24221 Pandawan Hat
+24799 Count Harebourg's Clock Hand
+24800 Count Harebourg's Shield
+24803 Black Drheller Cloak
+24804 Gray XIII Belt
+24807 Black Drheller Cloak
+24808 Black Drheller Cloak
+25080 Razor Tooth
+25132 Sacred Moogrr Boots
+25133 Sacred Moogrr Headgear
+25245 Epincerettes
+25246 Cwabelt
+25287 Ultimate Survivor Leaf
+25288 Ultimate Survivor Boots
+25329 Mud-Pied Piper Ring
+25330 Battlestick Galaktika
+25371 Strich Bow
+25372 Pillo Wand
+25413 Razor Tooth
+25414 Tsarina
+25455 Primitive Club
+25456 Mace Lipawey
+25497 Hyldegarde
+25498 Ardent Ring
+25595 Acidic Puddlicape
+25596 Acidic Puddlicape
+25597 Sweet Puddlicape
+25598 Sweet Puddlicape
+25661 Black Zord
+25662 Black Zord
+25663 Javelhand
+25664 Javelhand
+25727 Imperial Treechnid Boots
+25728 Imperial Treechnid Boots
+25729 Imperial Treechnid Cape
+25730 Imperial Treechnid Cape
+25803 Flamulet
+25804 Flamulet
+25805 Lavaring
+25806 Lavaring
+25935 Relaxing Epaulettes
+25936 Relaxing Epaulettes
+25937 Minesweeper Breastplate
+25938 Minesweeper Breastplate
+26001 Scroll Necklace
+26002 Scroll Necklace
+26007 Wooden Riktus Sword
+26008 Wooden Riktus Sword
+26482 Visibility Cloak
+26488 Ecaflip Lightning Helmet
+26490 Wekyn Bekyn Sword
+26512 Cold Belt
+26513 Cold Cape
+26581 Coiffeemaker
+26749 Crabby Breastplate
+26750 Crabby Breastplate
+26751 Piss Still
+26752 Piss Still
+26815 Ruler
+26816 Ruler
+26817 Eternalettes
+26818 Eternalettes
+26886 Dashing Dagger
+26887 Dashing Dagger
+26888 Oh-So-Porific Epaulettes
+26889 Oh-So-Porific Epaulettes
+26955 Erogenulet
+26956 Erogenulet
+26957 Mad Hera
+26958 Mad Hera
+27024 Vermilion Bird Epaulettes
+27028 Azure Dragon Headgear
+27036 Black Turtle Shield
+27353 Per-See-Us Horse Ring
+27357 Rozan Ring
+27371 Neval's Blade
+27372 Neval's Blade
+27373 Kiotamm's Saw
+27374 Kiotamm's Saw
+27443 Amon Amarth Breastplate
+27444 Amon Amarth Breastplate
+27445 Lord Zaens's Cape
+27446 Lord Zaens's Cape
+27512 Toxy Cloak
+27513 Platonium Breastplate
+27580 Hijinkering
+27581 Hijinkering
+27582 Laughing Breastplate
+27583 Laughing Breastplate
+27630 The Eternal
+27638 Irregularing
+27639 Irregularing
+27640 Purri Breastplate
+27641 Purri Breastplate
+27696 Icy Briss Boots
+27697 Icy Briss Boots
+27698 Bam's Ring
+27699 Bam's Ring
+27754 Discolored Ring
+27755 Discolored Ring
+27756 Discolored Epaulettes
+27757 Discolored Epaulettes
+27814 Mopy King Gloves
+27815 Dee Tracter Breastplate
+28133 Torturpid Boots
+28134 Torturpid Boots
+28135 Torturpid Ring
+28136 Torturpid Ring
+28196 Scoobidursa Breastplate
+28197 Scoobidursa Breastplate
+28198 Scoobidursa Belt
+28199 Scoobidursa Belt
+28259 Morsnivel Ring
+28260 Morsnivel Ring
+28261 Morsnivel Epaulettes
+28262 Morsnivel Epaulettes
+28325 Punt Boots
+28328 Kalipso
+29049 Vile Boots
+29050 Vile Boots
+29051 Vyl'oop
+29052 Vyl'oop
+29058 Eachure Hat
+29111 Follower Epaulettes
+29112 Follower Epaulettes
+29113 Follower Amulet
+29114 Follower Amulet
+29119 Marvelous Iron Boots
+29173 Archibald Mask
+29174 Archibald Mask
+29175 Archibald Bust
+29176 Archibald Bust
+29243 Sigma
+29297 Unyielding Sword
+29298 Unyielding Sword
+29589 The Constant
+29590 The Constant
+29880 Palablue Ring
+29881 Palablue Ring
+29882 Azure Knight Greaves
+29883 Azure Knight Greaves
+29884 Azure Knight Helm
+29885 Azure Knight Helm
+29886 Azure Knight Coat
+29887 Azure Knight Coat
+29974 Vagabond Headband
+29975 Vagabond Headband
+29976 Vagabond Boots
+29977 Vagabond Boots
+30148 A Gora Dagger
+30149 A Gora Dagger
+30150 Smokeherr Ring
+30151 Smokeherr Ring
+30275 Iron Giant's Shield
+30277 Mechanic Shoes
+30278 Mechanic Shoes
+30284 Mechanic Helmet
+30285 Mechanic Helmet
+30335 Paladout Ring
+30336 Paladout Ring
+30337 Paladin Greaves
+30338 Paladin Greaves
+
+# Above were pulled from a list provided by scour + cross-referencing for other rarities with the same name
+# Below are other items which are crafted from any of these
+
+25073 Mori Memento (relic, crafts from White-paw Epaulettes)
+29234 ti-tunic (souvenir, crafts using laughing breastplate)
+
