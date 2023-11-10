@@ -1,0 +1,434 @@
+# Lines beginning with a '#' are ignored by automated tools
+# A list of items that require an arch drop.
+# Only the first column of data is used
+# Format: item_id info
+
+8247 Black Crow's Boots
+8248 Black Crow's Ring
+8249 Black Crow's Cloak
+12381 Demented Club
+12382 Hurdy Girdle
+12383 Milimoowolf Amulet
+12384 Milimoowolf Bracelet
+12385 Milimoowolf Fleece
+12386 Milimoowolf Headgear
+12484 Black Crow's Epaulettes
+12488 Black Crow's Helmet
+12588 Gobbsage String
+12589 Gobbsage Cape
+12767 Moowolf Bell
+12768 Moowolf Signet Ring
+12769 Moowolf Finery
+12770 Moowolf Headgear
+14115 Gobbalrog Helmet
+14116 Gobbalrog Breastplate
+14117 Gobbalrog Boots
+14118 Gobbalrog Belt
+14119 Rogmourne
+14120 Gray Mage's Wand
+14121 The Mogmatic
+14122 Magmog Feet
+14123 Magmog Clinkers
+14124 Magmog Cloak
+14125 Magmog Halo
+14128 Excarnus Fleece
+14129 Excarnus's Crystal
+14131 Excarnus Veil
+14132 Tortured Soul
+14134 Milkar Finery
+14135 Milkar Fangs
+14136 Milkar Fur
+14137 Milkar Mitts
+14138 The Bloodthirsty
+14140 White Crow Hackle
+14141 White Crow Amulet
+14142 White Crow Breastplate
+14143 White Crow Belt
+14144 White Crow Wings
+14147 Milimoowolf
+15851 Gobbalrog Cloak
+16965 Dragon Pig Helmet
+16966 Dragon Pig Trotters
+16967 Dragon Pig Winglets
+16969 Larduous Hat
+16970 Larduous Boots
+16971 Larduous Epaulettes
+16972 Larduous Breastplate
+16974 Dragon Pig Bandage
+16975 Turq Tutu
+16976 Dragon Pig Kimono
+16977 Dragon Pig Beads
+17007 Dragon Pig Breastplate
+19410 Steel Beak Amulet
+19411 Steel Beak Ring
+19412 Steel Beak Boots
+19413 Steel Beak Cape
+19414 Steel Beak Helm
+19415 Steel Beak Belt
+19416 Steel Beak Epaulettes
+19417 Steel Beak Breastplate
+19420 Black Crow Emblem
+19421 White Crow Emblem
+19422 Steel Beak Sword
+19423 Cute Corset
+19424 Soul Brother
+19425 Soul Sister
+19426 Riktus Cape
+19427 Epaulettes of Lord Cuhkol
+19429 Dora Borette
+19430 Dora Lagoole
+19431 Dora Marron
+19432 Dora N.I.O.
+20246 Sham Moon Tail-Cape
+20247 Sham Moon Feet
+20248 Sham Moon Hands
+20249 Sham Moon Pendant
+20250 Sham Moon Headgear
+20251 Sham Moon Belt
+20252 Sham Moon Epaulettes
+20253 Sham Moon Torso
+20277 Monkey-Ring
+20278 Monkey King Epaulettes
+20279 Sham Moon Hammer
+20281 Precision Sham
+20293 Bow Meoviator Helmet
+20294 Luk Ylook Cloak
+20295 Precision Charm
+20362 Destruction Sham
+20363 Melee Sham
+20364 Long-Range Sham
+20365 Persistence Sham
+20367 Moon Aegis
+20368 Violence Sham
+20369 Sneakiness Sham
+20719 Prismatic Belt
+20720 Prismatic Dofus
+20722 Dragon Epaulettes
+20723 Dragon Armor
+20724 Dragon Coat
+20725 Dragon Helm
+20726 Dragon Shin Guards
+20727 Dragon Amulet
+20728 Dragon Seal
+20729 Prismatic Bow
+20730 Prismatic Ring
+20731 Prismatic Buckle
+20732 Coat of Chain Scales
+20733 Dragon Slicer
+20734 Iridescent Necklace
+20735 Mage Cape
+22442 Sham Moon Tail-Cape
+22443 Sham Moon Belt
+22444 Sham Moon Headgear
+22445 Sham Moon Epaulettes
+22446 Sham Moon Hands
+22447 Sham Moon Hammer
+22448 Sham Moon Pendant
+22449 Sham Moon Feet
+22450 Sham Moon Torso
+22451 Monkey-Ring
+22452 Bow Meoviator Helmet
+22453 Moon Aegis
+22454 Precision Charm
+22463 Steel Beak Amulet
+22464 Steel Beak Ring
+22465 Steel Beak Boots
+22466 Steel Beak Cape
+22467 Steel Beak Belt
+22468 Steel Beak Epaulettes
+22469 Steel Beak Breastplate
+22470 Steel Beak Sword
+22471 Soul Brother
+22472 Cute Corset
+22473 Epaulettes of Lord Cuhkol
+22474 Riktus Cape
+22475 Soul Sister
+22489 Steel Beak Helm
+22523 Dragon Amulet
+22524 Prismatic Ring
+22525 Prismatic Bow
+22526 Dragon Armor
+22527 Dragon Epaulettes
+22528 Dragon Helm
+22529 Dragon Shin Guards
+22530 Dragon Coat
+22531 Dragon Seal
+22532 Prismatic Buckle
+22533 Iridescent Necklace
+22534 Coat of Chain Scales
+22535 Mage Cape
+22536 Dragon Slicer
+23174 White Crow Wings
+23175 White Crow Belt
+23176 White Crow Breastplate
+23177 White Crow Hackle
+23179 Black Crow's Ring
+23181 Black Crow's Helmet
+23182 Black Crow's Epaulettes
+23183 Black Crow's Boots
+23184 Black Crow's Cloak
+23185 Magmog Cloak
+23186 Magmog Clinkers
+23187 Magmog Feet
+23188 Magmog Halo
+23189 Gray Mage's Wand
+23191 The Mogmatic
+23192 Gobbalrog Helmet
+23193 Gobbalrog Cloak
+23194 Gobbalrog Boots
+23195 Gobbalrog Belt
+23196 Gobbalrog Breastplate
+23197 Dragon Pig Winglets
+23198 Dragon Pig Helmet
+23199 Dragon Pig Trotters
+23200 Dragon Pig Breastplate
+23201 Dragon Pig Bandage
+23202 Dragon Pig Beads
+23205 Larduous Hat
+23206 Larduous Epaulettes
+23207 Larduous Breastplate
+23208 Larduous Boots
+23843 Milkar Fangs
+23844 Milkar Fur
+23845 Milkar Finery
+23846 Milkar Mitts
+23847 Hurdy Girdle
+23848 Demented Club
+23850 Moowolf Signet Ring
+23851 Moowolf Bell
+23852 Moowolf Headgear
+23853 Excarnus's Crystal
+23855 Moowolf Finery
+23856 Excarnus Fleece
+23857 Excarnus Veil
+23860 Gobbsage Cape
+23863 Gobbsage String
+23965 Ignemikhal Claws
+23967 Aguabrial Scales
+23968 Aguabrial Scales
+23969 Dardondakal Fang
+23970 Dardondakal Fang
+23971 Terrakourial's Paws
+23972 Terrakourial's Paws
+23973 Aerafal’s Wings
+23974 Aerafal’s Wings
+23975 Grougalorasalar Skull
+23976 Grougalorasalar Skull
+23977 Forgotten Epaulettes
+23978 Forgotten Epaulettes
+23979 Forgotten Breastplate
+23980 Forgotten Breastplate
+23981 Forgotten Ring
+23982 Forgotten Ring
+23983 Forgotten Navigator's Ring
+23984 Forgotten Navigator's Ring
+23985 Forgotten Amulet
+23986 Forgotten Amulet
+23987 Forgotten Boots
+23988 Forgotten Boots
+23989 Forgotten Belt
+23990 Forgotten Belt
+23991 Forgotten Cloak
+23992 Forgotten Cloak
+23994 Ebony Dofus Fragment
+23995 Emerald Dofus Fragment
+23996 Ivory Dofus Fragment
+23997 Ochre Dofus Fragment
+23998 Turquoise Dofus Fragment
+23999 Crimson Dofus Fragment
+24000 Disembodier
+24001 Sword of Iop
+24002 Enutrof Shovel
+24003 Sram Dagger
+24004 Feca's Shield
+24005 Sacrier Axe
+24006 Sadida's Staff
+24007 Pandawa's Bamboo
+24008 Osamodas' Hammer
+24009 Cra Bow
+24010 Ecaflip Cards
+24011 Xelor's Hand
+24012 Eniripsa's Wand
+24014 Disembodier
+24015 Sword of Iop
+24016 Enutrof Shovel
+24017 Sram Dagger
+24018 Feca's Shield
+24019 Sacrier Axe
+24020 Sadida's Staff
+24021 Pandawa's Bamboo
+24022 Osamodas' Hammer
+24023 Cra Bow
+24024 Ecaflip Cards
+24025 Xelor's Hand
+24026 Eniripsa's Wand
+24027 Dathura Souvenir
+24028 Ogrest's Wrath
+24121 Turq Tutu
+24794 Forgotten Helmet
+24795 Forgotten Helmet
+26262 Milkar Paw
+26263 Black Crow's Slasher
+26264 Gobbsage Dora
+26265 Red Mage's Wand
+26266 Lard-Borer
+26267 Blade of Betrayal
+26268 Darkli Moon Necklace
+26269 Counselor of the Gods Laurels
+26287 Deadly Stylist
+26288 Belt of Shadows
+26289 Hooklettes
+26290 Shademail
+26291 Cape Hillary
+26292 Horned Headgear
+26293 Worn to a Shadow
+26294 Collar of Shadows
+26295 Hairpin
+26296 Brrr Belt
+26297 Shadroomba Ring
+26298 Shadowed Boots
+26299 Breastplate of Shadows
+26300 Laughing Shovel
+26301 Laughing Ring
+26302 Hairlarious Cloak
+26303 Mocking Cap
+26304 Jeering Epaulettes
+26310 Hooklettes
+26311 Shademail
+26312 Cape Hillary
+26313 Horned Headgear
+26314 Worn to a Shadow
+26315 Collar of Shadows
+26316 Hairpin
+26317 Brrr Belt
+26318 Breastplate of Shadows
+26319 Laughing Shovel
+26321 Laughing Ring
+26322 Hairlarious Cloak
+26323 Mocking Cap
+26324 Jeering Epaulettes
+26566 Fire of Darkness Emblem
+26567 Volcano Fire Emblem
+26568 Ethereal Soul Emblem
+26569 Savagery Emblem
+26572 Lard of Combat Emblem
+27064 Koolich Boots
+27065 The Optimizer
+27066 Shadowy Breastplate
+27207 Gobbalroglet
+27688 Moowolf Bell
+27689 Tortured Soul
+27690 Magmog Feet
+27691 Gobbalrog Breastplate
+27692 Hurdy Girdle
+27693 White Crow Hackle
+27694 The Black Crow's Helmet
+27695 Excarnus Veil
+27806 Enchanting Hat
+27808 Garbfather Jacket
+28409 Enchanting Hat
+28410 Garbfather Jacket
+29454 Valkyr Helmet
+29455 The Portal
+29456 Dofushu
+29457 Rushu Ring
+29458 Rushu Ring
+29459 Rushu Helmet
+29460 Rushu Helmet
+29461 Rushu Cloak
+29462 Rushu Cloak
+29463 Rushu Boots
+29464 Rushu Boots
+29465 Rushu Breastplate
+29466 Rushu Breastplate
+29467 Rushu Amulet
+29468 Rushu Amulet
+29469 Rushu Belt
+29470 Rushu Belt
+29471 Rushu Epaulettes
+29472 Rushu Epaulettes
+29473 Tatsus Shushu
+29474 Tatsus Shushu
+29475 Abyssal Trencher
+29476 Abyssal Trencher
+29477 Mysterious Blade
+29478 Mysterious Blade
+29479 Vylus Shushu
+29480 Vylus Shushu
+29481 The Aviolbow
+29482 The Aviolbow
+29483 The Augaromace
+29484 The Augaromace
+29485 Last Rest Scepter
+29486 Last Rest Scepter
+29487 Kraivus Shushu
+29488 Kraivus Shushu
+29489 End of Time Aegis
+29490 End of Time Aegis
+29491 Gobbsaggy Dagger
+29492 Gobbsaggy Dagger
+29516 Corrupted Viddhartas
+29517 Corrupted Viddhartas
+29518 Corrupted Perpetual Cloak
+29519 Corrupted Perpetual Cloak
+29520 Corrupted Daudgee
+29521 Corrupted Daudgee
+29522 Corrupted Mail Har
+29523 Corrupted Mail Har
+29524 Corrupted Shadows of the Veiled Souls
+29525 Corrupted Shadows of the Veiled Souls
+29526 Corrupted Emiw Amulet
+29527 Corrupted Emiw Amulet
+29528 Corrupted Soul Sister
+29529 Corrupted Soul Sister
+29530 Corrupted Lenald Maltial Alt Belt
+29531 Corrupted Lenald Maltial Alt Belt
+29532 Cursed Shamanic Egg
+29533 Cursed Shamanic Egg
+29534 Cursed Five Cawat Ring
+29535 Cursed Five Cawat Ring
+29536 Cursed High Priestess Belt
+29537 Cursed High Priestess Belt
+29538 Cursed Janairo Helmet
+29539 Cursed Janairo Helmet
+29540 Cursed Luk Ylook Cloak
+29541 Cursed Luk Ylook Cloak
+29542 Cursed Abreastplate
+29543 Cursed Abreastplate
+29544 Cursed Otomai's Scouts Greaves
+29545 Cursed Otomai's Scouts Greaves
+29546 Cursed Black Crow's Epaulettes
+29547 Cursed Black Crow's Epaulettes
+29622 Age-Old Sword
+29623 Age-Old Sword
+29624 Great Age-Old Blade
+29625 Great Age-Old Blade
+29626 Age-Old Ax
+29627 Age-Old Ax
+29628 Age-Old Shovel
+29629 Age-Old Shovel
+29630 Age-Old Scepter
+29631 Age-Old Scepter
+29632 Age-Old Hammer
+29633 Age-Old Hammer
+29634 Great Age-Old Staff
+29635 Great Age-Old Staff
+29636 Age-Old Bow
+29637 Age-Old Bow
+29638 Age-Old Cards
+29639 Age-Old Cards
+29640 Age-Old Wand
+29641 Age-Old Wand
+29642 Age-Old Clock Hand
+29643 Age-Old Clock Hand
+29644 Munkeliar Epaulettes
+29645 Age-Old Dagger
+29646 Age-Old Dagger
+29804 Excarnus Strap
+29806 Excarnus Stripes
+29808 Moowolf Boots
+29810 Alepaulettes
+29812 White Crow Helmet
+29816 Magmog Talisman
+29818 Gobbalrog Ring
+29820 Dragon Pig Baldric
