@@ -338,14 +338,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             item._critical_mastery,
         )
 
-    ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon]
-    TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]
-    DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]
-    SHIELDS = [] if SKIP_SHIELDS else [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 189][:ITEM_SEARCH_DEPTH]
-
-    del CANIDATES["FIRST_WEAPON"]
-    del CANIDATES["SECOND_WEAPON"]
-
     if original_forced_counts:
         for slot, count in original_forced_counts.items():
             if (slot != "LEFT_HAND" and count == 1) or (slot == "LEFT_HAND" and count == 2):
@@ -355,6 +347,17 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 for canidate in CANIDATES[slot][::-1]:
                     if canidate.name in names:
                         CANIDATES[slot].remove(canidate)
+
+    ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon] if "FIRST_WEAPON" in CANIDATES else []
+    TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]  if "FIRST_WEAPON" in CANIDATES else []
+    DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]  if "SECOND_WEAPON" in CANIDATES else []
+    if SKIP_SHIELDS or "SECOND_WEAPON" not in CANIDATES:
+        SHIELDS = []
+    else:
+        SHIELDS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 189]
+
+    del CANIDATES["FIRST_WEAPON"]
+    del CANIDATES["SECOND_WEAPON"]
 
     for items in (ONEH, TWOH, DAGGERS, *CANIDATES.values()):
         if not items:
@@ -386,8 +389,10 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
             for stat in ("_ap", "_mp", "_range", "_wp"):  # TODO: Dynamic
                 x = attrgetter(stat)
+                condition = (0).__gt__ if all(x(i) > 0 for i in items) else (0).__le__
+
                 for item in ordered_keep_by_key(bck, x, k):
-                    if x(item) > 0 and item not in items:
+                    if condition(x(item)) and item not in items:
                         items.append(item)
 
             uniq = ordered_keep_by_key(items, needs_full_sim_key, k)
@@ -526,8 +531,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             if epic.disables_second_weapon and relic.item_slot == "SECOND_WEAPON":
                 continue
 
-        partial_score = score_key(epic) + (score_key(relic) if relic else 0)
-
         REM_SLOTS = [
             "LEGS",
             "BACK",
@@ -600,30 +603,22 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
             CANIDATES["WEAPONS"].sort(key=weapon_score_func, reverse=True)
 
-        RING_CHECK_NEEDED = REM_SLOTS.count("LEFT_HAND") > 1
-
         try:
-            cans = [CANIDATES[k][: ns.search_depth + 2] for k in REM_SLOTS]
+            k = REM_SLOTS.count("LEFT_HAND")
+            ring_pairs = list(itertools.combinations(CANIDATES["LEFT_HAND"], k)) if k else ()
+            cans = [ring_pairs, *(CANIDATES[k] for k in REM_SLOTS if k != "LEFT_HAND")]
             cn_c = reduce(mul, map(len, cans), 1) / 3
-            if RING_CHECK_NEEDED:
-                cn_c *= len(CANIDATES["LEFT_HAND"])
         except KeyError as exc:
             log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
             continue
 
         if cn_c > 5000 and use_tqdm:
-            inner = tqdm.tqdm(itertools.product(*cans), desc="Trying items with that pair", total=cn_c, leave=True)
+            inner = tqdm.tqdm(itertools.product(*filter(None, cans)), desc="Trying items with that pair", total=cn_c, leave=True)
         else:
-            inner = itertools.product(*cans)
+            inner = itertools.product(*filter(None, cans))
 
         for raw_items in inner:
             items = [*tuple_expander(raw_items), *forced_items]
-
-            if RING_CHECK_NEEDED:
-                rings: list[EquipableItem] = [i for i in items if i.item_slot == "LEFT_HAND"]
-                r1, r2 = rings
-                if r1._item_id == r2._item_id:
-                    continue
 
             statline: Stats = reduce(add, (i.as_stats for i in (relic, epic, *items) if i))
             if statline.ap < AP or statline.mp < MP or statline.wp < WP or statline.ra < RA:
@@ -646,7 +641,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             if (mns or mxs) and not generate_filter(base_stats, mns, mxs)(stats):
                 continue
 
-            score = sum(score_key(i) for i in items) + partial_score + BASE_RELEV_MASTERY
+            score = sum(score_key(i) for i in (*items, relic, epic)) + BASE_RELEV_MASTERY
             score = (score + (crit_mastery if UNRAVELING else 0)) * ((100 - crit_chance) / 100) + (score + crit_mastery) * (
                 crit_chance / 80
             )  # 1.25 * .01, includes crit math
@@ -658,8 +653,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 filtered.sort(key=lambda i: i._item_id)
 
                 tup = (score, filtered)
-                if tup in BEST_LIST:
-                    continue
                 BEST_LIST.sort(key=itemgetter(0), reverse=True)
                 BEST_LIST = BEST_LIST[:5]
                 BEST_LIST.append(tup)
@@ -711,6 +704,7 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
     parser.add_argument("--exhaustive", dest="exhaustive", default=False, action="store_true")
     parser.add_argument("--tolerance", dest="tolerance", type=int, default=30)
+    parser.add_argument("--opti-res-instead", dest="optimize_res_block_instead", action="store_true", default=False)
 
     if ns is None:
         ns = parser.parse_args(namespace=v1Config())
