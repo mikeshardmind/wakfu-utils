@@ -154,35 +154,3 @@ def encode_build(build: v1Build) -> str:
 
 def decode_build(build_str: str) -> v1Build:
     return msgpack.decode(zlib.decompress(base2048.decode(build_str), wbits=-15), type=v1Build)
-
-
-# TODO: RELEASE-BLOCKER Add element support to the below prior to next release, or remove the code.
-# Do not version this without element support.
-def encode_partialv1(
-    classname: str | ClassName | None = None,
-    level: int = 230,
-    items: list[int] | None = None,
-) -> str:
-    if isinstance(classname, str):
-        try:
-            classname = ClassName[classname]
-        except KeyError:
-            return ""
-    _items = [Item(item_id=i) for i in items] if items else []
-
-    build = v1Build(classname=classname, level=level, items=_items)
-
-    return encode_build(build)
-
-
-DATA = tuple[ClassName | None, int, list[int]]
-Decodev1Result = tuple[DATA | None, str | None]
-
-
-def decode_partialv1(build_str: str) -> Decodev1Result:
-    try:
-        build = decode_build(build_str)
-    except Exception:  # noqa: BLE001
-        return None, "Invalid Build String"
-
-    return (build.classname, build.level, [item.item_id for item in build.items]), None

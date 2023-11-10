@@ -10,7 +10,6 @@ from __future__ import annotations
 # pyright: reportPrivateUsage=false
 # pyright: reportConstantRedefinition=false
 import bz2
-import collections
 import contextvars
 import logging
 import pathlib
@@ -409,13 +408,12 @@ _EFFECT_MAP: dict[int, Callable[[list[int]], list[tuple[str, int]]]] = {
     # along with the emblem lanterns (fire of darkness, jacko, etc)
     # but also mounts??)
     400: lambda d: [],
-    # 832: +x level to [specified element] spells. TODO but not rushing this.
-    832: lambda d: [],
+    832: lambda d: [],  # 832: +x level to [specified element] spells.
     # 843 intetionally omitted, no items
     # 865 intetionally omitted, no items
     875: lambda d: [("_block", d[0])],
     876: lambda d: [("_block", 0 - d[0])],
-    # 979: +x level to elemental spells. TODO but not rushing this.
+    # 979: +x level to elemental spells.
     979: lambda d: [],
     988: lambda d: [("_critical_resistance", d[0])],
     1020: lambda d: [],  # makabrakfire ring, also not handling this one.
@@ -434,8 +432,7 @@ _EFFECT_MAP: dict[int, Callable[[list[int]], list[tuple[str, int]]]] = {
     1069: type1069,  # requires a bit more logic
     1083: lambda d: [],  # light damage
     1084: lambda d: [],  # light heal
-    # harvesting quantity,  TODO: decsion: maybe make this searchable?
-    2001: lambda d: [],
+    2001: lambda d: [],  # Harvest quant, unused by solver.
 }
 
 
@@ -455,7 +452,6 @@ class RawEffectType(TypedDict):
 class Effect:
     def __init__(self):
         self._transforms: list[tuple[str, int]] = []
-        # TODO: self._description = {}
         self._id: int
 
     def apply_to(self, item: EquipableItem) -> None:
@@ -495,8 +491,6 @@ class EquipableItem:
         self._item_rarity: int = 0
         self._item_type: int = 0
         self._title_strings: dict[str, str] = {}
-        self._description_strings: dict[str, str] = collections.defaultdict(str)
-        # TODO: self._computed_effects_display: Dict[str, str] = {}
         self._hp: int = 0
         self._ap: int = 0
         self._mp: int = 0
@@ -564,10 +558,6 @@ class EquipableItem:
     def name(self) -> str | None:
         return self._title_strings.get(_locale.get(), None)
 
-    @property
-    def description(self) -> str | None:
-        return self._description_strings.get(_locale.get(), None)
-
     @classmethod
     def from_bz2_bundled(cls: type[Self]) -> list[Self]:
         data_file_path = pathlib.Path(__file__).with_name("item_data.bz2")
@@ -591,7 +581,6 @@ class EquipableItem:
 
         ret = cls()
         ret._title_strings = data.get("title", {}).copy()
-        ret._description_strings = data.get("description", {}).copy()
         ret._item_id = base_details["id"]
         ret._item_lv = base_details["level"]
         ret._item_rarity = base_params["rarity"]

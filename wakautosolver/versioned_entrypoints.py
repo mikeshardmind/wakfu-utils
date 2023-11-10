@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from .build_codes import Build, ClassName, Item, encode_build
+from .build_codes import ClassName, Item, encode_build
 from .build_codes import Stats as AssignedStatPoints
+from .build_codes import v1Build as Build
 from .restructured_types import Priority, SetMinimums, StatPriority, Stats
 from .solver import SolveError, solve, v1Config
 
