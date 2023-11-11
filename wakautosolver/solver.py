@@ -24,12 +24,11 @@ from typing import Final, Protocol, TypeVar
 
 import tqdm
 
-from .build_codes import Item, encode_build
-from .build_codes import v1Build as Build
 from .object_parsing import EquipableItem, _locale
 from .restructured_types import SetMaximums, SetMinimums, Stats, generate_filter, v1Config
 from .unobs import get_unobtainable_ids
 from .utils import only_once
+from .wakforge_buildcodes import build_code_from_item_ids
 
 T = TypeVar("T")
 
@@ -755,8 +754,8 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
         write(f"Best set under constraints has effective mastery {score}:")
         write(*items, sep="\n")
 
-        #build = Build(level=ns.lv, items=[Item(i._item_id) for i in items])
-        #write("Build code:", encode_build(build))
+        build = build_code_from_item_ids(ns.lv, [i._item_id for i in items])
+        write("Wakforge compatible build code (items and level only):", build, sep="\n")
 
 
 if __name__ == "__main__":

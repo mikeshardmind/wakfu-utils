@@ -8,10 +8,12 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 import enum
+import zlib
 from typing import Literal
 
-from msgspec import Struct, field
+from msgspec import Struct, field, msgpack
 
+from . import b2048
 from ._typing_memes import STAT_MAX, UP_TO_5, UP_TO_10, UP_TO_11, UP_TO_20, UP_TO_40, ZERO_OR_ONE
 
 # Builds here are currently equivalent to an open PR, do not use for stable
@@ -128,3 +130,15 @@ class Buildv1(Struct, array_like=True):
     passive_4: int = -1
     passive_5: int = -1
     passive_6: int = -1
+
+
+def build_code_from_item_ids(level: int, ids: list[int]) -> str:
+    kwargs = {f"item_{idx}": Item(item_id=item_id) for idx, item_id in enumerate(ids)}
+    build = Buildv1(level=level, **kwargs)  # type: ignore
+    encoded = msgpack.encode(build)
+    compressed = zlib.compress(encoded, level=9, wbits=-15)
+    return b2048.encode(compressed)
+
+
+def build_from_code(code: str) -> Buildv1:
+    return msgpack.decode(zlib.decompress(b2048.decode(code), wbits=-15), type=Buildv1)
