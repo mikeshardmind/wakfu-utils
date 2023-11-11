@@ -15,6 +15,7 @@ import argparse
 import collections
 import itertools
 import logging
+import statistics
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache, reduce
@@ -111,6 +112,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     BASE_CRIT_MASTERY = ns.bcmast
     BASE_RELEV_MASTERY = ns.bmast
     SKIP_TWO_HANDED = ns.skiptwo_hand
+
+    RES_DEVIATION_PENALTY = 0  # TODO: tuning knob or do it based on level based rune effectiveness
 
     if WEILD_TYPE_TWO_HANDED:
         AP -= 2
@@ -363,8 +366,23 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         if not items:
             continue
         slot = items[0].item_slot
+
         items.sort(key=score_key, reverse=True)
         inplace_ordered_unique_by_key(items, attrgetter("name", "is_souvenir"))
+
+        dist = statistics.NormalDist.from_samples(i.total_elemental_res for i in items)
+
+        def res_adjusted_key(item: EquipableItem, dist: statistics.NormalDist = dist) -> float:
+            st = score_key(item)
+            try:
+                adj = RES_DEVIATION_PENALTY * dist.zscore(item.total_elemental_res)
+            except statistics.StatisticsError:  # zscore when sigma = 0
+                adj = 0
+            if adj:
+                return st + adj * st
+            return st
+
+        items.sort(key=res_adjusted_key, reverse=True)
 
         if slot == "LEFT_HAND":
             uniq = ordered_keep_by_key(items, needs_full_sim_key, 2)
