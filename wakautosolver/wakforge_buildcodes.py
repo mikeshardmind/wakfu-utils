@@ -57,8 +57,8 @@ class Rune(Struct, array_like=True):
 class Item(Struct, array_like=True):
     item_id: int = -1
     assignable_elements: WFElements = WFElements.empty
-    rune_info: list[Rune] = field(default_factory=lambda: [Rune() for _ in range(4)])
-    sublimations: list[int] = field(default_factory=lambda: [0, 0])
+    rune_info: list[Rune] | list[list[object]] = field(default_factory=lambda: [[] for _ in range(4)])
+    sublimations: list[int] = field(default_factory=list)
 
 
 SupportedVersions = Literal[1]
@@ -98,20 +98,20 @@ class Buildv1(Struct, array_like=True):
     s_major_control: ZERO_OR_ONE = 0
     s_major_damage: ZERO_OR_ONE = 0
     s_major_res: ZERO_OR_ONE = 0
-    item_1: Item = field(default_factory=Item)
-    item_2: Item = field(default_factory=Item)
-    item_3: Item = field(default_factory=Item)
-    item_4: Item = field(default_factory=Item)
-    item_5: Item = field(default_factory=Item)
-    item_6: Item = field(default_factory=Item)
-    item_7: Item = field(default_factory=Item)
-    item_8: Item = field(default_factory=Item)
-    item_9: Item = field(default_factory=Item)
-    item_10: Item = field(default_factory=Item)
-    item_11: Item = field(default_factory=Item)
-    item_12: Item = field(default_factory=Item)
-    item_13: Item = field(default_factory=Item)
-    item_14: Item = field(default_factory=Item)
+    item_1: Item | list[object] = field(default_factory=list)
+    item_2: Item | list[object] = field(default_factory=list)
+    item_3: Item | list[object] = field(default_factory=list)
+    item_4: Item | list[object] = field(default_factory=list)
+    item_5: Item | list[object] = field(default_factory=list)
+    item_6: Item | list[object] = field(default_factory=list)
+    item_7: Item | list[object] = field(default_factory=list)
+    item_8: Item | list[object] = field(default_factory=list)
+    item_9: Item | list[object] = field(default_factory=list)
+    item_10: Item | list[object] = field(default_factory=list)
+    item_11: Item | list[object] = field(default_factory=list)
+    item_12: Item | list[object] = field(default_factory=list)
+    item_13: Item | list[object] = field(default_factory=list)
+    item_14: Item | list[object] = field(default_factory=list)
     active_1: int = -1
     active_2: int = -1
     active_3: int = -1
@@ -133,7 +133,7 @@ class Buildv1(Struct, array_like=True):
 
 
 def build_code_from_item_ids(level: int, ids: list[int]) -> str:
-    kwargs = {f"item_{idx}": Item(item_id=item_id) for idx, item_id in enumerate(ids)}
+    kwargs = {f"item_{idx}": Item(item_id=item_id) for idx, item_id in enumerate(ids, 1)}
     build = Buildv1(level=level, **kwargs)  # type: ignore
     encoded = msgpack.encode(build)
     compressed = zlib.compress(encoded, level=9, wbits=-15)
