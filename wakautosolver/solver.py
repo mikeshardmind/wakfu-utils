@@ -755,8 +755,8 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
         write(f"Best set under constraints has effective mastery {score}:")
         write(*items, sep="\n")
 
-        build = Build(level=ns.lv, items=[Item(i._item_id) for i in items])
-        write("Build code:", encode_build(build))
+        #build = Build(level=ns.lv, items=[Item(i._item_id) for i in items])
+        #write("Build code:", encode_build(build))
 
 
 if __name__ == "__main__":
