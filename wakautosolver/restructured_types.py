@@ -264,7 +264,7 @@ class v1Config(Struct, kw_only=True):
     skiptwo_hand: bool = False
     locale: Literal["en", "fr", "pt", "es"] = "en"
     dry_run: bool = False
-    hard_cap_depth: int = 100
+    hard_cap_depth: int = 25
     negzerk: Literal["full", "half", "none"] = "none"
     negrear: Literal["full", "half", "none"] = "none"
     forbid_rarity: list[int] = field(default_factory=list)

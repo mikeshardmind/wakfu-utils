@@ -349,8 +349,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                         CANIDATES[slot].remove(canidate)
 
     ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon] if "FIRST_WEAPON" in CANIDATES else []
-    TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon]  if "FIRST_WEAPON" in CANIDATES else []
-    DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112]  if "SECOND_WEAPON" in CANIDATES else []
+    TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon] if "FIRST_WEAPON" in CANIDATES else []
+    DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112] if "SECOND_WEAPON" in CANIDATES else []
     if SKIP_SHIELDS or "SECOND_WEAPON" not in CANIDATES:
         SHIELDS = []
     else:
@@ -389,11 +389,13 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
             for stat in ("_ap", "_mp", "_range", "_wp"):  # TODO: Dynamic
                 x = attrgetter(stat)
-                condition = (0).__gt__ if all(x(i) > 0 for i in items) else (0).__le__
-
+                c_added = 0
                 for item in ordered_keep_by_key(bck, x, k):
-                    if condition(x(item)) and item not in items:
+                    if x(item) > 0 and item not in items:
                         items.append(item)
+                        c_added += 1
+                        if c_added >= k:
+                            break
 
             uniq = ordered_keep_by_key(items, needs_full_sim_key, k)
             for i in items[::-1]:
@@ -467,25 +469,31 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     epics = ordered_unique_by_key(epics, kf)
     relics = ordered_unique_by_key(relics, kf)
 
-    re_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
-    re_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
-    re_key_func = lambda w: (
-        (*(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),),
-        "-".join(sorted(i.item_slot for i in tuple_expander(w))),
-    )
-    re_score_func = lambda w: sum(map(score_key, tuple_expander(w)))
-    if relics:
-        sorted_pairs = sorted((*itertools.product(relics, epics), *extra_pairs), key=re_score_func, reverse=True)
-        canidate_re_pairs = ordered_unique_by_key(sorted_pairs, re_key_func)
-    else:
-        canidate_re_pairs = (
-            *itertools.product(relics or [None], epics or [None]),
-            *extra_pairs,
-        )
+    def re_key_func(pair: tuple[EquipableItem | None, EquipableItem | None]) -> Hashable:
+        if not any(pair):
+            return 0
+        disables_second = any(i.disables_second_weapon for i in pair if i)
+        positions = [i.item_slot for i in pair if i]
+        pos_key = "-".join(sorted(positions))
+        re_s = [i.as_stats for i in pair if i]
+        sc = re_s[0]
+        if len(re_s) > 1:
+            sc = sc + re_s[1]
+        ks = attrgetter("ap", "mp", "ra", "wp", "crit", "crit_mastery")(sc)
+        return (pos_key, disables_second, *ks)
+
+    def re_score_key(pair: tuple[EquipableItem | None, EquipableItem | None]) -> float:
+        return sum(map(score_key, pair))
+
+    pairs: list[tuple[EquipableItem | None, EquipableItem | None]]
+    pairs = [*itertools.product(relics or [None], epics or [None]), *extra_pairs]  # type: ignore
+    pairs.sort(key=re_score_key, reverse=True)
+    canidate_re_pairs = ordered_unique_by_key(pairs, re_key_func)
 
     if ns and not ns.exhaustive:
+        per_item_factor = lambda llv, lls: 2 if lls == "LEFT_HAND" else 1  # type: ignore TODO
         canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth]
-        CANIDATES = {k: v[: ns.hard_cap_depth] for k, v in CANIDATES.items()}
+        CANIDATES = {k: v[: ns.search_depth + per_item_factor(HIGH_BOUND, k)] for k, v in CANIDATES.items()}
         canidate_weapons = canidate_weapons[: int(ns.hard_cap_depth / 2)]
 
     if ns.dry_run:
@@ -704,7 +712,6 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
     two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
     parser.add_argument("--exhaustive", dest="exhaustive", default=False, action="store_true")
     parser.add_argument("--tolerance", dest="tolerance", type=int, default=30)
-    parser.add_argument("--opti-res-instead", dest="optimize_res_block_instead", action="store_true", default=False)
 
     if ns is None:
         ns = parser.parse_args(namespace=v1Config())
