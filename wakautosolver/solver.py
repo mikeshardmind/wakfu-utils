@@ -359,8 +359,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     else:
         SHIELDS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 189]
 
-    del CANIDATES["FIRST_WEAPON"]
-    del CANIDATES["SECOND_WEAPON"]
+    for key in ("FIRST_WEAPON", "SECOND_WEAPON"):
+        CANIDATES.pop(key, None)
 
     for items in (ONEH, TWOH, DAGGERS, *CANIDATES.values()):
         if not items:
