@@ -369,10 +369,12 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         items.sort(key=score_key, reverse=True)
         inplace_ordered_unique_by_key(items, attrgetter("name", "is_souvenir"))
 
-        dist = statistics.NormalDist.from_samples(i.total_elemental_res for i in items)
+        dist = statistics.NormalDist.from_samples(i.total_elemental_res for i in items) if len(items) > 1 else None
 
-        def res_adjusted_key(item: EquipableItem, dist: statistics.NormalDist = dist) -> float:
+        def res_adjusted_key(item: EquipableItem, dist: statistics.NormalDist | None = dist) -> float:
             st = score_key(item)
+            if dist is None:
+                return st
             try:
                 adj = RES_DEVIATION_PENALTY * dist.zscore(item.total_elemental_res)
             except statistics.StatisticsError:  # zscore when sigma = 0
@@ -499,23 +501,44 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         ks = attrgetter("ap", "mp", "ra", "wp", "crit", "crit_mastery")(sc)
         return (pos_key, disables_second, *ks)
 
-    distribs = {k: statistics.NormalDist.from_samples(score_key(i) for i in v) for k, v in CANIDATES.items()}
+    distribs = {
+        k: statistics.NormalDist.from_samples(score_key(i) for i in v) if len(v) > 1 else None
+        for k, v in CANIDATES.items()
+    }
 
-    def re_score_key(pair: tuple[EquipableItem | None, EquipableItem | None]) -> tuple[float, float]:
+    ONEH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in ONEH) if len(ONEH) > 1 else None
+    TWOH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in TWOH) if len(TWOH) > 1 else None
+    OFF_HANDS = DAGGERS + SHIELDS
+    OFF_HAND_distrib = statistics.NormalDist.from_samples(score_key(i) for i in OFF_HANDS) if len(OFF_HANDS) > 1 else None
+
+    @lru_cache
+    def re_score_key(pair: tuple[EquipableItem | None, EquipableItem | None]) -> tuple[int, float, float]:
         v, s = 0, 0
+        unknown = 0
         for re in pair:
             if re:
                 s += score_key(re)
-                try:
-                    v += distribs[re.item_slot].zscore(score_key(re))
-                except (KeyError, statistics.StatisticsError):
-                    pass
-        return v, s
+                if re.item_slot == "FIRST_WEAPON":
+                    dist = TWOH_distrib if re.disables_second_weapon else ONEH_distrib
+                elif re.item_slot == "SECOND_WEAPON":
+                    dist = OFF_HAND_distrib
+                else:
+                    dist = distribs.get(re.item_slot, None)
+
+                if dist:
+                    try:
+                        v += dist.zscore(score_key(re))
+                    except statistics.StatisticsError:
+                        unknown = -1
+                else:
+                    unknown = -1
+        return unknown, v, s
 
     pairs: list[tuple[EquipableItem | None, EquipableItem | None]]
     pairs = [*itertools.product(relics or [None], epics or [None]), *extra_pairs]  # type: ignore
     pairs.sort(key=re_score_key, reverse=True)
     canidate_re_pairs = ordered_unique_by_key(pairs, re_key_func)
+    pairs.sort(key=lambda p: re_score_key(p)[1:], reverse=True)
 
     if ns and not ns.exhaustive:
         per_item_factor = lambda llv, lls: 2 if lls == "LEFT_HAND" else 1  # type: ignore TODO
