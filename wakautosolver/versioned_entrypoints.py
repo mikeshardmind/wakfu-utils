@@ -103,9 +103,9 @@ def partial_solve_v1(
         zerk=zerk,
         rear=rear,
         dry_run=dry_run,
-        hard_cap_depth=50,
+        hard_cap_depth=25,
         tolerance=30,
-        search_depth=2,
+        search_depth=1,
     )
 
     try:

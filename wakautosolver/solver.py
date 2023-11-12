@@ -499,8 +499,18 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         ks = attrgetter("ap", "mp", "ra", "wp", "crit", "crit_mastery")(sc)
         return (pos_key, disables_second, *ks)
 
-    def re_score_key(pair: tuple[EquipableItem | None, EquipableItem | None]) -> float:
-        return sum(map(score_key, pair))
+    distribs = {k: statistics.NormalDist.from_samples(score_key(i) for i in v) for k, v in CANIDATES.items()}
+
+    def re_score_key(pair: tuple[EquipableItem | None, EquipableItem | None]) -> tuple[float, float]:
+        v, s = 0, 0
+        for re in pair:
+            if re:
+                s += score_key(re)
+                try:
+                    v += distribs[re.item_slot].zscore(score_key(re))
+                except (KeyError, statistics.StatisticsError):
+                    pass
+        return v, s
 
     pairs: list[tuple[EquipableItem | None, EquipableItem | None]]
     pairs = [*itertools.product(relics or [None], epics or [None]), *extra_pairs]  # type: ignore
