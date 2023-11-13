@@ -133,7 +133,7 @@ class Buildv1(Struct, array_like=True):
 
 
 def build_code_from_item_ids(level: int, ids: list[int]) -> str:
-    kwargs = {f"item_{idx}": Item(item_id=item_id) for idx, item_id in enumerate(ids, 1)}
+    kwargs = {f"item_{idx}": Item(item_id=item_id) for idx, item_id in enumerate(filter(None, ids), 1)}
     build = Buildv1(level=level, **kwargs)  # type: ignore
     encoded = msgpack.encode(build)
     compressed = zlib.compress(encoded, level=9, wbits=-15)
