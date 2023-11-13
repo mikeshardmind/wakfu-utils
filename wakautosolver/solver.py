@@ -28,7 +28,7 @@ from .object_parsing import EquipableItem, _locale
 from .restructured_types import SetMaximums, SetMinimums, Stats, generate_filter, v1Config
 from .unobs import get_unobtainable_ids
 from .utils import only_once
-from .wakforge_buildcodes import build_code_from_item_ids
+from .wakforge_buildcodes import build_code_from_items
 
 T = TypeVar("T")
 
@@ -195,10 +195,12 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             (item._item_id not in FORBIDDEN)
             and (item.name not in FORBIDDEN_NAMES)
             and (not has_currently_unhandled_item_condition(item))
-            and (item._item_rarity in allowed_rarities)
+            and ((item._item_rarity in allowed_rarities) or (item.item_slot in ("MOUNT", "PET")))
         )
 
     def level_filter(item: EquipableItem) -> bool:
+        if item.item_slot in ("MOUNT", "PET"):
+            return True
         return HIGH_BOUND >= item._item_lv >= max(LOW_BOUND, 1)
 
     def relic_epic_level_filter(item: EquipableItem) -> bool:
@@ -502,8 +504,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         return (pos_key, disables_second, *ks)
 
     distribs = {
-        k: statistics.NormalDist.from_samples(score_key(i) for i in v) if len(v) > 1 else None
-        for k, v in CANIDATES.items()
+        k: statistics.NormalDist.from_samples(score_key(i) for i in v) if len(v) > 1 else None for k, v in CANIDATES.items()
     }
 
     ONEH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in ONEH) if len(ONEH) > 1 else None
@@ -551,6 +552,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         ret.extend(filter(None, itertools.chain.from_iterable(canidate_re_pairs)))
         for k, v in CANIDATES.items():
             if k in (
+                "PET",
+                "MOUNT",
                 "LEGS",
                 "BACK",
                 "HEAD",
@@ -600,6 +603,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             "LEFT_HAND",
             "NECK",
             "ACCESSORY",
+            "MOUNT",
+            "PET",
         ]
 
         # This is a slot we allow building without, sets without will be worse ofc...
@@ -787,7 +792,7 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
         write(f"Best set under constraints has effective mastery {score}:")
         write(*items, sep="\n")
 
-        build = build_code_from_item_ids(ns.lv, [i._item_id for i in items])
+        build = build_code_from_items(ns.lv, items)
         write("Wakforge compatible build code (items and level only):", build, sep="\n")
 
 

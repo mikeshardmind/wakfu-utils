@@ -459,14 +459,20 @@ class Effect:
             item.update(prop, val)
 
     @classmethod
-    def from_raw(cls, raw: RawEffectType) -> Effect:
+    def from_raw(cls, raw: RawEffectType, is_pet: bool = False) -> Effect:
         ret = cls()
 
         try:
             effect = raw["effect"]["definition"]
             act_id = effect["actionId"]
             transformers = _EFFECT_MAP[act_id]
-            ret._transforms = transformers(effect["params"])
+            params = effect["params"]
+            t = transformers(params)
+            if t and params and is_pet:
+                k, v = t[0]
+                v = int(v + 50 * params[1])
+                t = [(k, v)]
+            ret._transforms = t
         except KeyError as exc:
             logging.exception(
                 "Effect parsing failed skipping effect payload:\n %s",
@@ -583,12 +589,14 @@ class EquipableItem:
         ret._title_strings = data.get("title", {}).copy()
         ret._item_id = base_details["id"]
         ret._item_lv = base_details["level"]
+        if item_type_id in (582, 611):
+            ret._item_lv = 50
         ret._item_rarity = base_params["rarity"]
         ret._item_type = item_type_id
         ret._is_shop_item = 7 in base_details.get("properties", [])
 
         for effect_dict in data["definition"]["equipEffects"]:
-            Effect.from_raw(effect_dict).apply_to(ret)
+            Effect.from_raw(effect_dict, is_pet=item_type_id in (582, 611)).apply_to(ret)
 
         if ret.name is None:
             if ret._item_id not in (27700, 27701, 27702, 27703):

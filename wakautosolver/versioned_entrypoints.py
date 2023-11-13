@@ -33,6 +33,24 @@ ClassNames = Literal[
     "Hupper",
 ]
 
+_adaptive_tolerance_map: dict[int, int] = {
+    20: 20,
+    35: 35,
+    50: 50,
+    65: 30,
+    80: 30,
+    95: 30,
+    110: 30,
+    125: 15,
+    140: 15,
+    155: 15,
+    170: 15,
+    185: 15,
+    200: 15,
+    215: 15,
+    230: 14,
+}
+
 v1Result = tuple[list[int] | None, str | None]
 
 
@@ -104,8 +122,8 @@ def partial_solve_v1(
         rear=rear,
         dry_run=dry_run,
         hard_cap_depth=25,
-        tolerance=30,
-        search_depth=1,
+        tolerance=_adaptive_tolerance_map.get(lv, 15),
+        search_depth=3 if dry_run else 1,
     )
 
     try:

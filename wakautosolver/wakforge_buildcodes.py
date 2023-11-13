@@ -6,7 +6,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 from __future__ import annotations
+import collections
 
+# pyright: reportPrivateUsage=none
 import enum
 import zlib
 from typing import Literal
@@ -15,6 +17,7 @@ from msgspec import Struct, field, msgpack
 
 from . import b2048
 from ._typing_memes import STAT_MAX, UP_TO_5, UP_TO_10, UP_TO_11, UP_TO_20, UP_TO_40, ZERO_OR_ONE
+from .object_parsing import EquipableItem
 
 # Builds here are currently equivalent to an open PR, do not use for stable
 
@@ -132,8 +135,38 @@ class Buildv1(Struct, array_like=True):
     passive_6: int = -1
 
 
-def build_code_from_item_ids(level: int, ids: list[int]) -> str:
-    kwargs = {f"item_{idx}": Item(item_id=item_id) for idx, item_id in enumerate(filter(None, ids), 1)}
+def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
+    slots = [
+        "ACCESSORY",
+        "BACK",
+        "BELT",
+        "CHEST",
+        "FIRST_WEAPON",
+        "HEAD",
+        "LEFT_HAND",
+        "LEGS",
+        "MOUNT",
+        "NECK",
+        "PET",
+        "LEFT_HAND",  # RIGHT_HAND, but ...
+        "SECOND_WEAPON",
+        "SHOULDERS",
+    ]
+
+    items = [i for i in items if i._item_id]  # filter out placeholder items
+
+    ordered: list[Item | list[object]] = []
+
+    for slot in slots:
+        nx: EquipableItem | None = next(iter(i for i in items if i.item_slot == slot), None)
+        if nx:
+            ordered.append(Item(item_id=nx._item_id))
+            items.remove(nx)
+        else:
+            ordered.append([])
+
+    kwargs = {f"item_{idx}": item for idx, item in enumerate(ordered, 1)}
+
     build = Buildv1(level=level, **kwargs)  # type: ignore
     encoded = msgpack.encode(build)
     compressed = zlib.compress(encoded, level=9, wbits=-15)
