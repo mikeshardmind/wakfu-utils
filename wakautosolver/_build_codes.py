@@ -7,6 +7,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 from __future__ import annotations
 
+# This is an idealized handling that varies a bit from wakforge's. Keeping it for now,
 import enum
 import zlib
 

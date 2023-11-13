@@ -6,7 +6,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 from __future__ import annotations
-import collections
 
 # pyright: reportPrivateUsage=none
 import enum
@@ -14,12 +13,12 @@ import zlib
 from typing import Literal
 
 from msgspec import Struct, field, msgpack
+from msgspec.structs import astuple
 
 from . import b2048
+from ._build_codes import Stats as AllocatedStats
 from ._typing_memes import STAT_MAX, UP_TO_5, UP_TO_10, UP_TO_11, UP_TO_20, UP_TO_40, ZERO_OR_ONE
 from .object_parsing import EquipableItem
-
-# Builds here are currently equivalent to an open PR, do not use for stable
 
 
 class WFClasses(enum.IntEnum):
@@ -134,6 +133,24 @@ class Buildv1(Struct, array_like=True):
     passive_5: int = -1
     passive_6: int = -1
 
+    @classmethod
+    def from_code(cls, code: str) -> Buildv1:
+        return msgpack.decode(zlib.decompress(b2048.decode(code), wbits=-15), type=Buildv1)
+
+    def get_allocated_stats(self) -> AllocatedStats:
+        tup = astuple(self)
+        return AllocatedStats(*tup[3:32])
+
+    def get_item_ids(self) -> list[Item]:
+        """
+        Wakforge attaches 2 sublimations to an item matching how
+        the game does it instead of the idealized structure,
+        converstion to an idealized build requires knowing which sublimations
+        are relic and epic sublimations, and isn't important right now.
+        """
+        items = astuple(self)[32:46]
+        return [i for i in items if isinstance(i, Item)]
+
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
     slots = [
@@ -174,4 +191,4 @@ def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
 
 
 def build_from_code(code: str) -> Buildv1:
-    return msgpack.decode(zlib.decompress(b2048.decode(code), wbits=-15), type=Buildv1)
+    return Buildv1.from_code(code)
