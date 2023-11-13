@@ -141,7 +141,7 @@ class Buildv1(Struct, array_like=True):
         tup = astuple(self)
         return AllocatedStats(*tup[3:32])
 
-    def get_item_ids(self) -> list[Item]:
+    def get_items(self) -> list[Item]:
         """
         Wakforge attaches 2 sublimations to an item matching how
         the game does it instead of the idealized structure,
