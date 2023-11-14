@@ -59,7 +59,7 @@ class Rune(Struct, array_like=True):
 class Item(Struct, array_like=True):
     item_id: int = -1
     assignable_elements: WFElements = WFElements.empty
-    rune_info: list[Rune] | list[list[object]] = field(default_factory=lambda: [[] for _ in range(4)])
+    rune_info: list[Rune] | list[object] = field(default_factory=lambda: [[] for _ in range(4)])
     sublimations: list[int] = field(default_factory=list)
 
 
@@ -135,7 +135,22 @@ class Buildv1(Struct, array_like=True):
 
     @classmethod
     def from_code(cls, code: str) -> Buildv1:
-        return msgpack.decode(zlib.decompress(b2048.decode(code), wbits=-15), type=Buildv1)
+        # wakforge sending empty arrays...
+        s = msgpack.decode(zlib.decompress(b2048.decode(code), wbits=-15))
+        s[1] = WFClasses(s[1])
+        items = s[32:46]
+        for idx, item in enumerate(items, 32):
+            if not item:
+                s[idx] = Item()
+            else:
+                item_id, elements, runes, subs = item
+                if item_id == -1:
+                    s[idx] = Item()
+                    continue
+                runes = [Rune() for r in runes if r]
+                s[idx] = Item(item_id, WFElements(elements), runes, subs)
+
+        return cls(*s)
 
     def get_allocated_stats(self) -> AllocatedStats:
         tup = astuple(self)
@@ -149,7 +164,8 @@ class Buildv1(Struct, array_like=True):
         are relic and epic sublimations, and isn't important right now.
         """
         items = astuple(self)[32:46]
-        return [i for i in items if isinstance(i, Item)]
+        # wakforge sends fake items rather than not sending them, a subarray for items would be lovely...
+        return [i for i in items if isinstance(i, Item) and i.item_id != -1]
 
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:

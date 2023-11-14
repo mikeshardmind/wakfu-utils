@@ -107,7 +107,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     SKIP_SHIELDS = ns.skipshields
     LIGHT_WEAPON_EXPERT = ns.lwx
     WEILD_TYPE_TWO_HANDED = ns.twoh
-    BASE_CRIT_CHANCE = 3 + ns.bcrit
+    BASE_CRIT_CHANCE = ns.bcrit
     BASE_CRIT_MASTERY = ns.bcmast
     BASE_RELEV_MASTERY = ns.bmast
     SKIP_TWO_HANDED = ns.skiptwo_hand
@@ -444,6 +444,18 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
     # Tt be reused below
 
+    for item in (*forced_relics, *forced_epics):
+        if item._item_type == 112:
+            DAGGERS = [item]
+        elif item._item_id == 189:
+            SHIELDS = [item]
+
+        if item.item_slot == "FIRST_WEAPON":
+            if item.disables_second_weapon:
+                TWOH = [item]
+            else:
+                ONEH = [item]
+
     if WEILD_TYPE_TWO_HANDED:
         canidate_weapons = (*((two_hander,) for two_hander in TWOH),)
     elif SKIP_TWO_HANDED:
@@ -550,21 +562,9 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     if ns.dry_run:
         ret: list[EquipableItem] = []
         ret.extend(filter(None, itertools.chain.from_iterable(canidate_re_pairs)))
+        ret.extend(forced_items)
         for k, v in CANIDATES.items():
-            if k in (
-                "PET",
-                "MOUNT",
-                "LEGS",
-                "BACK",
-                "HEAD",
-                "CHEST",
-                "SHOULDERS",
-                "BELT",
-                "LEFT_HAND",
-                "LEFT_HAND",
-                "NECK",
-                "ACCESSORY",
-            ):
+            if "WEAPON" not in k:
                 ret.extend(v)
 
         for weps in canidate_weapons:
@@ -621,9 +621,9 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 except ValueError:
                     pass
 
-        if relic and relic.item_slot not in REM_SLOTS:
+        if relic and relic.item_slot not in REM_SLOTS and "WEAPON" not in relic.item_slot:
             continue
-        if epic and epic.item_slot not in REM_SLOTS:
+        if epic and epic.item_slot not in REM_SLOTS and "WEAPON" not in epic.item_slot:
             continue
 
         main_hand_disabled = False
@@ -682,7 +682,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
         for raw_items in inner:
             items = [*tuple_expander(raw_items), *forced_items]
-
             statline: Stats = reduce(add, (i.as_stats for i in (relic, epic, *items) if i))
             if statline.ap < AP or statline.mp < MP or statline.wp < WP or statline.ra < RA:
                 continue
@@ -694,7 +693,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             if crit_chance < -10:
                 continue
 
-            crit_chance = min(crit_chance, 100)
+            crit_chance = max(min(crit_chance, 100), 3)
 
             generated_conditions = [(*item.conditions, item.as_stats) for item in (*items, relic, epic) if item]
             mns, mxs, stats = zip(*generated_conditions)
