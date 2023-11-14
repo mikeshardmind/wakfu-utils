@@ -693,8 +693,6 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             if crit_chance < -10:
                 continue
 
-            crit_chance = max(min(crit_chance, 100), 3)
-
             generated_conditions = [(*item.conditions, item.as_stats) for item in (*items, relic, epic) if item]
             mns, mxs, stats = zip(*generated_conditions)
             mns = reduce(and_, mns, SetMinimums())
@@ -703,10 +701,15 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             if (mns or mxs) and not generate_filter(base_stats, mns, mxs)(stats):
                 continue
 
+            UNRAVEL_ACTIVE = UNRAVELING and crit_chance >= 40
+
+            crit_chance = max(min(crit_chance + 3, 100), 0)  # engine crit rate vs stat
+
             score = sum(score_key(i) for i in (*items, relic, epic)) + BASE_RELEV_MASTERY
-            score = (score + (crit_mastery if UNRAVELING else 0)) * ((100 - crit_chance) / 100) + (score + crit_mastery) * (
-                crit_chance / 80
-            )  # 1.25 * .01, includes crit math
+            score = (
+                (score + (crit_mastery if UNRAVEL_ACTIVE else 0)) * ((100 - crit_chance) / 100)
+                + (score + crit_mastery) * (crit_chance / 80)  # 1.25 * .01, includes crit math
+            )
 
             worst_kept = min(i[0] for i in BEST_LIST) if 0 < len(BEST_LIST) < 3 else 0
 
