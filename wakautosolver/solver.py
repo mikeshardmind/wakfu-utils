@@ -574,7 +574,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     # everything below this line is performance sensitive, and runtime is based on how much the above
     # managed to reduce the permuations of possible gear.
 
-    base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit) if isinstance(ns, argparse.Namespace) else Stats()
+    base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit)
 
     if use_tqdm:
         maybe_progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pair")

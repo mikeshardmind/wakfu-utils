@@ -109,7 +109,7 @@ def partial_solve_v1(
         basemp=stats.mp,
         basera=stats.ra,
         bawewp=stats.wp,
-        bcrit=stats.crit,
+        bcrit=stats.crit - 3,  # wakforge is doing something wrong here, won't be fixes for this entrypoint
         bcmast=stats.crit_mastery,
         bmast=stats.elemental_mastery,
         num_mastery=num_mastery,
