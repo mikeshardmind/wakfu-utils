@@ -6,15 +6,12 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
-__version__ = "2023.11.26"  # For the month of november, due to an earlier issue, this is now YYYY.MM.monotonic
+__version__ = "2023.11.27"  # For the month of november, due to an earlier issue, this is now YYYY.MM.monotonic
 
 from . import object_parsing, solver
 from .b2048 import decode as b2048_decode
 from .b2048 import encode as b2048_encode
-from .restructured_types import v1Config as Config  # pyright: ignore
 from .unobs import get_unobtainable_ids
-
-# stuff in v1_entrypoint excluded from * import, only here for wakforge
 
 __all__ = [
     "b2048_decode",
