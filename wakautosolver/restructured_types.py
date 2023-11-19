@@ -23,24 +23,38 @@ from .functional import element_wise_apply
 
 
 class ClassesEnum(enum.IntEnum):
-    feca = 0
-    osamodas = 1
-    enutrof = 2
-    sram = 3
-    xelor = 4
-    ecaflip = 5
-    eniripsa = 6
-    iop = 7
-    cra = 8
-    sadida = 9
-    sacrier = 10
-    pandawa = 11
-    rogue = 12
-    masqueraider = 13
-    ouginak = 14
-    foggernaut = 15
-    eliotrope = 16
-    huppermage = 17
+    EMPTY = -1
+    Feca = 0
+    Osa = 1
+    Osamodas = Osa
+    Enu = 2
+    Enutrof = Enu
+    Sram = 3
+    Xel = 4
+    Xelor = Xel
+    Eca = 5
+    Ecaflip = Eca
+    Eni = 6
+    Eniripsa = Eni
+    Iop = 7
+    Cra = 8
+    Sadi = 9
+    Sadida = Sadi
+    Sac = 10
+    Sacrier = Sac
+    Panda = 11
+    Pandawa = Panda
+    Rogue = 12
+    Masq = 13
+    Masqueraiders = Masq
+    Ougi = 14
+    Ouginak = Ougi
+    Fog = 15
+    Foggernaut = Fog
+    Elio = 16
+    Eliotrope = Elio
+    Hupper = 17
+    Huppermage = Hupper
 
 
 class ElementsEnum(enum.IntFlag, boundary=enum.STRICT):

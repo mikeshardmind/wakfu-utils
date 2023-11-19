@@ -14,6 +14,7 @@ import zlib
 from msgspec import Struct, field, msgpack
 
 from . import b2048 as base2048
+from .restructured_types import ClassesEnum as ClassName
 from .restructured_types import Stats as _Stats
 
 
@@ -37,39 +38,6 @@ class Elements(enum.IntFlag):
     FIRE = 4
     WATER = 8
 
-
-class ClassName(enum.IntEnum):
-    Feca = 0
-    Osa = 1
-    Osamodas = Osa
-    Enu = 2
-    Enutrof = Enu
-    Sram = 3
-    Xel = 4
-    Xelor = Xel
-    Eca = 5
-    Ecaflip = Eca
-    Eni = 6
-    Eniripsa = Eni
-    Iop = 7
-    Cra = 8
-    Sadi = 9
-    Sadida = Sadi
-    Sac = 10
-    Sacrier = Sac
-    Panda = 11
-    Pandawa = Panda
-    Rogue = 12
-    Masq = 13
-    Masqueraiders = Masq
-    Ougi = 14
-    Ouginak = Ougi
-    Fog = 15
-    Foggernaut = Fog
-    Elio = 16
-    Eliotrope = Elio
-    Hupper = 17
-    Huppermage = Hupper
 
 
 class Stats(Struct, array_like=True):
@@ -103,18 +71,23 @@ class Stats(Struct, array_like=True):
     di: bool = False
     major_res: bool = False
 
-    def to_stat_values(self, is_xelor: bool = False) -> _Stats:
+    def to_stat_values(self, cl: ClassName | None) -> _Stats:
         e_mast = self.elemental_mastery * 5
         e_mast += self.mp * 20
         e_mast += (self.ra + self.control) * 40
-        wp = 12 if is_xelor else 6
-        wp += 2 * self.wp
+        wp = 6 + 2 * self.wp
+        crit = self.crit
+        if cl is ClassName.Ecaflip:
+            crit += 20
+        if cl is ClassName.Xelor:
+            wp += 6
+
         return _Stats(
             ap=6 + self.ap,
             mp=3 + self.mp,
             wp=wp,
             ra=1 * self.ra,
-            crit=self.crit,
+            crit=crit,
             crit_mastery=4 * self.crit_mastery,
             elemental_mastery=e_mast,
             distance_mastery=8 * self.distance_mastery,

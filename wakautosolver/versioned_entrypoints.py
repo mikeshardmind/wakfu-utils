@@ -176,9 +176,10 @@ def partial_solve_v2(
         return v2Result(None, "Invalid config", debug_info=p)
 
     build = WFBuild.from_code(build_code)
-    stats = build.get_allocated_stats().to_stat_values(is_xelor=build.classenum==ClassesEnum.xelor)
+    stats = build.get_allocated_stats().to_stat_values(build.classenum)
+    if build.classenum is ClassesEnum.Ecaflip:
+        stats = stats + Stats(crit=20)
     item_ids = [i.item_id for i in build.get_items() if i.item_id > 0]
-
     ap = config.target_stats.ap - stats.ap
     mp = config.target_stats.mp - stats.mp
     wp = config.target_stats.wp - stats.wp

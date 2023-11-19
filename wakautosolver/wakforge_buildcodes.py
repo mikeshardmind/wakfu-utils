@@ -60,7 +60,7 @@ v1BuildSlotsOrder = [
 
 class Buildv1(Struct, array_like=True):
     buildcodeversion: SupportedVersions = 1
-    classenum: WFClasses = WFClasses.feca
+    classenum: WFClasses = WFClasses.EMPTY
     level: int = 230
     # allocated stats
     s_int_percent_hp: STAT_MAX = 0
