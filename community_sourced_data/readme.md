@@ -19,5 +19,8 @@ Note: Blueprints are in the item data already, no need to track those down.
 
 If you want another category, ask
 
+This data will be compiled into sqlite dbs regularly for release.
 
-This data will be compiled into both json and sqlite dbs regularly for release.
+see: https://github.com/dimitri/pgloader for automating loading this into postgres if that's your preference.
+
+Note: Currently archdrops is incomplete and does not include certain crafts based on 10% arch mat drops.

@@ -28,6 +28,21 @@ CREATE TABLE IF NOT EXISTS ub_items (
     PRIMARY KEY (item_id)
 ) STRICT, WITHOUT ROWID ;
 
+CREATE TABLE IF NOT EXISTS pvp_items (
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    PRIMARY KEY (item_id)
+) STRICT, WITHOUT ROWID ;
+
+CREATE TABLE IF NOT EXISTS archmonster_items (
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    PRIMARY KEY (item_id)
+) STRICT, WITHOUT ROWID ;
+
+CREATE TABLE IF NOT EXISTS horde_items (
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    PRIMARY KEY (item_id)
+) STRICT, WITHOUT ROWID ;
+
 CREATE TABLE IF NOT EXISTS recipes (
     item_id INTEGER PRIMARY KEY NOT NULL,
     is_upgrade INTEGER NOT NULL DEFAULT FALSE,
@@ -213,17 +228,25 @@ if __name__ == "__main__":
     )
 
     item_id_regex = re.compile(r"^(\d{1,6})\w?.*$", re.DOTALL)
-    ub_item_ids: list[int] = []
-    with open("../community_sourced_data/ubs.txt", encoding="utf-8") as ub_data:
-        lines = [stripped for line in ub_data.readlines() if (stripped := line.strip())]
-        for line in lines:
-            if m := item_id_regex.match(line):
-                ub_item_ids.append(int(m.group(1)))
 
-    conn.executemany(
-        """INSERT INTO ub_items (item_id) VALUES(?)""",
-        [(i,) for i in ub_item_ids],
-    )
+    for path, table_name in (
+        ("../community_sourced_data/ubs.txt", "ub_items"),
+        ("../community_sourced_data/pvp.txt", "pvp_items"),
+        ("../community_sourced_data/archdrops.txt", "archmonster_items"),
+        ("../community_sourced_data/hordes.txt", "horde_items"),
+    ):
+
+        item_ids: list[int] = []
+        with open(path, encoding="utf-8") as ub_data:
+            lines = [stripped for line in ub_data.readlines() if (stripped := line.strip())]
+            for line in lines:
+                if m := item_id_regex.match(line):
+                    item_ids.append(int(m.group(1)))
+
+        conn.executemany(
+            f"""INSERT INTO [{table_name}] (item_id) VALUES(?)""",
+            [(i,) for i in item_ids],
+        )
 
     with open("json_data/recipes.json", mode="rb") as rcp:
         recipes = json.load(rcp)
