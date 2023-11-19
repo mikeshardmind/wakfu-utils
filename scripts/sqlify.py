@@ -13,7 +13,7 @@ import re
 
 import apsw
 
-from wakautosolver import object_parsing, unobs
+from wakautosolver import object_parsing
 
 ITEM_TYPE_MAP = object_parsing.ITEM_TYPE_MAP
 
@@ -90,13 +90,7 @@ CREATE TABLE IF NOT EXISTS items (
     rear_resistance INTEGER DEFAULT 0,
     critical_resistance INTEGER DEFAULT 0,
     armor_given INTEGER DEFAULT 0,
-    armor_received INTEGER DEFAULT 0,
-    is_shop_item INTEGER DEFAULT FALSE
-) STRICT, WITHOUT ROWID ;
-
-CREATE TABLE IF NOT EXISTS unobtainables (
-    item_id INTEGER PRIMARY KEY NOT NULL,
-    reason TEXT
+    armor_received INTEGER DEFAULT 0
 ) STRICT, WITHOUT ROWID ;
 
 CREATE TABLE IF NOT EXISTS item_names (
@@ -167,7 +161,6 @@ keys = [
     "critical_resistance",
     "armor_given",
     "armor_received",
-    "is_shop_item",
 ]
 
 QUERY = "INSERT INTO ITEMS({}) VALUES({})".format(
@@ -290,11 +283,4 @@ if __name__ == "__main__":
         VALUES (:item_type, :en, :fr, :pt, :es)
         """,
         item_type_name_data,
-    )
-
-    conn.executemany(
-        """
-        INSERT INTO unobtainables (item_id, reason) VALUES (?, ?)
-        """,
-        list(unobs.get_unobtainable_info()),
     )
