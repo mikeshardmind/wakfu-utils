@@ -8,8 +8,10 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 # pyright: reportPrivateUsage=none
-import enum
 import zlib
+from functools import partial
+from itertools import compress, count
+from operator import eq
 from typing import Literal
 
 from msgspec import Struct, field, msgpack
@@ -19,35 +21,8 @@ from . import b2048
 from ._build_codes import Stats as AllocatedStats
 from ._typing_memes import STAT_MAX, UP_TO_5, UP_TO_10, UP_TO_11, UP_TO_20, UP_TO_40, ZERO_OR_ONE
 from .object_parsing import EquipableItem
-
-
-class WFClasses(enum.IntEnum):
-    feca = 0
-    osamodas = 1
-    enutrof = 2
-    sram = 3
-    xelor = 4
-    ecaflip = 5
-    eniripsa = 6
-    iop = 7
-    cra = 8
-    sadida = 9
-    sacrier = 10
-    pandawa = 11
-    rogue = 12
-    masqueraider = 13
-    ouginak = 14
-    foggernaut = 15
-    eliotrope = 16
-    huppermage = 17
-
-
-class WFElements(enum.IntFlag):
-    empty = 0
-    fire = 1 << 1
-    earth = 1 << 2
-    water = 1 << 3
-    air = 1 << 4
+from .restructured_types import ClassesEnum as WFClasses
+from .restructured_types import ElementsEnum as WFElements
 
 
 class Rune(Struct, array_like=True):
@@ -65,6 +40,23 @@ class Item(Struct, array_like=True):
 
 SupportedVersions = Literal[1]
 
+
+v1BuildSlotsOrder = [
+    "ACCESSORY",
+    "BACK",
+    "BELT",
+    "CHEST",
+    "FIRST_WEAPON",
+    "HEAD",
+    "LEFT_HAND",
+    "LEGS",
+    "MOUNT",
+    "NECK",
+    "PET",
+    "LEFT_HAND",  # RIGHT_HAND, but ...
+    "SECOND_WEAPON",
+    "SHOULDERS",
+]
 
 class Buildv1(Struct, array_like=True):
     buildcodeversion: SupportedVersions = 1
@@ -167,40 +159,26 @@ class Buildv1(Struct, array_like=True):
         # wakforge sends fake items rather than not sending them, a subarray for items would be lovely...
         return [i for i in items if isinstance(i, Item) and i.item_id != -1]
 
+    def add_item(self, item: EquipableItem) -> None:
+        indices = compress(count(1), map(partial(eq, item.item_slot), v1BuildSlotsOrder))
+        for index in indices:
+            if not getattr(self, f"item_{index}", None):
+                setattr(self, f"item_{index}", Item(item_id=item._item_id))
+                break
+        else:
+            msg = f"Can't find a valid slot for this thing. {item}"
+            raise RuntimeError(msg)
+
+    def to_code(self) -> str:
+        packed = msgpack.encode(self)
+        return b2048.encode(packed)
+
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
-    slots = [
-        "ACCESSORY",
-        "BACK",
-        "BELT",
-        "CHEST",
-        "FIRST_WEAPON",
-        "HEAD",
-        "LEFT_HAND",
-        "LEGS",
-        "MOUNT",
-        "NECK",
-        "PET",
-        "LEFT_HAND",  # RIGHT_HAND, but ...
-        "SECOND_WEAPON",
-        "SHOULDERS",
-    ]
-
     items = [i for i in items if i._item_id]  # filter out placeholder items
-
-    ordered: list[Item | list[object]] = []
-
-    for slot in slots:
-        nx: EquipableItem | None = next(iter(i for i in items if i.item_slot == slot), None)
-        if nx:
-            ordered.append(Item(item_id=nx._item_id))
-            items.remove(nx)
-        else:
-            ordered.append([])
-
-    kwargs = {f"item_{idx}": item for idx, item in enumerate(ordered, 1)}
-
-    build = Buildv1(level=level, **kwargs)  # type: ignore
+    build = Buildv1(level=level)  # type: ignore
+    for item in items:
+        build.add_item(item)
     encoded = msgpack.encode(build)
     compressed = zlib.compress(encoded, level=9, wbits=-15)
     return b2048.encode(compressed)

@@ -22,6 +22,34 @@ from msgspec.structs import astuple, replace
 from .functional import element_wise_apply
 
 
+class ClassesEnum(enum.IntEnum):
+    feca = 0
+    osamodas = 1
+    enutrof = 2
+    sram = 3
+    xelor = 4
+    ecaflip = 5
+    eniripsa = 6
+    iop = 7
+    cra = 8
+    sadida = 9
+    sacrier = 10
+    pandawa = 11
+    rogue = 12
+    masqueraider = 13
+    ouginak = 14
+    foggernaut = 15
+    eliotrope = 16
+    huppermage = 17
+
+
+class ElementsEnum(enum.IntFlag, boundary=enum.STRICT):
+    empty = 0
+    fire = 1 << 1
+    earth = 1 << 2
+    water = 1 << 3
+    air = 1 << 4
+
 class Priority(enum.IntEnum):
     unvalued = 0
     prioritized = 1
@@ -29,13 +57,17 @@ class Priority(enum.IntEnum):
     half_negative_only = 4
 
 
-class StatPriority(Struct, frozen=True):
+class StatPriority(Struct, frozen=True, array_like=True):
     distance_mastery: Priority = Priority.unvalued
-    rear_mastery: Priority = Priority.unvalued
-    heal_mastery: Priority = Priority.unvalued
-    berserk_mastery: Priority = Priority.unvalued
     melee_mastery: Priority = Priority.unvalued
-    number_of_elements: int = 3
+    heal_mastery: Priority = Priority.unvalued
+    rear_mastery: Priority = Priority.unvalued
+    berserk_mastery: Priority = Priority.unvalued
+    elements: ElementsEnum = ElementsEnum.empty
+
+    @property
+    def is_valid(self) -> bool:
+        return all(x < 2 for x in (self.distance_mastery, self.melee_mastery, self.heal_mastery))
 
 
 class Stats(Struct, frozen=True, gc=True):
