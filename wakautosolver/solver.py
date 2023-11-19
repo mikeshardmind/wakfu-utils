@@ -164,15 +164,18 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         if ns.num_mastery <= 3:
             score += item._mastery_3_elements
 
-        if ElementsEnum.air in ns.elements:
-            score += item._air_mastery
-        if ElementsEnum.earth in ns.elements:
-            score += item._earth_mastery
-        if ElementsEnum.water in ns.elements:
-            score += item._water_mastery
-        if ElementsEnum.fire in ns.elements:
-            score += item._fire_mastery
-
+        # This isn't perfect, Doziak epps are weird.
+        if n := ns.elements.bit_count():
+            element_vals = 0
+            if ElementsEnum.air in ns.elements:
+                element_vals += item._air_mastery
+            if ElementsEnum.earth in ns.elements:
+                element_vals += item._earth_mastery
+            if ElementsEnum.water in ns.elements:
+                element_vals += item._water_mastery
+            if ElementsEnum.fire in ns.elements:
+                element_vals += item._fire_mastery
+            score += element_vals / n
 
         return score
 
