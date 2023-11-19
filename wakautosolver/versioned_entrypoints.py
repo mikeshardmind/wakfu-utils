@@ -53,7 +53,7 @@ _adaptive_tolerance_map: dict[int, int] = {
     185: 15,
     200: 15,
     215: 15,
-    230: 14,
+    230: 15,
 }
 
 v1Result = tuple[list[int] | None, str | None]
@@ -221,6 +221,7 @@ def partial_solve_v2(
         hard_cap_depth=25,
         tolerance=_adaptive_tolerance_map.get(build.level, 15),
         search_depth=3 if config.dry_run else 1,
+        elements=config.objectives.elements,
     )
 
     try:
@@ -240,10 +241,14 @@ def partial_solve_v2(
     if config.dry_run:
         return v2Result(None, None, found_item_ids, None)
 
+    ecount = config.objectives.elements.bit_count()
     for item in found_items:
         if item._item_id not in item_ids:
             try:
-                build.add_item(item)
+                if getattr(item, f"_mastery_{ecount}_elements", 0):
+                    build.add_item(item, config.objectives.elements)
+                else:
+                    build.add_item(item)
             except RuntimeError as exc:
                 msg = (exc.__class__.__name__, *map(str, exc.args))
                 p = b2048encode(msgpack.encode(msg))

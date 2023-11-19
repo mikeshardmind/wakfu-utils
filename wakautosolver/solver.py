@@ -25,7 +25,7 @@ from typing import Final, Protocol, TypeVar
 import tqdm
 
 from .object_parsing import EquipableItem, _locale
-from .restructured_types import SetMaximums, SetMinimums, Stats, generate_filter, v1Config
+from .restructured_types import ElementsEnum, SetMaximums, SetMinimums, Stats, generate_filter, v1Config
 from .unobs import get_unobtainable_ids
 from .utils import only_once
 from .wakforge_buildcodes import build_code_from_items
@@ -163,6 +163,16 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             score += item._mastery_2_elements
         if ns.num_mastery <= 3:
             score += item._mastery_3_elements
+
+        if ElementsEnum.air in ns.elements:
+            score += item._air_mastery
+        if ElementsEnum.earth in ns.elements:
+            score += item._earth_mastery
+        if ElementsEnum.water in ns.elements:
+            score += item._water_mastery
+        if ElementsEnum.fire in ns.elements:
+            score += item._fire_mastery
+
 
         return score
 

@@ -59,10 +59,10 @@ class ClassesEnum(enum.IntEnum):
 
 class ElementsEnum(enum.IntFlag, boundary=enum.STRICT):
     empty = 0
-    fire = 1 << 1
-    earth = 1 << 2
-    water = 1 << 3
-    air = 1 << 4
+    fire = 1 << 0
+    earth = 1 << 1
+    water = 1 << 2
+    air = 1 << 3
 
 
 class Priority(enum.IntEnum):
@@ -326,3 +326,4 @@ class v1Config(Struct, kw_only=True):
     basemp: int = 0
     bawewp: int = 0
     basera: int = 0
+    elements: ElementsEnum = ElementsEnum.empty
