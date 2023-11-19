@@ -9,6 +9,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 # pyright: reportPrivateUsage=none
 
 import json
+import re
 
 import apsw
 
@@ -18,6 +19,11 @@ ITEM_TYPE_MAP = object_parsing.ITEM_TYPE_MAP
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS blueprints (
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    PRIMARY KEY (item_id)
+) STRICT, WITHOUT ROWID ;
+
+CREATE TABLE IF NOT EXISTS ub_items (
     item_id INTEGER NOT NULL REFERENCES items(item_id),
     PRIMARY KEY (item_id)
 ) STRICT, WITHOUT ROWID ;
@@ -182,10 +188,10 @@ if __name__ == "__main__":
         titles,
     )
 
-    with open("blueprints.json", mode="rb") as bp:
+    with open("json_data/blueprints.json", mode="rb") as bp:
         bpdata = json.load(bp)
 
-    with open("recipeResults.json", mode="rb") as results_are_why_ankama:
+    with open("json_data/recipeResults.json", mode="rb") as results_are_why_ankama:
         recresults = {i["recipeId"]: i["productedItemId"] for i in json.load(results_are_why_ankama)}
 
     blueprints: set[int] = set()
@@ -206,7 +212,20 @@ if __name__ == "__main__":
         [(i,) for i in blueprints],
     )
 
-    with open("recipes.json", mode="rb") as rcp:
+    item_id_regex = re.compile(r"^(\d{1,6})\w?.*$", re.DOTALL)
+    ub_item_ids: list[int] = []
+    with open("../community_sourced_data/ubs.txt", encoding="utf-8") as ub_data:
+        lines = [stripped for line in ub_data.readlines() if (stripped := line.strip())]
+        for line in lines:
+            if m := item_id_regex.match(line):
+                ub_item_ids.append(int(m.group(1)))
+
+    conn.executemany(
+        """INSERT INTO ub_items (item_id) VALUES(?)""",
+        [(i,) for i in ub_item_ids],
+    )
+
+    with open("json_data/recipes.json", mode="rb") as rcp:
         recipes = json.load(rcp)
 
     recipes_limited = {

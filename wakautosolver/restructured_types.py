@@ -64,6 +64,7 @@ class ElementsEnum(enum.IntFlag, boundary=enum.STRICT):
     water = 1 << 3
     air = 1 << 4
 
+
 class Priority(enum.IntEnum):
     unvalued = 0
     prioritized = 1

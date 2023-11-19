@@ -1,0 +1,302 @@
+# Lines beginning with a '#' are ignored by automated tools
+# A list of items that require an arch drop.
+# Only the first column of data is used
+# Format: item_id info
+
+4192	The Bumper
+5963	Desire O'Ball Cloak
+5993	Sangroku's Belt
+7573	Pandawan Kimono
+7576	Pandawan Belt
+9933	Ring O'Stradamus
+10264	Strangly Wand
+10274	Carnivorous Staff
+11411	Zinit Boots
+11412	Zinit Cloak
+11413	Zinit Hat
+12476	Gobby Axe
+12601	Old Cane
+12603	Old Slippers
+12862	Gravey Hammer
+13838	Peckish Helmet
+14486	Whispery Pristplate
+14708	Osamost Helmet
+14709	Dracneel's Slippers
+14710	Kajeet Breastplate
+14712	Beltedy
+14716	Whybeard Hand
+14733	Ashal Ring
+14734	Sen Souali Belt
+14735	Cassel Helmet
+14736	Khiel's Aegis
+14832	Viscous Epaulettes
+15155	Magmacrak Breastplate
+15156	Magmacrak Boots
+15405	The Ratataka
+15478	Cockabootsledo
+15580	Enraged Gobball Belt
+15582	Enraged Gobball Boots
+15959	Icy Ring
+16088	Winter Coat
+17267	Amuleto
+17735	Crobak Dagger
+17747	The Foolmoun
+17749	Well-Guawded Cape
+18387	Dagger of the Ancestral Spirit
+18560	The Laughing Scythe
+18566	Relay Kamasword
+18632	Wagicien Cloak
+18636	The Zumbado
+18639	Wambomulet
+18641	Lenald Walm Pelt
+18694	Happy Sram Kimono
+18699	Golden Belt
+19037	The Protigious
+19060	Millennium Sword
+19141	Map of Wonders
+19142	Cheer Ring
+19143	Durable Shield
+19366	Limited Edition Cape
+19702	Jinnun Tunic
+19707	Tropicape
+19718	Tree Ring
+19859	Kannipaulettes
+19885	Sinuous Dagger
+19897	Lily Hammer
+20155	Buzzsaw Breastplate
+20211	Scaly Boots
+20222	Fanged Cards
+20224	The Recssenette
+20666	Satisfaction Ring
+20667	Satisfaction Boots
+20952	Future Belt
+20953	Dreggon Amulet
+20969	Imperial Whirly Wedding Ring
+20970	Imperial Whirly Ring
+20995	Boss Breastplate
+21146	Vertigo Breastplate
+21147	Vertigo Helmet
+21171	Salech Riing
+21172	Squalala Cape
+21204	Borano Cane
+21205	Nemic Sheet
+21206	Jo Bar
+21250	Explorer Boots
+21251	Explorer Cape
+21254	Borano Cane
+21255	Nemic Sheet
+21491	Imperial Whirly Ring
+21512	Imperial Whirly Wedding Ring
+21543	Firedrhell Amulet
+21544	Firedrhell Ring
+21569	Firedrhell Amulet
+21570	Firedrhell Ring
+21701	Le Golashes
+21704	Baggy Ring
+21705	Hairpaulettes
+21731	Baggy Rang
+21732	Hairpaulettes
+21783	Nauseatring
+21784	Tramontanring
+21791	Vocal Cord
+21842	Future Belt
+21843	Dreggon Amulet
+21871	Gon Door Hinge
+21872	Gon Door Hinge
+21896	The Great Leaps to Ragorn
+21897	The Great Leaps to Ragorn
+21975	Nauseatring
+21985	Vocal Cord
+22169	Lily Hammer
+22184	Tropicape
+22204	Sinuous Dagger
+22224	Jinnun Tunic
+22247	The Recssenette
+22266	Scaly Boots
+22296	Tree Ring
+22363	Millennium Sword
+22364	The Protigious
+22394	Map of Wonders
+22395	Cheer Ring
+22592	The Laughing Scythe
+22630	Relay Kamasword
+22917	Wagicien Cloak
+22918	Amuleto
+23152	Well-Guawded Cape
+23153	Wambomulet
+23154	Smisse Pirate Cloak
+23155	Smisse Pirate Cloak
+23156	Smisse Pirate Bandana
+23157	Smisse Pirate Bandana
+23158	Smisse Pirate Boots
+23159	Smisse Pirate Boots
+23160	Smisse Pirate Smock
+23161	Smisse Pirate Smock
+23164	Cold Hunter Helmet
+23165	Cold Hunter Helmet
+23172	Icy Ring
+23173	Winter Coat
+23266	Cold Hunter Coat
+23284	Cold Hunter Set
+23288	Hunter Thongs
+23289	Light Hunter Coat
+23866	The Zumbado
+24147	Zinit Boots
+24148	Zinit Cloak
+24149	Zinit Hat
+24150	Satiri Cloak
+24151	Satiri Cloak
+24186	Icy Epaulettes
+24222	Pandawan Kimono
+24223	Pandawan Belt
+24818	Black Drheller Hat
+24819	Black Drheller Hat
+25134	Xiangu's Stagger
+25135	Tanja Ring
+25247	Bashers
+25248	Turtobelt
+25289	Ultimate Survivor Helmet
+25290	Ultimate Survivor Ring
+25331	Synwel's Ring
+25332	Toh'Lo Hammer
+25373	Polnuds
+25374	Knuckle Rapper
+25415	Blust Cloak
+25416	Apiring
+25457	Skullenbone Bat
+25458	Card-Avars
+25499	Nubby Shovel
+25500	Pilfer Ring
+25599	Heram Breastplate
+25600	Heram Breastplate
+25601	Pudder Helmet
+25602	Pudder Helmet
+25665	Fullabeens Wand
+25666	Fullabeens Wand
+25667	Rump Stake
+25668	Rump Stake
+25731	Veteran Treechnid Helmet
+25732	Veteran Treechnid Helmet
+25733	Veteran Ancestral Treechnid Breastplate
+25734	Veteran Ancestral Treechnid Breastplate
+25807	AnnEkam
+25808	AnnEkam
+25809	Lavamulet
+25810	Lavamulet
+25939	Short Fuse
+25940	Short Fuse
+25941	Rogu'Boots
+25942	Rogu'Boots
+26003	Minatrix Ring
+26004	Minatrix Ring
+26484	Mummra Ring
+26486	God Ecaflip Belt
+26514	Pumbrrr's Ring
+26515	Glacial Headgear
+26579	Golden Api of His Parodies
+26609	Two-Braider Staff
+26753	Bootanist Boots
+26754	Bootanist Boots
+26755	O'Tarky Ring
+26756	O'Tarky Ring
+26819	Drun Cap
+26820	Drun Cap
+26821	A Gorafobe Dagger
+26822	A Gorafobe Dagger
+26890	Quincunx Brogans
+26891	Quincunx Brogans
+26892	Naughty Luss Ring
+26893	Naughty Luss Ring
+26959	Arm-a-Gnak
+26960	Arm-a-Gnak
+26961	Fuzzy Feet
+26962	Fuzzy Feet
+27032	White Tiger Amulet
+27353	Per-See-Us Horse Ring
+27355	Hollaback Boots
+27375	Lin's Sandals
+27376	Lin's Sandals
+27377	Art'And Cards
+27378	Art'And Cards
+27447	DigiArv Belt
+27448	DigiArv Belt
+27449	Haze'paulettes
+27450	Haze'paulettes
+27514	Boatox Boots
+27515	Plutoni Helm
+27584	Furnace Eye
+27585	Furnace Eye
+27586	Grinding Belt
+27587	Grinding Belt
+27642	Shell Amulet
+27643	Shell Amulet
+27644	Tentacled Belt
+27645	Tentacled Belt
+27700	Power Helmet
+27701	Power Helmet
+27702	Eternal Morrow Amulet
+27703	Eternal Morrow Amulet
+27758	Ginserick Belt
+27759	Ginserick Belt
+27760	Ginserick Gloves
+27761	Ginserick Gloves
+27812	Fannebuoy Belt
+27813	Eternal Second Cape
+28137	Reptilian Helmet
+28138	Reptilian Helmet
+28139	Reptilian Amulet
+28140	Reptilian Amulet
+28200	Emotive Cut
+28201	Emotive Cut
+28202	Goldilocks Staff
+28203	Goldilocks Staff
+28263	Fishbone
+28264	Fishbone
+28265	Caudal Ring
+28266	Caudal Ring
+28322	Curolas Mugnas Talisman
+29053	Corrupted Mask
+29054	Corrupted Mask
+29055	Corrupted Amulet
+29056	Corrupted Amulet
+29057	Shanty Cloak
+29115	Chrysahelm
+29116	Chrysahelm
+29117	Aerial Belt
+29118	Aerial Belt
+29177	Skullcrow
+29178	Skullcrow
+29179	Yew Pendangle
+29180	Yew Pendangle
+29239	Streye Fins
+29240	Streye Fins
+29241	Streye Lucky Charm
+29242	Streye Lucky Charm
+29301	Greedery Overalls
+29302	Greedery Overalls
+29303	Today
+29304	Today
+29305	President Breastplate
+29978	Vagabond Cloak
+29979	Vagabond Cloak
+29980	Vagabond Breastplate
+29981	Vagabond Breastplate
+30001	Lorko Booto
+30002	Lorko Booto
+30003	Lorko Kasko
+30004	Lorko Kasko
+30146	Lava's Trident
+30152	Leblanc's Epaulettes
+30153	Leblanc's Epaulettes
+30175	Goopy Girdle
+30176	Goopy Girdle
+30294	T. Uring Bust
+30295	T. Uring Bust
+30303	McQueen Cloak
+30304	McQueen Cloak
+30352	Kyu-o'-Wel Cloak
+30363	Longevity Cloak
+30367	Bluster Belt
+30392	Rezak's Helmet
+30403	Jiliang's Breastplate
+30407	Zeyno

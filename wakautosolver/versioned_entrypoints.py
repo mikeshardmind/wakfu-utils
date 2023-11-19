@@ -143,11 +143,12 @@ def partial_solve_v1(
 
 
 class v2Config(Struct):
-    allowed_rarities: list[int] = field(default_factory=lambda: [1,2,3,4,5,6,7])
+    allowed_rarities: list[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6, 7])
     target_stats: SetMinimums = field(default_factory=SetMinimums)
     dry_run: bool = False
     objectives: StatPriority = field(default_factory=StatPriority)
     forbidden_items: list[int] = field(default_factory=list)
+
 
 class v2Result(Struct):
     build_code: str | None = None
@@ -161,7 +162,6 @@ def partial_solve_v2(
     build_code: str,
     config: v2Config,
 ) -> v2Result:
-
     # This may look redundant, but it's exceptionally cheap validation
     try:
         config = msgpack.decode(msgpack.encode(config), type=v2Config)
@@ -210,11 +210,11 @@ def partial_solve_v2(
         num_mastery=config.objectives.elements.bit_count(),
         forbid_rarity=forbidden_rarities,
         idforce=item_ids,
-        dist=config.objectives.distance_mastery==Priority.prioritized,
-        melee=config.objectives.melee_mastery==Priority.prioritized,
-        heal=config.objectives.heal_mastery==Priority.prioritized,
-        zerk=config.objectives.berserk_mastery==Priority.prioritized,
-        rear=config.objectives.rear_mastery==Priority.prioritized,
+        dist=config.objectives.distance_mastery == Priority.prioritized,
+        melee=config.objectives.melee_mastery == Priority.prioritized,
+        heal=config.objectives.heal_mastery == Priority.prioritized,
+        zerk=config.objectives.berserk_mastery == Priority.prioritized,
+        rear=config.objectives.rear_mastery == Priority.prioritized,
         negrear=lookup.get(config.objectives.rear_mastery, "none"),
         negzerk=lookup.get(config.objectives.berserk_mastery, "none"),
         dry_run=config.dry_run,

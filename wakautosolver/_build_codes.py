@@ -39,7 +39,6 @@ class Elements(enum.IntFlag):
     WATER = 8
 
 
-
 class Stats(Struct, array_like=True):
     percent_hp: int = 0
     res: int = 0

@@ -609,7 +609,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
         # This is a slot we allow building without, sets without will be worse ofc...
         if "ACCESSORY" not in CANIDATES:  # noqa: SIM102
-            if not ((relic and relic.item_slot == "ACCESSORY") or (epic and epic.item_slot =="ACCESSORY")):
+            if not ((relic and relic.item_slot == "ACCESSORY") or (epic and epic.item_slot == "ACCESSORY")):
                 try:
                     REM_SLOTS.remove("ACCESSORY")
                 except ValueError:

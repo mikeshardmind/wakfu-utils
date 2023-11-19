@@ -58,6 +58,7 @@ v1BuildSlotsOrder = [
     "SHOULDERS",
 ]
 
+
 class Buildv1(Struct, array_like=True):
     buildcodeversion: SupportedVersions = 1
     classenum: WFClasses = WFClasses.EMPTY
