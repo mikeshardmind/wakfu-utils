@@ -108,6 +108,40 @@ class Stats(Struct, frozen=True, gc=True):
     lock: int = 0
     dodge: int = 0
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Stats):
+            return NotImplemented
+        return astuple(self) == astuple(other)
+
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, Stats):
+            return NotImplemented
+        return astuple(self) != astuple(other)
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, Stats):
+            return NotImplemented
+
+        return all(s < o for s, o in zip(astuple(self), astuple(other), strict=True))
+
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, Stats):
+            return NotImplemented
+
+        return all(s <= o for s, o in zip(astuple(self), astuple(other), strict=True))
+
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, Stats):
+            return NotImplemented
+
+        return all(s > o for s, o in zip(astuple(self), astuple(other), strict=True))
+
+    def __ge__(self, other: object) -> bool:
+        if not isinstance(other, Stats):
+            return NotImplemented
+
+        return all(s >= o for s, o in zip(astuple(self), astuple(other), strict=True))
+
     def __sub__(self, other: object) -> Stats:
         if not isinstance(other, Stats):
             return NotImplemented
@@ -237,12 +271,9 @@ def generate_filter(
     minimums: SetMinimums,
     maximums: SetMaximums,
 ) -> Callable[[list[Stats]], bool]:
-    min_tup = astuple(minimums)
-    max_tup = astuple(maximums)
-
     def f(item_set: list[Stats]) -> bool:
-        stat_tup = astuple(reduce(operator.add, (base_stats, *item_set)))
-        return all(mn <= s <= mx for mn, s, mx in zip(min_tup, stat_tup, max_tup, strict=True))
+        stats = reduce(operator.add, item_set, base_stats)
+        return minimums <= stats <= maximums
 
     return f
 
