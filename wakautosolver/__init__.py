@@ -11,12 +11,10 @@ __version__ = "2023.11.31"  # For the month of november, due to an earlier issue
 from . import object_parsing, solver
 from .b2048 import decode as b2048_decode
 from .b2048 import encode as b2048_encode
-from .unobs import get_unobtainable_ids
 
 __all__ = [
     "b2048_decode",
     "b2048_encode",
-    "get_unobtainable_ids",
     "object_parsing",
     "solver",
 ]

@@ -9,9 +9,6 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 import argparse
-
-# pyright: reportPrivateUsage=false
-# pyright: reportConstantRedefinition=false
 import collections
 import itertools
 import logging
@@ -24,9 +21,9 @@ from typing import Final, Protocol, TypeVar
 
 import tqdm
 
-from .object_parsing import EquipableItem, _locale
-from .restructured_types import ElementsEnum, SetMaximums, SetMinimums, Stats, generate_filter, v1Config
-from .unobs import get_unobtainable_ids
+from .item_conditions import get_item_conditions
+from .object_parsing import EquipableItem, get_all_items, set_locale
+from .restructured_types import ElementsEnum, SetMaximums, SetMinimums, Stats, v1Config
 from .utils import only_once
 from .wakforge_buildcodes import build_code_from_items
 
@@ -82,13 +79,13 @@ class SolveError(Exception):
 def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = False) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
-    _locale.set(ns.locale)
+    set_locale(ns.locale)
 
     # ## Everything in this needs abstracting into something
     # that can handle user input and be more dynamic.
     # ## Could benefit from some optimizations here and there.
 
-    ALL_OBJS = EquipableItem.from_bz2_bundled()
+    ALL_OBJS = get_all_items()
 
     allowed_rarities = ns.allowed_rarities or list(range(1, 8))
     if ns.forbid_rarity:
@@ -97,8 +94,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     LV_TOLERANCE = ns.tolerance
     ITEM_SEARCH_DEPTH = ns.search_depth
 
-    AP = ns.ap
-    MP = ns.mp
+    solve_AP = ns.ap
+    solve_MP = ns.mp
     RA = ns.ra
     WP = ns.wp
     HIGH_BOUND = ns.lv
@@ -115,23 +112,23 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     RES_DEVIATION_PENALTY = 0  # TODO: tuning knob or do it based on level based rune effectiveness
 
     if WEILD_TYPE_TWO_HANDED:
-        AP -= 2
-        MP += 2
+        solve_AP -= 2
+        solve_MP += 2
 
     @lru_cache
     def score_key(item: EquipableItem | None) -> float:
         if not item:
             return 0
 
-        score = item._elemental_mastery
+        score = item.elemental_mastery
         if ns.melee:
-            score += item._melee_mastery
+            score += item.melee_mastery
         if ns.dist:
-            score += item._distance_mastery
+            score += item.distance_mastery
         if ns.zerk:
-            score += item._berserk_mastery
+            score += item.berserk_mastery
         else:
-            if item._berserk_mastery < 0:
+            if item.berserk_mastery < 0:
                 if ns.negzerk == "full":
                     mul = 1
                 elif ns.negzerk == "half":
@@ -139,12 +136,12 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 else:
                     mul = 0
 
-                score += item._berserk_mastery * mul
+                score += item.berserk_mastery * mul
 
         if ns.rear:
-            score += item._rear_mastery
+            score += item.rear_mastery
         else:
-            if item._rear_mastery < 0:
+            if item.rear_mastery < 0:
                 if ns.negrear == "full":
                     mul = 1
                 elif ns.negrear == "half":
@@ -152,35 +149,35 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 else:
                     mul = 0
 
-                score += item._rear_mastery * mul
+                score += item.rear_mastery * mul
 
         if ns.heal:
-            score += item._healing_mastery
+            score += item.healing_mastery
 
         if ns.num_mastery == 1:
-            score += item._mastery_1_element
+            score += item.mastery_1_element
         if ns.num_mastery <= 2:
-            score += item._mastery_2_elements
+            score += item.mastery_2_elements
         if ns.num_mastery <= 3:
-            score += item._mastery_3_elements
+            score += item.mastery_3_elements
 
         # This isn't perfect, Doziak epps are weird.
         if n := ns.elements.bit_count():
             element_vals = 0
             if ElementsEnum.air in ns.elements:
-                element_vals += item._air_mastery
+                element_vals += item.air_mastery
             if ElementsEnum.earth in ns.elements:
-                element_vals += item._earth_mastery
+                element_vals += item.earth_mastery
             if ElementsEnum.water in ns.elements:
-                element_vals += item._water_mastery
+                element_vals += item.water_mastery
             if ElementsEnum.fire in ns.elements:
-                element_vals += item._fire_mastery
+                element_vals += item.fire_mastery
             score += element_vals / n
 
         return score
 
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
-        return any(condition.unhandled() for condition in item.conditions)
+        return any(i.unhandled() for i in get_item_conditions(item))
 
     #    │ 26494   │ Amakna Sword  │
     #    │ 26495   │ Sufokia Sword │
@@ -195,7 +192,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     # or without modifying uses
     NATION_RELIC_EPIC_IDS = [26494, 26495, 26496, 26497, 26575, 26576, 26577, 26578]
 
-    FORBIDDEN = list(get_unobtainable_ids())
+    FORBIDDEN: list[int] = []
 
     if ns and ns.idforbid:
         FORBIDDEN.extend(ns.idforbid)
@@ -205,24 +202,24 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
     def initial_filter(item: EquipableItem) -> bool:
         return bool(
-            (item._item_id not in FORBIDDEN)
+            (item.item_id not in FORBIDDEN)
             and (item.name not in FORBIDDEN_NAMES)
             and (not has_currently_unhandled_item_condition(item))
-            and ((item._item_rarity in allowed_rarities) or (item.item_slot in ("MOUNT", "PET")))
+            and ((item.item_rarity in allowed_rarities) or (item.item_slot in ("MOUNT", "PET")))
         )
 
     def level_filter(item: EquipableItem) -> bool:
         if item.item_slot in ("MOUNT", "PET"):
             return True
-        return HIGH_BOUND >= item._item_lv >= max(LOW_BOUND, 1)
+        return HIGH_BOUND >= item.item_lv >= max(LOW_BOUND, 1)
 
     def relic_epic_level_filter(item: EquipableItem) -> bool:
         """The unreasonable effectiveness of these two rings extends them a bit"""
-        if item._item_id == 9723:  # gelano
+        if item.item_id == 9723:  # gelano
             return 140 >= HIGH_BOUND >= 65
-        if item._item_id == 27281:  # bagus shushu
+        if item.item_id == 27281:  # bagus shushu
             return 185 >= HIGH_BOUND >= 125
-        return HIGH_BOUND >= item._item_lv >= LOW_BOUND
+        return HIGH_BOUND >= item.item_lv >= LOW_BOUND
 
     def minus_relicepic(item: EquipableItem) -> bool:
         return not (item.is_epic or item.is_relic)
@@ -236,7 +233,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         _fids = ns.idforce or ()
         _fns = ns.nameforce or ()
 
-        forced_items = [i for i in OBJS if i._item_id in _fids]
+        forced_items = [i for i in OBJS if i.item_id in _fids]
         # Handle names a little differently to avoid an issue with duplicate names
         forced_by_name = [i for i in OBJS if i.name in _fns]
         forced_by_name.sort(key=score_key, reverse=True)
@@ -260,12 +257,12 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             relic = forced_relics[0]
             forced_slots[relic.item_slot] += 1
             try:
-                sword_idx = NATION_RELIC_EPIC_IDS.index(relic._item_id)
+                sword_idx = NATION_RELIC_EPIC_IDS.index(relic.item_id)
             except ValueError:
                 pass
             else:
                 ring_idx = NATION_RELIC_EPIC_IDS[sword_idx + 4]
-                fr = next((i for i in OBJS if i._item_id == ring_idx), None)
+                fr = next((i for i in OBJS if i.item_id == ring_idx), None)
                 if fr is None:
                     msg = "Couldn't force corresponding nation ring?"
                     raise SolveError(msg)
@@ -279,12 +276,12 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             forced_slots[epic.item_slot] += 1
 
             try:
-                ring_idx = NATION_RELIC_EPIC_IDS.index(epic._item_id)
+                ring_idx = NATION_RELIC_EPIC_IDS.index(epic.item_id)
             except ValueError:
                 pass
             else:
                 sword_idx = NATION_RELIC_EPIC_IDS[ring_idx - 4]
-                forced_sword = next((i for i in OBJS if i._item_id == sword_idx), None)
+                forced_sword = next((i for i in OBJS if i.item_id == sword_idx), None)
 
                 if forced_sword is None:
                     msg = "Couldn't force corresponding nation sword?"
@@ -334,49 +331,55 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     relics = forced_relics or [
         item
         for item in OBJS
-        if item.is_relic and initial_filter(item) and relic_epic_level_filter(item) and item._item_id not in NATION_RELIC_EPIC_IDS
+        if item.is_relic and initial_filter(item) and relic_epic_level_filter(item) and item.item_id not in NATION_RELIC_EPIC_IDS
     ]
     epics = forced_epics or [
         item
         for item in OBJS
-        if item.is_epic and initial_filter(item) and relic_epic_level_filter(item) and item._item_id not in NATION_RELIC_EPIC_IDS
+        if item.is_epic and initial_filter(item) and relic_epic_level_filter(item) and item.item_id not in NATION_RELIC_EPIC_IDS
     ]
 
-    CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
+    solve_CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
     def needs_full_sim_key(item: EquipableItem) -> Hashable:
         return (
             item.disables_second_weapon,
-            item._ap,
-            item._range,
-            item._mp,
-            item._wp,
-            item._critical_hit,
-            item._critical_mastery,
+            item.ap,
+            item.ra,
+            item.mp,
+            item.wp,
+            item.critical_hit,
+            item.critical_mastery,
         )
 
     if original_forced_counts:
         for slot, count in original_forced_counts.items():
             if (slot != "LEFT_HAND" and count == 1) or (slot == "LEFT_HAND" and count == 2):
-                CANIDATES.pop(slot, None)
+                solve_CANIDATES.pop(slot, None)
             elif slot == "LEFT_HAND" and count == 1:
                 names = {i.name for i in forced_items if i.name}
-                for canidate in CANIDATES[slot][::-1]:
+                for canidate in solve_CANIDATES[slot][::-1]:
                     if canidate.name in names:
-                        CANIDATES[slot].remove(canidate)
+                        solve_CANIDATES[slot].remove(canidate)
 
-    ONEH = [i for i in CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon] if "FIRST_WEAPON" in CANIDATES else []
-    TWOH = [i for i in CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon] if "FIRST_WEAPON" in CANIDATES else []
-    DAGGERS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 112] if "SECOND_WEAPON" in CANIDATES else []
-    if SKIP_SHIELDS or "SECOND_WEAPON" not in CANIDATES:
-        SHIELDS = []
+    solve_ONEH = (
+        [i for i in solve_CANIDATES["FIRST_WEAPON"] if not i.disables_second_weapon] if "FIRST_WEAPON" in solve_CANIDATES else []
+    )
+    solve_TWOH = (
+        [i for i in solve_CANIDATES["FIRST_WEAPON"] if i.disables_second_weapon] if "FIRST_WEAPON" in solve_CANIDATES else []
+    )
+    solve_DAGGERS = (
+        [i for i in solve_CANIDATES["SECOND_WEAPON"] if i.item_type == 112] if "SECOND_WEAPON" in solve_CANIDATES else []
+    )
+    if SKIP_SHIELDS or "SECOND_WEAPON" not in solve_CANIDATES:
+        solve_SHIELDS = []
     else:
-        SHIELDS = [i for i in CANIDATES["SECOND_WEAPON"] if i._item_type == 189]
+        solve_SHIELDS = [i for i in solve_CANIDATES["SECOND_WEAPON"] if i.item_type == 189]
 
     for key in ("FIRST_WEAPON", "SECOND_WEAPON"):
-        CANIDATES.pop(key, None)
+        solve_CANIDATES.pop(key, None)
 
-    for items in (ONEH, TWOH, DAGGERS, *CANIDATES.values()):
+    for items in (solve_ONEH, solve_TWOH, solve_DAGGERS, *solve_CANIDATES.values()):
         if not items:
             continue
         slot = items[0].item_slot
@@ -421,7 +424,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
             k = 2 if slot == "LEFT_HAND" else 1
 
-            for stat in ("_ap", "_mp", "_range", "_wp"):  # TODO: Dynamic
+            for stat in ("ap", "mp", "ra", "wp"):  # TODO: Dynamic
                 x = attrgetter(stat)
                 c_added = 0
                 for item in ordered_keep_by_key(bck, x, k):
@@ -446,35 +449,32 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     epics.sort(key=lambda e: (score_key(e), e.item_slot), reverse=True)
     epics = ordered_unique_by_key(epics, needs_full_sim_key)
 
-    lw = EquipableItem()
-    lw._elemental_mastery = int(HIGH_BOUND * 1.5)
-    lw._title_strings[_locale.get()] = "LIGHT WEAPON EXPERT PLACEHOLDER"
-    lw._item_lv = HIGH_BOUND
-    lw._item_rarity = 4
-    lw._item_type = 112
     if LIGHT_WEAPON_EXPERT:
-        DAGGERS.append(lw)
+        solve_DAGGERS.append(EquipableItem(-2, HIGH_BOUND, 4, 112, elemental_mastery=int(HIGH_BOUND * 1.5)))
 
     # Tt be reused below
 
     for item in (*forced_relics, *forced_epics):
-        if item._item_type == 112:
-            DAGGERS = [item]
-        elif item._item_id == 189:
-            SHIELDS = [item]
+        if item.item_type == 112:
+            solve_DAGGERS = [item]
+        elif item.item_id == 189:
+            solve_SHIELDS = [item]
 
         if item.item_slot == "FIRST_WEAPON":
             if item.disables_second_weapon:
-                TWOH = [item]
+                solve_TWOH = [item]
             else:
-                ONEH = [item]
+                solve_ONEH = [item]
 
     if WEILD_TYPE_TWO_HANDED:
-        canidate_weapons = (*((two_hander,) for two_hander in TWOH),)
+        canidate_weapons = (*((two_hander,) for two_hander in solve_TWOH),)
     elif SKIP_TWO_HANDED:
-        canidate_weapons = (*itertools.product(ONEH, (DAGGERS + SHIELDS)),)
+        canidate_weapons = (*itertools.product(solve_ONEH, (solve_DAGGERS + solve_SHIELDS)),)
     else:
-        canidate_weapons = (*((two_hander,) for two_hander in TWOH), *itertools.product(ONEH, (DAGGERS + SHIELDS)))
+        canidate_weapons = (
+            *((two_hander,) for two_hander in solve_TWOH),
+            *itertools.product(solve_ONEH, (solve_DAGGERS + solve_SHIELDS)),
+        )
 
     def tuple_expander(seq: Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]) -> Iterator[EquipableItem]:
         for item in seq:
@@ -493,7 +493,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
     canidate_weapons = ordered_unique_by_key(srt_w, weapon_key_func)
 
-    BEST_LIST: list[tuple[float, list[EquipableItem]]] = []
+    solve_BEST_LIST: list[tuple[float, list[EquipableItem]]] = []
 
     log.info("Considering the options...")
 
@@ -502,8 +502,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     if not (forced_relics or forced_epics) and (LOW_BOUND <= 200 <= HIGH_BOUND):
         for i in range(4):
             sword_id, ring_id = NATION_RELIC_EPIC_IDS[i], NATION_RELIC_EPIC_IDS[i + 4]
-            sword = next((i for i in OBJS if i._item_id == sword_id), None)
-            ring = next((i for i in OBJS if i._item_id == ring_id), None)
+            sword = next((i for i in OBJS if i.item_id == sword_id), None)
+            ring = next((i for i in OBJS if i.item_id == ring_id), None)
             if sword and ring:
                 extra_pairs.append((sword, ring))
 
@@ -521,7 +521,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         disables_second = any(i.disables_second_weapon for i in pair if i)
         positions = [i.item_slot for i in pair if i]
         pos_key = "-".join(sorted(positions))
-        re_s = [i.as_stats for i in pair if i]
+        re_s = [i.as_stats() for i in pair if i]
         sc = re_s[0]
         if len(re_s) > 1:
             sc = sc + re_s[1]
@@ -529,12 +529,12 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         return (pos_key, disables_second, *ks)
 
     distribs = {
-        k: statistics.NormalDist.from_samples(score_key(i) for i in v) if len(v) > 1 else None for k, v in CANIDATES.items()
+        k: statistics.NormalDist.from_samples(score_key(i) for i in v) if len(v) > 1 else None for k, v in solve_CANIDATES.items()
     }
 
-    ONEH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in ONEH) if len(ONEH) > 1 else None
-    TWOH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in TWOH) if len(TWOH) > 1 else None
-    OFF_HANDS = DAGGERS + SHIELDS
+    ONEH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in solve_ONEH) if len(solve_ONEH) > 1 else None
+    TWOH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in solve_TWOH) if len(solve_TWOH) > 1 else None
+    OFF_HANDS = solve_DAGGERS + solve_SHIELDS
     OFF_HAND_distrib = statistics.NormalDist.from_samples(score_key(i) for i in OFF_HANDS) if len(OFF_HANDS) > 1 else None
 
     @lru_cache
@@ -569,20 +569,20 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     if ns and not ns.exhaustive:
         per_item_factor = lambda llv, lls: 2 if lls == "LEFT_HAND" else 1  # type: ignore TODO
         canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth]
-        CANIDATES = {k: v[: ns.search_depth + per_item_factor(HIGH_BOUND, k)] for k, v in CANIDATES.items()}
+        solve_CANIDATES = {k: v[: ns.search_depth + per_item_factor(HIGH_BOUND, k)] for k, v in solve_CANIDATES.items()}
         canidate_weapons = canidate_weapons[: int(ns.hard_cap_depth / 2)]
 
     if ns.dry_run:
         ret: list[EquipableItem] = []
         ret.extend(filter(None, itertools.chain.from_iterable(canidate_re_pairs)))
         ret.extend(forced_items)
-        for k, v in CANIDATES.items():
+        for k, v in solve_CANIDATES.items():
             if "WEAPON" not in k:
                 ret.extend(v)
 
         for weps in canidate_weapons:
             ret.extend(tuple_expander(weps))
-        return [(0, ordered_unique_by_key(ret, attrgetter("_item_id")))]
+        return [(0, ordered_unique_by_key(ret, attrgetter("item_id")))]
 
     # everything below this line is performance sensitive, and runtime is based on how much the above
     # managed to reduce the permuations of possible gear.
@@ -621,7 +621,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         ]
 
         # This is a slot we allow building without, sets without will be worse ofc...
-        if "ACCESSORY" not in CANIDATES:  # noqa: SIM102
+        if "ACCESSORY" not in solve_CANIDATES:  # noqa: SIM102
             if not ((relic and relic.item_slot == "ACCESSORY") or (epic and epic.item_slot == "ACCESSORY")):
                 try:
                     REM_SLOTS.remove("ACCESSORY")
@@ -664,26 +664,26 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             if main_hand_disabled:
                 if WEILD_TYPE_TWO_HANDED:
                     continue
-                s = [*DAGGERS, *SHIELDS]
+                s = [*solve_DAGGERS, *solve_SHIELDS]
                 s.sort(key=score_key, reverse=True)
-                CANIDATES["WEAPONS"] = [  # type: ignore
-                    (i,) for i in ordered_unique_by_key(s, lambda i: (i._ap, i._mp, i._range, i._wp))
+                solve_CANIDATES["WEAPONS"] = [  # type: ignore
+                    (i,) for i in ordered_unique_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))
                 ]
             elif off_hand_disabled:
                 if WEILD_TYPE_TWO_HANDED:
                     continue
-                CANIDATES["WEAPONS"] = [  # type: ignore
-                    (i,) for i in ordered_unique_by_key(ONEH, lambda i: (i._ap, i._mp, i._range, i._wp))
+                solve_CANIDATES["WEAPONS"] = [  # type: ignore
+                    (i,) for i in ordered_unique_by_key(solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp))
                 ]
             else:
-                CANIDATES["WEAPONS"] = canidate_weapons  # type: ignore
+                solve_CANIDATES["WEAPONS"] = canidate_weapons  # type: ignore
 
-            CANIDATES["WEAPONS"].sort(key=weapon_score_func, reverse=True)
+            solve_CANIDATES["WEAPONS"].sort(key=weapon_score_func, reverse=True)
 
         try:
             k = REM_SLOTS.count("LEFT_HAND")
-            ring_pairs = list(itertools.combinations(CANIDATES["LEFT_HAND"], k)) if k else ()
-            cans = [ring_pairs, *(CANIDATES[k] for k in REM_SLOTS if k != "LEFT_HAND")]
+            ring_pairs = list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k else ()
+            cans = [ring_pairs, *(solve_CANIDATES[k] for k in REM_SLOTS if k != "LEFT_HAND")]
             cn_c = reduce(mul, map(len, cans), 1) / 3
         except KeyError as exc:
             log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
@@ -696,8 +696,8 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
 
         for raw_items in inner:
             items = [*tuple_expander(raw_items), *forced_items]
-            statline: Stats = reduce(add, (i.as_stats for i in (relic, epic, *items) if i))
-            if statline.ap < AP or statline.mp < MP or statline.wp < WP or statline.ra < RA:
+            statline: Stats = reduce(add, (i.as_stats() for i in (relic, epic, *items) if i))
+            if statline.ap < solve_AP or statline.mp < solve_MP or statline.wp < WP or statline.ra < RA:
                 continue
 
             crit_chance = statline.crit + BASE_CRIT_CHANCE
@@ -707,12 +707,12 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
             if crit_chance < -10:
                 continue
 
-            generated_conditions = [(*item.conditions, item.as_stats) for item in (*items, relic, epic) if item]
-            mns, mxs, stats = zip(*generated_conditions)
+            generated_conditions = [get_item_conditions(item) for item in (*items, relic, epic) if item]
+            mns, mxs = zip(*generated_conditions)
             mns = reduce(and_, mns, SetMinimums())
             mxs = reduce(and_, mxs, SetMaximums())
 
-            if (mns or mxs) and not generate_filter(base_stats, mns, mxs)(stats):
+            if not (mns <= (statline + base_stats) <= mxs):
                 continue
 
             UNRAVEL_ACTIVE = UNRAVELING and crit_chance >= 40
@@ -725,18 +725,18 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 + (score + crit_mastery) * (crit_chance / 80)  # 1.25 * .01, includes crit math
             )
 
-            worst_kept = min(i[0] for i in BEST_LIST) if 0 < len(BEST_LIST) < 3 else 0
+            worst_kept = min(i[0] for i in solve_BEST_LIST) if 0 < len(solve_BEST_LIST) < 3 else 0
 
             if score > worst_kept:
                 filtered = [i for i in (*items, relic, epic) if i]
-                filtered.sort(key=lambda i: i._item_id)
+                filtered.sort(key=lambda i: i.item_id)
 
                 tup = (score, filtered)
-                BEST_LIST.sort(key=itemgetter(0), reverse=True)
-                BEST_LIST = BEST_LIST[:5]
-                BEST_LIST.append(tup)
+                solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
+                solve_BEST_LIST = solve_BEST_LIST[:5]
+                solve_BEST_LIST.append(tup)
 
-    return BEST_LIST
+    return solve_BEST_LIST
 
 
 def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:

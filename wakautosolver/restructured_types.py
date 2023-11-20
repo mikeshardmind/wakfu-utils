@@ -13,13 +13,10 @@ from __future__ import annotations
 import enum
 import operator
 from collections.abc import Callable
-from functools import reduce
 from typing import Literal
 
 from msgspec import Struct, field
 from msgspec.structs import astuple, replace
-
-from .functional import element_wise_apply
 
 
 class ClassesEnum(enum.IntEnum):
@@ -190,7 +187,7 @@ class SetMinimums(Stats, frozen=True, gc=False):
         if not isinstance(other, SetMinimums):
             return NotImplemented
 
-        return SetMinimums(*element_wise_apply(max, map(astuple, (self, other))))
+        return SetMinimums(*(max(s, o) for s, o in zip(astuple(self), astuple(other), strict=True)))
 
 
 class SetMaximums(Stats, frozen=True, gc=False):
@@ -224,7 +221,7 @@ class SetMaximums(Stats, frozen=True, gc=False):
         if not isinstance(other, SetMaximums):
             return NotImplemented
 
-        return SetMaximums(*element_wise_apply(min, map(astuple, (self, other))))
+        return SetMaximums(*(min(s, o) for s, o in zip(astuple(self), astuple(other), strict=True)))
 
 
 def effective_mastery(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> float:
@@ -264,57 +261,6 @@ def apply_elementalism(stats: Stats) -> Stats:
     if (stats.one_element_mastery == stats.two_element_mastery == 0) and stats.three_element_mastery != 0:
         return replace(stats, fd=stats.fd + 30, heals_performed=stats.heals_performed + 30)
     return stats
-
-
-def generate_filter(
-    base_stats: Stats,
-    minimums: SetMinimums,
-    maximums: SetMaximums,
-) -> Callable[[list[Stats]], bool]:
-    def f(item_set: list[Stats]) -> bool:
-        stats = reduce(operator.add, item_set, base_stats)
-        return minimums <= stats <= maximums
-
-    return f
-
-
-class SolveConfig(Struct, frozen=True):
-    #: Base stats should also include from shards and unconditional gains in passives
-    #: And sublimations, but should not include any stat transforms!!
-    lv: int = 230
-    base_stats: Stats = field(default_factory=Stats)
-    #: Warning, the more stats you set minimums and maximums for the longer a solution will take!
-    set_minimums: SetMinimums = field(default_factory=SetMinimums)
-    set_maximums: SetMaximums = field(default_factory=SetMaximums)
-    stat_priorities: StatPriority = field(default_factory=StatPriority)
-    forced_item_ids: list[int] = field(default_factory=list)
-    forbidden_item_ids: list[int] = field(default_factory=list)
-    equipped_sublimation_ids: list[int] = field(default_factory=list)
-    assume_double_damage_only_shards_are_damage: bool = True
-    #: When set to True, the search will be done exhaustively
-    #: When set to False, the search will adaptively determine when to end
-    #: Based on intenrally maintained criteria that attempt to balance
-    #: going through enough of the competitive options to at least find a
-    #: highly competitive option
-    exhaustive: bool = False
-    skip_shields: bool = True  # speeds up searches
-    dry_run: bool = False
-
-
-class Result(Struct):
-    items: list[int] | None = None
-    stats: Stats | None = None
-    errors: list[str] | None = None
-    eser_errors: list[str] | None = None
-    user_warnings: list[str] | None = None
-
-
-class DryRunResult(Struct):
-    items: list[int] | None = None
-    stats: None = None
-    errors: list[str] | None = None
-    user_errors: list[str] | None = None
-    user_warnings: list[str] | None = None
 
 
 class v1Config(Struct, kw_only=True):

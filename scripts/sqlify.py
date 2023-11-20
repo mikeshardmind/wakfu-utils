@@ -12,13 +12,17 @@ import json
 import re
 
 import apsw
-
-from wakautosolver import object_parsing
+import object_parsing
 
 ITEM_TYPE_MAP = object_parsing.ITEM_TYPE_MAP
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS blueprints (
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    PRIMARY KEY (item_id)
+) STRICT, WITHOUT ROWID ;
+
+CREATE TABLE IF NOT EXISTS unobtainable_items (
     item_id INTEGER NOT NULL REFERENCES items(item_id),
     PRIMARY KEY (item_id)
 ) STRICT, WITHOUT ROWID ;
@@ -178,109 +182,110 @@ if __name__ == "__main__":
 
     data: list[dict[str, int]] = []
 
-    for item in items:
-        d: dict[str, int] = {k: getattr(item, f"_{k}", 0) for k in keys}
-        data.append(d)
+    with conn:
+        for item in items:
+            d: dict[str, int] = {k: getattr(item, f"_{k}", 0) for k in keys}
+            data.append(d)
 
-    conn.executemany(QUERY, data)
+        conn.executemany(QUERY, data)
 
-    titles = [
-        {"item_id": item._item_id, **item._title_strings}
-        for item in items  # pyright: ignore[reportPrivateUsage]
-    ]
-
-    conn.executemany(
-        """
-        INSERT INTO item_names (item_id, en, fr, pt, es) VALUES (:item_id, :en, :fr, :pt, :es)
-        """,
-        titles,
-    )
-
-    with open("json_data/blueprints.json", mode="rb") as bp:
-        bpdata = json.load(bp)
-
-    with open("json_data/recipeResults.json", mode="rb") as results_are_why_ankama:
-        recresults = {i["recipeId"]: i["productedItemId"] for i in json.load(results_are_why_ankama)}
-
-    blueprints: set[int] = set()
-    for blueprint in bpdata:
-        blueprint_id = blueprint["blueprintId"]
-        recipe_ids = blueprint["recipeId"]
-        for rid in recipe_ids:
-            try:
-                actual_id = recresults[rid]
-                blueprints.add(actual_id)
-            except KeyError as e:
-                (k,) = e.args
-                if k not in (7165, 7166, 7167):  # known failures
-                    raise
-
-    conn.executemany(
-        """INSERT INTO blueprints (item_id) VALUES(?)""",
-        [(i,) for i in blueprints],
-    )
-
-    item_id_regex = re.compile(r"^(\d{1,6})\w?.*$", re.DOTALL)
-
-    for path, table_name in (
-        ("../community_sourced_data/ubs.txt", "ub_items"),
-        ("../community_sourced_data/pvp.txt", "pvp_items"),
-        ("../community_sourced_data/archdrops.txt", "archmonster_items"),
-        ("../community_sourced_data/hordes.txt", "horde_items"),
-    ):
-
-        item_ids: list[int] = []
-        with open(path, encoding="utf-8") as ub_data:
-            lines = [stripped for line in ub_data.readlines() if (stripped := line.strip())]
-            for line in lines:
-                if m := item_id_regex.match(line):
-                    item_ids.append(int(m.group(1)))
+        titles = [
+            {"item_id": item._item_id, **item._title_strings}
+            for item in items  # pyright: ignore[reportPrivateUsage]
+        ]
 
         conn.executemany(
-            f"""INSERT INTO [{table_name}] (item_id) VALUES(?)""",
-            [(i,) for i in item_ids],
+            """
+            INSERT INTO item_names (item_id, en, fr, pt, es) VALUES (:item_id, :en, :fr, :pt, :es)
+            """,
+            titles,
         )
 
-    with open("json_data/recipes.json", mode="rb") as rcp:
-        recipes = json.load(rcp)
+        with open("json_data/blueprints.json", mode="rb") as bp:
+            bpdata = json.load(bp)
 
-    recipes_limited = {
-        rid: (rid, recipe["isUpgrade"], recipe["upgradeItemId"])
-        for recipe in recipes
-        if (rid := recresults.get(recipe["id"])) in all_item_ids
-    }
+        with open("json_data/recipeResults.json", mode="rb") as results_are_why_ankama:
+            recresults = {i["recipeId"]: i["productedItemId"] for i in json.load(results_are_why_ankama)}
 
-    conn.executemany(
-        """
-        INSERT INTO
-        recipes (item_id, is_upgrade, upgrade_of)
-        VALUES (?, ?, ?)
-        """,
-        list(recipes_limited.values()),
-    )
+        blueprints: set[int] = set()
+        for blueprint in bpdata:
+            blueprint_id = blueprint["blueprintId"]
+            recipe_ids = blueprint["recipeId"]
+            for rid in recipe_ids:
+                try:
+                    actual_id = recresults[rid]
+                    blueprints.add(actual_id)
+                except KeyError as e:
+                    (k,) = e.args
+                    if k not in (7165, 7166, 7167):  # known failures
+                        raise
 
-    item_type_data: list[tuple[int, str, bool]] = []
-    item_type_name_data: list[dict[str, str]] = []
+        conn.executemany(
+            """INSERT INTO blueprints (item_id) VALUES(?)""",
+            [(i,) for i in blueprints],
+        )
 
-    for type_id, type_data in ITEM_TYPE_MAP.items():
-        position: str = type_data["position"][0]  # type: ignore
-        disables: bool = bool(type_data["disables"])
-        item_type_data.append((type_id, position, disables))
+        item_id_regex = re.compile(r"^(\d{1,6})\w?.*$", re.DOTALL)
 
-        loc = {"item_type": type_id, **(type_data["title"])}  # type: ignore
-        item_type_name_data.append(loc)  # type: ignore
+        for path, table_name in (
+            ("../community_sourced_data/ubs.txt", "ub_items"),
+            ("../community_sourced_data/pvp.txt", "pvp_items"),
+            ("../community_sourced_data/archdrops.txt", "archmonster_items"),
+            ("../community_sourced_data/hordes.txt", "horde_items"),
+            ("../community_sourced_data/unobtainable.txt", "unobtainable_items"),
+        ):
+            item_ids: list[int] = []
+            with open(path, encoding="utf-8") as ub_data:
+                lines = [stripped for line in ub_data.readlines() if (stripped := line.strip())]
+                for line in lines:
+                    if m := item_id_regex.match(line):
+                        item_ids.append(int(m.group(1)))
 
-    conn.executemany(
-        """
-        INSERT INTO item_types(item_type, position, disables_offhand) VALUES (?,?,?)
-        """,
-        item_type_data,
-    )
+            conn.executemany(
+                f"""INSERT INTO [{table_name}] (item_id) VALUES(?)""",
+                [(i,) for i in item_ids],
+            )
 
-    conn.executemany(
-        """
-        INSERT INTO item_type_names(item_type, t_en, t_fr, t_pt, t_es)
-        VALUES (:item_type, :en, :fr, :pt, :es)
-        """,
-        item_type_name_data,
-    )
+        with open("json_data/recipes.json", mode="rb") as rcp:
+            recipes = json.load(rcp)
+
+        recipes_limited = {
+            rid: (rid, recipe["isUpgrade"], recipe["upgradeItemId"])
+            for recipe in recipes
+            if (rid := recresults.get(recipe["id"])) in all_item_ids
+        }
+
+        conn.executemany(
+            """
+            INSERT INTO
+            recipes (item_id, is_upgrade, upgrade_of)
+            VALUES (?, ?, ?)
+            """,
+            list(recipes_limited.values()),
+        )
+
+        item_type_data: list[tuple[int, str, bool]] = []
+        item_type_name_data: list[dict[str, str]] = []
+
+        for type_id, type_data in ITEM_TYPE_MAP.items():
+            position: str = type_data["position"][0]  # type: ignore
+            disables: bool = bool(type_data["disables"])
+            item_type_data.append((type_id, position, disables))
+
+            loc = {"item_type": type_id, **(type_data["title"])}  # type: ignore
+            item_type_name_data.append(loc)  # type: ignore
+
+        conn.executemany(
+            """
+            INSERT INTO item_types(item_type, position, disables_offhand) VALUES (?,?,?)
+            """,
+            item_type_data,
+        )
+
+        conn.executemany(
+            """
+            INSERT INTO item_type_names(item_type, t_en, t_fr, t_pt, t_es)
+            VALUES (:item_type, :en, :fr, :pt, :es)
+            """,
+            item_type_name_data,
+        )

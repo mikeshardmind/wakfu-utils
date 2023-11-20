@@ -16,7 +16,7 @@ Exists just to generate a smaller file intended for use in minimal distributions
 """
 
 if __name__ == "__main__":
-    with open("items.json", mode="rb") as fp:
+    with open("json_data/items.json", mode="rb") as fp:
         data = msgspec.json.decode(fp.read())
 
     # Fully math based tools don't need the flavor text

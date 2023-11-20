@@ -5,7 +5,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
-# pyright: reportPrivateUsage=none
 from __future__ import annotations
 
 from typing import Literal
@@ -138,7 +137,7 @@ def partial_solve_v1(
         return (None, "No possible solution found")
 
     _score, items = best
-    item_ids = [i._item_id for i in items]  # pyright: ignore
+    item_ids = [i.item_id for i in items]
     return (item_ids, None)
 
 
@@ -236,14 +235,14 @@ def partial_solve_v2(
 
     score, found_items = best
 
-    found_item_ids = [i._item_id for i in found_items]
+    found_item_ids = [i.item_id for i in found_items]
 
     if config.dry_run:
         return v2Result(None, None, found_item_ids, None)
 
     ecount = config.objectives.elements.bit_count()
     for item in found_items:
-        if item._item_id not in item_ids:
+        if item.item_id not in item_ids:
             try:
                 if getattr(item, f"_mastery_{ecount}_elements", 0):
                     build.add_item(item, config.objectives.elements)

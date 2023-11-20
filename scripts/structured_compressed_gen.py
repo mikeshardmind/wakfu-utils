@@ -56,17 +56,44 @@ class Item(Struct, array_like=True):
     armor_received: int = 0
 
 
-StatOnlyBundle = list[Item]
+class LocaleData(Struct, frozen=True, array_like=True):
+    en: str
+    es: str
+    fr: str
+    pt: str
+
+
+LocaleBundle = dict[int, LocaleData]
+
 
 if __name__ == "__main__":
     conn = apsw.Connection("items.db")
-    rows = conn.cursor().execute("SELECT * FROM items order by item_id ASC;").fetchall()
-    items = [Item(*row) for row in rows]  # type: ignore
+    cursor = conn.cursor()
+    rows = cursor.execute(
+        """
+        WITH ubs AS (SELECT item_id FROM unobtainable_items)
+        SELECT * FROM items WHERE item_id not in ubs
+        ORDER BY item_id ASC
+        """
+    )
+    items = [Item(*row) for row in rows]
     data = msgpack.encode(items)
-    # ensure roundtrip
-    items_2 = msgpack.decode(data, type=StatOnlyBundle)
-    assert items == items_2
-
     bz2_comp = bz2.compress(data, compresslevel=9)
     with open("stat_only_bundle.bz2", mode="wb") as fp:
+        fp.write(bz2_comp)
+
+    rows = cursor.execute(
+        """
+        WITH ubs AS (SELECT item_id FROM unobtainable_items)
+        SELECT item_id, en, es, fr, pt
+        FROM items NATURAL JOIN item_names
+        WHERE item_id not in ubs
+        ORDER BY item_id ASC
+        """
+    )
+    loc_items = {item_id: LocaleData(*rest) for item_id, *rest in rows}
+
+    data = msgpack.encode(loc_items)
+    bz2_comp = bz2.compress(data, compresslevel=9)
+    with open("locale_bundle.bz2", mode="wb") as fp:
         fp.write(bz2_comp)

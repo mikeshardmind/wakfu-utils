@@ -7,7 +7,6 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 from __future__ import annotations
 
-# pyright: reportPrivateUsage=none
 import zlib
 from functools import partial
 from itertools import compress, count
@@ -164,7 +163,7 @@ class Buildv1(Struct, array_like=True):
         indices = compress(count(1), map(partial(eq, item.item_slot), v1BuildSlotsOrder))
         for index in indices:
             if not getattr(self, f"item_{index}", None):
-                setattr(self, f"item_{index}", Item(item_id=item._item_id, assignable_elements=elements))
+                setattr(self, f"item_{index}", Item(item_id=item.item_id, assignable_elements=elements))
                 break
         else:
             msg = f"Can't find a valid slot for this thing. {item}"
@@ -176,7 +175,7 @@ class Buildv1(Struct, array_like=True):
 
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
-    items = [i for i in items if i._item_id]  # filter out placeholder items
+    items = [i for i in items if i.item_id > 0]  # filter out placeholder items
     build = Buildv1(level=level)  # type: ignore
     for item in items:
         build.add_item(item)

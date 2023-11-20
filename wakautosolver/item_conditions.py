@@ -8,8 +8,11 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 from collections.abc import Sequence
+from functools import reduce
+from operator import and_
 
 from . import restructured_types as rst
+from .object_parsing import EquipableItem
 
 # Manually maintained because this isn't in ankama's data.
 # If ankama added items frequently, I'd make this parse a file with something like "locale,item name,lv,stat<x"
@@ -98,3 +101,19 @@ for item_id in (26298,):
 wp_gt_eq_8 = [rst.SetMinimums(wp=8)]
 for item_id in (26994, 26995, 26996, 26300, 26319):
     conditions[item_id] = wp_gt_eq_8
+
+
+def get_item_conditions(item: EquipableItem) -> tuple[rst.SetMinimums, rst.SetMaximums]:
+    item_conds = conditions.get(item.item_id, [])
+    set_mins: list[rst.SetMinimums] = []
+    set_maxs: list[rst.SetMaximums] = []
+
+    for c in item_conds:
+        if isinstance(c, rst.SetMinimums):
+            set_mins.append(c)
+        elif isinstance(c, rst.SetMaximums):
+            set_maxs.append(c)
+
+    mins = reduce(and_, set_mins, rst.SetMinimums())
+    maxs = reduce(and_, set_maxs, rst.SetMaximums())
+    return mins, maxs
