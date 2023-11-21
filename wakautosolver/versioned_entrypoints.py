@@ -161,18 +161,21 @@ def partial_solve_v2(
     build_code: str,
     config: v2Config,
 ) -> v2Result:
+    # pyodide proxies aren't actually lists...
+    config.allowed_rarities = [i for i in config.allowed_rarities if i]
+    config.forbidden_items = [i for i in config.forbidden_items if i]
     # This may look redundant, but it's exceptionally cheap validation
     try:
         config = msgpack.decode(msgpack.encode(config), type=v2Config)
     except Exception as exc:  # noqa: BLE001
         msg = (exc.__class__.__name__, *map(str, exc.args))
         p = b2048encode(msgpack.encode(msg))
-        return v2Result(None, "Invalid config", debug_info=p)
+        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=p)
 
     if not config.objectives.is_valid:
         msg = ("objectives", config.objectives)
         p = b2048encode(msgpack.encode(msg))
-        return v2Result(None, "Invalid config", debug_info=p)
+        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=p)
 
     build = WFBuild.from_code(build_code)
     stats = build.get_allocated_stats().to_stat_values(build.classenum)
