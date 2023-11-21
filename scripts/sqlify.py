@@ -47,6 +47,11 @@ CREATE TABLE IF NOT EXISTS horde_items (
     PRIMARY KEY (item_id)
 ) STRICT, WITHOUT ROWID ;
 
+CREATE TABLE IF NOT EXISTS ah_boss_exclusions (
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    PRIMARY KEY (item_id)
+) STRICT, WITHOUT ROWID ;
+
 CREATE TABLE IF NOT EXISTS recipes (
     item_id INTEGER PRIMARY KEY NOT NULL,
     is_upgrade INTEGER NOT NULL DEFAULT FALSE,
@@ -233,6 +238,7 @@ if __name__ == "__main__":
             ("../community_sourced_data/archdrops.txt", "archmonster_items"),
             ("../community_sourced_data/hordes.txt", "horde_items"),
             ("../community_sourced_data/unobtainable.txt", "unobtainable_items"),
+            ("../community_sourced_data/arch_or_horde_and_boss.txt", "ah_boss_exclusions"),
         ):
             item_ids: list[int] = []
             with open(path, encoding="utf-8") as ub_data:

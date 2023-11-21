@@ -288,8 +288,6 @@ class EquipableItem(Struct, frozen=True, array_like=True):
     def is_epic(self) -> bool:
         return self.item_rarity == 7
 
-
-
     @property
     def item_slot(self) -> str:
         return ITEM_TYPE_MAP[self.item_type]["position"][0]
@@ -342,9 +340,6 @@ def _item_to_stats(item: EquipableItem) -> Stats:
         fd=0,
         heals_performed=0,
     )
-
-
-
 
 
 class LocaleData(Struct, frozen=True, array_like=True):
