@@ -66,6 +66,14 @@ class LocaleData(Struct, frozen=True, array_like=True):
 LocaleBundle = dict[int, LocaleData]
 
 
+class SourceData(Struct, frozen=True, array_like=True):
+    arch: frozenset[int]
+    horde: frozenset[int]
+    non_finite_arch_horde: frozenset[int]
+    pvp: frozenset[int]
+    ultimate_boss: frozenset[int]
+
+
 if __name__ == "__main__":
     conn = apsw.Connection("items.db")
     cursor = conn.cursor()
@@ -96,4 +104,24 @@ if __name__ == "__main__":
     data = msgpack.encode(loc_items)
     bz2_comp = bz2.compress(data, compresslevel=9)
     with open("locale_bundle.bz2", mode="wb") as fp:
+        fp.write(bz2_comp)
+
+    data = [
+        frozenset(
+            i
+            for (i,) in cursor.execute(f"SELECT item_id FROM [{table_name}]")  # noqa: S608
+        )
+        for table_name in (
+            "archmonster_items",
+            "horde_items",
+            "ah_finite_exclusions",
+            "pvp_items",
+            "ub_items",
+        )
+    ]
+
+    datastruct = SourceData(*data)
+    data = msgpack.encode(datastruct)
+    bz2_comp = bz2.compress(data, compresslevel=9)
+    with open("source_info.bz2", mode="wb") as fp:
         fp.write(bz2_comp)

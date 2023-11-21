@@ -15,10 +15,14 @@ from .solver import entrypoint, v1Config
 
 if __name__ == "__main__":
     ns = None
-    if n := sys.argv[1]:
-        path = pathlib.Path(n).resolve()
-        if path.exists():
-            with path.open(mode="rb") as fp:
-                ns = msgspec.toml.decode(fp.read(), type=v1Config)
+    if len(sys.argv) > 1 and (n := sys.argv[1]):
+        try:
+            path = pathlib.Path(n).resolve()
+        except Exception:  # noqa: S110, BLE001
+            pass
+        else:
+            if path.exists():
+                with path.open(mode="rb") as fp:
+                    ns = msgspec.toml.decode(fp.read(), type=v1Config)
 
     entrypoint(sys.stdout, ns)

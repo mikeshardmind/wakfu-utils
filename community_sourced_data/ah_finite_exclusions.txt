@@ -1,3 +1,6 @@
+# Items that are dropped from arches or hordes
+# but also elsewhere and should not be considered a finite server resource
+
 15478	Cockabootsledo
 18641	Lenald Walm Pelt
 18694	Happy Sram Kimono

@@ -352,6 +352,14 @@ class LocaleData(Struct, frozen=True, array_like=True):
         return getattr(self, key, "")
 
 
+class SourceData(Struct, frozen=True, array_like=True):
+    arch: frozenset[int]
+    horde: frozenset[int]
+    non_finite_arch_horde: frozenset[int]
+    pvp: frozenset[int]
+    ultimate_boss: frozenset[int]
+
+
 LocaleBundle = dict[int, LocaleData]
 StatOnlyBundle = tuple[EquipableItem, ...]
 
@@ -364,13 +372,20 @@ def _get_item_name(item: EquipableItem) -> str:
 
 @lru_cache
 def get_all_items() -> StatOnlyBundle:
-    data_file_path = pathlib.Path(__file__).with_name("stat_only_bundle.bz2")
-    with bz2.open(str(data_file_path), mode="rb", compresslevel=9) as fp:
+    data_file_path = pathlib.Path(__file__).with_name("data") / "stat_only_bundle.bz2"
+    with bz2.open(data_file_path, mode="rb", compresslevel=9) as fp:
         return msgpack.decode(fp.read(), type=StatOnlyBundle)
 
 
 @lru_cache
 def load_locale_data() -> LocaleBundle:
-    data_file_path = pathlib.Path(__file__).with_name("locale_bundle.bz2")
-    with bz2.open(str(data_file_path), mode="rb", compresslevel=9) as fp:
+    data_file_path = pathlib.Path(__file__).with_name("data") / "locale_bundle.bz2"
+    with bz2.open(data_file_path, mode="rb", compresslevel=9) as fp:
         return msgpack.decode(fp.read(), type=LocaleBundle)
+
+
+@lru_cache
+def load_item_source_data() -> SourceData:
+    data_file_path = pathlib.Path(__file__).with_name("data") / "source_info.bz2"
+    with bz2.open(data_file_path, mode="rb", compresslevel=9) as fp:
+        return msgpack.decode(fp.read(), type=SourceData)

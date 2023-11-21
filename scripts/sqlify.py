@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS horde_items (
     PRIMARY KEY (item_id)
 ) STRICT, WITHOUT ROWID ;
 
-CREATE TABLE IF NOT EXISTS ah_boss_exclusions (
+CREATE TABLE IF NOT EXISTS ah_finite_exclusions (
     item_id INTEGER NOT NULL REFERENCES items(item_id),
     PRIMARY KEY (item_id)
 ) STRICT, WITHOUT ROWID ;
@@ -233,12 +233,12 @@ if __name__ == "__main__":
         item_id_regex = re.compile(r"^(\d{1,6})\w?.*$", re.DOTALL)
 
         for path, table_name in (
-            ("../community_sourced_data/ubs.txt", "ub_items"),
-            ("../community_sourced_data/pvp.txt", "pvp_items"),
             ("../community_sourced_data/archdrops.txt", "archmonster_items"),
             ("../community_sourced_data/hordes.txt", "horde_items"),
+            ("../community_sourced_data/ah_finite_exclusions.txt", "ah_finite_exclusions"),
+            ("../community_sourced_data/pvp.txt", "pvp_items"),
+            ("../community_sourced_data/ubs.txt", "ub_items"),
             ("../community_sourced_data/unobtainable.txt", "unobtainable_items"),
-            ("../community_sourced_data/arch_or_horde_and_boss.txt", "ah_boss_exclusions"),
         ):
             item_ids: list[int] = []
             with open(path, encoding="utf-8") as ub_data:
