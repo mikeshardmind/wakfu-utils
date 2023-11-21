@@ -36,6 +36,9 @@ class Item(Struct, array_like=True):
     rune_info: list[Rune] | list[object] = field(default_factory=lambda: [[] for _ in range(4)])
     sublimations: list[int] = field(default_factory=list)
 
+    def __bool__(self):
+        return self.item_id > 0
+
 
 SupportedVersions = Literal[1]
 
