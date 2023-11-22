@@ -151,6 +151,11 @@ class Buildv1(Struct, array_like=True):
         tup = astuple(self)
         return AllocatedStats(*tup[3:32])
 
+    def clear_items(self) -> None:
+        empty = Item()
+        for idx in range(1, 15):
+            setattr(self, f"item_{idx}", empty)
+
     def get_items(self) -> list[Item]:
         """
         Wakforge attaches 2 sublimations to an item matching how

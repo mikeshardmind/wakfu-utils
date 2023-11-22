@@ -12,6 +12,7 @@ from typing import Literal
 from msgspec import Struct, field, msgpack
 
 from .b2048 import encode as b2048encode
+from .object_parsing import load_item_source_data
 from .restructured_types import ClassesEnum, Priority, SetMinimums, StatPriority, Stats
 from .solver import SolveError, solve, v1Config
 from .wakforge_buildcodes import Buildv1 as WFBuild
@@ -147,6 +148,8 @@ class v2Config(Struct):
     dry_run: bool = False
     objectives: StatPriority = field(default_factory=StatPriority)
     forbidden_items: list[int] = field(default_factory=list)
+    ignore_existing_items: bool = False
+    forbidden_sources: list[Literal["arch", "horde", "pvp", "ultimate_boss"]] = field(default_factory=list)
 
 
 class v2Result(Struct):
@@ -164,6 +167,7 @@ def partial_solve_v2(
     # pyodide proxies aren't actually lists...
     config.allowed_rarities = [i for i in config.allowed_rarities if i]
     config.forbidden_items = [i for i in config.forbidden_items if i]
+    config.forbidden_sources = [s for s in config.forbidden_sources if s]
     # This may look redundant, but it's exceptionally cheap validation
     try:
         config = msgpack.decode(msgpack.encode(config), type=v2Config)
@@ -172,12 +176,21 @@ def partial_solve_v2(
         p = b2048encode(msgpack.encode(msg))
         return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=p)
 
+    item_sources = load_item_source_data()
+    forbidden_ids: set[int] = set()
+    for source in config.forbidden_sources:
+        forbidden_ids |= getattr(item_sources, source)
+    forbidden_ids -= item_sources.non_finite_arch_horde
+    config.forbidden_items.extend(forbidden_ids)
+
     if not config.objectives.is_valid:
         msg = ("objectives", config.objectives)
         p = b2048encode(msgpack.encode(msg))
         return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=p)
 
     build = WFBuild.from_code(build_code)
+    if config.ignore_existing_items:
+        build.clear_items()
     stats = build.get_allocated_stats().to_stat_values(build.classenum)
     if build.classenum is ClassesEnum.Ecaflip:
         stats = stats + Stats(crit=20)
