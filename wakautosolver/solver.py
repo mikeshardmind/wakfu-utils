@@ -76,7 +76,7 @@ class SolveError(Exception):
     pass
 
 
-def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = False) -> list[tuple[float, list[EquipableItem]]]:
+def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
     set_locale(ns.locale)
@@ -224,23 +224,20 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
     def minus_relicepic(item: EquipableItem) -> bool:
         return not (item.is_epic or item.is_relic)
 
-    OBJS: Final[list[EquipableItem]] = list(filter(initial_filter, ALL_OBJS))
-    del ALL_OBJS
-
     forced_slots: collections.Counter[str] = collections.Counter()
     original_forced_counts: collections.Counter[str] | None = None
     if ns and (ns.idforce or ns.nameforce):
         _fids = ns.idforce or ()
         _fns = ns.nameforce or ()
 
-        forced_items = [i for i in OBJS if i.item_id in _fids]
+        forced_items = [i for i in ALL_OBJS if i.item_id in _fids]
         # Handle names a little differently to avoid an issue with duplicate names
-        forced_by_name = [i for i in OBJS if i.name in _fns]
+        forced_by_name = [i for i in ALL_OBJS if i.name in _fns]
         forced_by_name.sort(key=score_key, reverse=True)
         forced_by_name = ordered_unique_by_key(forced_by_name, key=attrgetter("name", "item_slot"))
         forced_items.extend(forced_by_name)
 
-        if len(forced_items) < len(_fids) + len(_fns) and not ignore_missing_items:
+        if len(forced_items) < len(_fids) + len(_fns):
             msg = (
                 "Unable to force some of these items with your other conditions"
                 f"Attempted ids {ns.idforce}, names {ns.nameforce}, found {' '.join(map(str, forced_items))}"
@@ -262,7 +259,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 pass
             else:
                 ring_idx = NATION_RELIC_EPIC_IDS[sword_idx + 4]
-                fr = next((i for i in OBJS if i.item_id == ring_idx), None)
+                fr = next((i for i in ALL_OBJS if i.item_id == ring_idx), None)
                 if fr is None:
                     msg = "Couldn't force corresponding nation ring?"
                     raise SolveError(msg)
@@ -281,7 +278,7 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
                 pass
             else:
                 sword_idx = NATION_RELIC_EPIC_IDS[ring_idx - 4]
-                forced_sword = next((i for i in OBJS if i.item_id == sword_idx), None)
+                forced_sword = next((i for i in ALL_OBJS if i.item_id == sword_idx), None)
 
                 if forced_sword is None:
                     msg = "Couldn't force corresponding nation sword?"
@@ -317,6 +314,9 @@ def solve(ns: v1Config, ignore_missing_items: bool = False, use_tqdm: bool = Fal
         forced_items = []
         forced_relics = []
         forced_epics = []
+
+    OBJS: Final[list[EquipableItem]] = list(filter(initial_filter, ALL_OBJS))
+    del ALL_OBJS
 
     AOBJS: collections.defaultdict[str, list[EquipableItem]] = collections.defaultdict(list)
 

@@ -160,7 +160,7 @@ class Buildv1(Struct, array_like=True):
         """
         items = astuple(self)[32:46]
         # wakforge sends fake items rather than not sending them, a subarray for items would be lovely...
-        return [i for i in items if isinstance(i, Item) and i.item_id != -1]
+        return [i for i in items if isinstance(i, Item) and i]
 
     def add_item(self, item: EquipableItem, elements: WFElements = WFElements.empty, /) -> None:
         indices = compress(count(1), map(partial(eq, item.item_slot), v1BuildSlotsOrder))

@@ -131,7 +131,7 @@ def partial_solve_v1(
     )
 
     try:
-        result = solve(cfg, ignore_missing_items=True)
+        result = solve(cfg)
         best = result[0]
     except (IndexError, SolveError):
         return (None, "No possible solution found")
@@ -227,7 +227,7 @@ def partial_solve_v2(
     )
 
     try:
-        result = solve(cfg, ignore_missing_items=True)
+        result = solve(cfg)
         best = result[0]
     except (IndexError, SolveError):
         return v2Result(None, "No possible solution found", debug_info=None)
