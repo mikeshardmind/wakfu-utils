@@ -379,7 +379,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
     def adj_func(item: EquipableItem) -> float:
         mins = tuple(i - j for i, j in zip(adj_getter(stat_mins), adj_getter(base_stats), strict=True))
-        perc_contr = [i / (j or 1) for i, j in zip(adj_getter(item), mins, strict=True)]
+        perc_contr = [(i + 1) / (j or 1) for i, j in zip(adj_getter(item), mins, strict=True)]
         return sum(perc_contr) / len(perc_contr)
 
     for items in (solve_ONEH, solve_TWOH, solve_DAGGERS, *solve_CANIDATES.values()):
@@ -401,7 +401,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
             except statistics.StatisticsError:  # zscore when sigma = 0
                 adj = 0
             if adj:
-                return st + adj * st
+                return st + (adj * st * .1)
             return st
 
         items.sort(key=adjusted_key, reverse=True)
@@ -510,13 +510,13 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
         return (pos_key, disables_second, *ks)
 
     distribs = {
-        k: statistics.NormalDist.from_samples(score_key(i) for i in v) if len(v) > 1 else None for k, v in solve_CANIDATES.items()
+        k: statistics.NormalDist.from_samples(crit_score_key(i) for i in v) if len(v) > 1 else None for k, v in solve_CANIDATES.items()
     }
 
-    ONEH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in solve_ONEH) if len(solve_ONEH) > 1 else None
-    TWOH_distrib = statistics.NormalDist.from_samples(score_key(i) for i in solve_TWOH) if len(solve_TWOH) > 1 else None
+    ONEH_distrib = statistics.NormalDist.from_samples(crit_score_key(i) for i in solve_ONEH) if len(solve_ONEH) > 1 else None
+    TWOH_distrib = statistics.NormalDist.from_samples(crit_score_key(i) for i in solve_TWOH) if len(solve_TWOH) > 1 else None
     OFF_HANDS = solve_DAGGERS + solve_SHIELDS
-    OFF_HAND_distrib = statistics.NormalDist.from_samples(score_key(i) for i in OFF_HANDS) if len(OFF_HANDS) > 1 else None
+    OFF_HAND_distrib = statistics.NormalDist.from_samples(crit_score_key(i) for i in OFF_HANDS) if len(OFF_HANDS) > 1 else None
 
     @lru_cache
     def re_score_key(pair: tuple[EquipableItem | None, EquipableItem | None]) -> tuple[int, float, float]:
@@ -524,7 +524,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
         unknown = 0
         for re in pair:
             if re:
-                s += score_key(re)
+                s += crit_score_key(re)
                 if re.item_slot == "FIRST_WEAPON":
                     dist = TWOH_distrib if re.disables_second_weapon else ONEH_distrib
                 elif re.item_slot == "SECOND_WEAPON":
@@ -534,7 +534,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
                 if dist:
                     try:
-                        v += dist.zscore(score_key(re))
+                        v += dist.zscore(crit_score_key(re))
                     except statistics.StatisticsError:
                         unknown = -1
                 else:
