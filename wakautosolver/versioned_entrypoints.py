@@ -114,8 +114,8 @@ def partial_solve_v1(
         basemp=stats.mp,
         basera=stats.ra,
         bawewp=stats.wp,
-        bcrit=stats.crit - 3,  # wakforge is doing something wrong here, won't be fixes for this entrypoint
-        bcmast=stats.crit_mastery,
+        bcrit=stats.critical_hit - 3,  # wakforge is doing something wrong here, won't be fixes for this entrypoint
+        bcmast=stats.critical_mastery,
         bmast=stats.elemental_mastery,
         num_mastery=num_mastery,
         forbid_rarity=forbidden_rarities,
@@ -193,7 +193,7 @@ def partial_solve_v2(
         build.clear_items()
     stats = build.get_allocated_stats().to_stat_values(build.classenum)
     if build.classenum is ClassesEnum.Ecaflip:
-        stats = stats + Stats(crit=20)
+        stats = stats + Stats(critical_hit=20)
     item_ids = [i.item_id for i in build.get_items() if i.item_id > 0]
     ap = config.target_stats.ap - stats.ap
     mp = config.target_stats.mp - stats.mp
@@ -215,12 +215,14 @@ def partial_solve_v2(
         mp=mp,
         wp=wp,
         ra=ra,
+        stat_minimums=config.target_stats,
+        base_stats=stats,
         baseap=stats.ap,
         basemp=stats.mp,
         basera=stats.ra,
         bawewp=stats.wp,
-        bcrit=stats.crit,
-        bcmast=stats.crit_mastery,
+        bcrit=stats.critical_hit,
+        bcmast=stats.critical_mastery,
         bmast=stats.elemental_mastery,
         num_mastery=config.objectives.elements.bit_count(),
         forbid_rarity=forbidden_rarities,

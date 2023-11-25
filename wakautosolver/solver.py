@@ -23,7 +23,7 @@ import tqdm
 
 from .item_conditions import get_item_conditions
 from .object_parsing import EquipableItem, get_all_items, set_locale
-from .restructured_types import ElementsEnum, SetMaximums, SetMinimums, Stats, v1Config
+from .restructured_types import ElementsEnum, SetMaximums, SetMinimums, Stats, apply_w2h, v1Config
 from .utils import only_once
 from .wakforge_buildcodes import build_code_from_items
 
@@ -40,6 +40,9 @@ class SupportsWrite(Protocol[T_contra]):
         ...
 
 
+ALWAYS_SIMMED = "ap", "mp", "ra", "wp"
+
+
 @only_once
 def setup_logging(output: SupportsWrite[str]) -> None:
     handler = logging.StreamHandler(output)
@@ -49,24 +52,19 @@ def setup_logging(output: SupportsWrite[str]) -> None:
     log.setLevel(logging.INFO)
 
 
-def ordered_unique_by_key(it: Iterable[T], key: Callable[[T], Hashable]) -> list[T]:
-    seen_set: set[Hashable] = set()
-    return [i for i in it if not ((k := key(i)) in seen_set or seen_set.add(k))]
-
-
-def ordered_keep_by_key(it: Iterable[T], key: Callable[[T], Hashable], count: int) -> list[T]:
+def ordered_keep_by_key(it: Iterable[T], key: Callable[[T], Hashable], k: int = 1) -> list[T]:
     seen_counts: collections.Counter[Hashable] = collections.Counter()
     ret: list[T] = []
     for i in it:
-        k = key(i)
-        seen_counts[k] += 1
-        if seen_counts[k] <= count:
+        _key = key(i)
+        seen_counts[_key] += 1
+        if seen_counts[_key] <= k:
             ret.append(i)
     return ret
 
 
-def inplace_ordered_unique_by_key(it: list[T], key: Callable[[T], Hashable]) -> None:
-    uniq = ordered_unique_by_key(it, key)
+def inplace_ordered_keep_by_key(it: list[T], key: Callable[[T], Hashable], k: int = 1) -> None:
+    uniq = ordered_keep_by_key(it, key, k)
     for v in it[::-1]:
         if v not in uniq:
             it.remove(v)
@@ -92,28 +90,15 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
         allowed_rarities = [i for i in allowed_rarities if i not in ns.forbid_rarity]
 
     LV_TOLERANCE = ns.tolerance
-    ITEM_SEARCH_DEPTH = ns.search_depth
 
-    solve_AP = ns.ap
-    solve_MP = ns.mp
-    RA = ns.ra
-    WP = ns.wp
     HIGH_BOUND = ns.lv
     LOW_BOUND = HIGH_BOUND - LV_TOLERANCE
     UNRAVELING = ns.unraveling
     SKIP_SHIELDS = ns.skipshields
     LIGHT_WEAPON_EXPERT = ns.lwx
     WEILD_TYPE_TWO_HANDED = ns.twoh
-    BASE_CRIT_CHANCE = ns.bcrit
-    BASE_CRIT_MASTERY = ns.bcmast
     BASE_RELEV_MASTERY = ns.bmast
     SKIP_TWO_HANDED = ns.skiptwo_hand
-
-    RES_DEVIATION_PENALTY = 0  # TODO: tuning knob or do it based on level based rune effectiveness
-
-    if WEILD_TYPE_TWO_HANDED:
-        solve_AP -= 2
-        solve_MP += 2
 
     @lru_cache
     def score_key(item: EquipableItem | None) -> float:
@@ -176,6 +161,13 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
         return score
 
+    @lru_cache
+    def crit_score_key(item: EquipableItem | None) -> float:
+        if item is None:
+            return 0
+        base_score = score_key(item)
+        return base_score + ((item.critical_hit + base_stats.critical_hit + 11) / 80) * base_score
+
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
         return any(i.unhandled() for i in get_item_conditions(item))
 
@@ -199,6 +191,17 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
     # locale based, only works if user is naming it in locale used and case sensitive currently.
     FORBIDDEN_NAMES: list[str] = ns.forbid if (ns and ns.forbid) else []
+
+    stat_mins = ns.stat_minimums or SetMinimums(ap=ns.ap, mp=ns.mp, wp=ns.wp, ra=ns.ra)
+    base_stats = ns.base_stats or Stats(
+        ns.baseap,
+        mp=ns.basemp,
+        ra=ns.basera,
+        wp=ns.bawewp,
+        critical_hit=ns.bcrit,
+        critical_mastery=ns.bcmast,
+        elemental_mastery=ns.bmast,
+    )
 
     def initial_filter(item: EquipableItem) -> bool:
         return bool(
@@ -234,7 +237,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
         # Handle names a little differently to avoid an issue with duplicate names
         forced_by_name = [i for i in ALL_OBJS if i.name in _fns]
         forced_by_name.sort(key=score_key, reverse=True)
-        forced_by_name = ordered_unique_by_key(forced_by_name, key=attrgetter("name", "item_slot"))
+        forced_by_name = ordered_keep_by_key(forced_by_name, key=attrgetter("name", "item_slot"), k=1)
         forced_items.extend(forced_by_name)
 
         if len(forced_items) < len(_fids) + len(_fns):
@@ -342,15 +345,8 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
     solve_CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
 
     def needs_full_sim_key(item: EquipableItem) -> Hashable:
-        return (
-            item.disables_second_weapon,
-            item.ap,
-            item.ra,
-            item.mp,
-            item.wp,
-            item.critical_hit,
-            item.critical_mastery,
-        )
+        keys = {"disables_second_weapon", *ALWAYS_SIMMED}
+        return attrgetter(*keys)(item)
 
     if original_forced_counts:
         for slot, count in original_forced_counts.items():
@@ -379,75 +375,60 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
     for key in ("FIRST_WEAPON", "SECOND_WEAPON"):
         solve_CANIDATES.pop(key, None)
 
+    adj_getter = attrgetter(*stat_mins.get_sim_keys())
+
+    def adj_func(item: EquipableItem) -> float:
+        mins = tuple(i - j for i, j in zip(adj_getter(stat_mins), adj_getter(base_stats), strict=True))
+        perc_contr = [i / (j or 1) for i, j in zip(adj_getter(item), mins, strict=True)]
+        return sum(perc_contr) / len(perc_contr)
+
     for items in (solve_ONEH, solve_TWOH, solve_DAGGERS, *solve_CANIDATES.values()):
         if not items:
             continue
         slot = items[0].item_slot
 
         items.sort(key=score_key, reverse=True)
-        inplace_ordered_unique_by_key(items, attrgetter("name", "is_souvenir"))
+        inplace_ordered_keep_by_key(items, attrgetter("name", "is_souvenir"))
 
-        dist = statistics.NormalDist.from_samples(i.total_elemental_res for i in items) if len(items) > 1 else None
+        dist = statistics.NormalDist.from_samples(adj_func(i) for i in items) if len(items) > 1 else None
 
-        def res_adjusted_key(item: EquipableItem, dist: statistics.NormalDist | None = dist) -> float:
-            st = score_key(item)
+        def adjusted_key(item: EquipableItem, dist: statistics.NormalDist | None = dist) -> float:
+            st = crit_score_key(item)
             if dist is None:
                 return st
             try:
-                adj = RES_DEVIATION_PENALTY * dist.zscore(item.total_elemental_res)
+                adj = dist.zscore(adj_func(item))
             except statistics.StatisticsError:  # zscore when sigma = 0
                 adj = 0
             if adj:
                 return st + adj * st
             return st
 
-        items.sort(key=res_adjusted_key, reverse=True)
+        items.sort(key=adjusted_key, reverse=True)
 
-        if slot == "LEFT_HAND":
-            uniq = ordered_keep_by_key(items, needs_full_sim_key, 2)
-        else:
-            uniq = ordered_keep_by_key(items, needs_full_sim_key, 1)
+        k = 2 if slot == "LEFT_HAND" else 1
+        inplace_ordered_keep_by_key(items, needs_full_sim_key, k)
 
-        if not ns.exhaustive:
-            items.sort(key=lambda i: (i in uniq, score_key(i)), reverse=True)
-            adaptive_depth = ITEM_SEARCH_DEPTH
-            if slot == "LEFT_HAND":
-                adaptive_depth += 1
-
-            if HIGH_BOUND < 50:  # Needed due to item design and low level -wp items
-                adaptive_depth += 2
-
-            bck = items.copy()
-            bck.sort(key=score_key, reverse=True)
-            inplace_ordered_unique_by_key(bck, needs_full_sim_key)
-            del items[adaptive_depth:]
-
-            k = 2 if slot == "LEFT_HAND" else 1
-
-            for stat in ("ap", "mp", "ra", "wp"):  # TODO: Dynamic
+        if not (ns and ns.exhaustive):
+            keep: list[EquipableItem] = []
+            for stat in ALWAYS_SIMMED:
                 x = attrgetter(stat)
                 c_added = 0
-                for item in ordered_keep_by_key(bck, x, k):
-                    if x(item) > 0 and item not in items:
-                        items.append(item)
+                for item in ordered_keep_by_key(items, x, k):
+                    if x(item) >= 0 and item not in keep:
                         c_added += 1
-                        if c_added >= k:
+                        keep.append(item)
+                        if c_added >= k + ns.search_depth - 1:
                             break
 
-            uniq = ordered_keep_by_key(items, needs_full_sim_key, k)
-            for i in items[::-1]:
-                if i not in uniq:
-                    items.remove(i)
-        else:
-            # simply keep the uniq without trimming then...
-            for i in items[::-1]:
-                if i not in uniq:
-                    items.remove(i)
+            for item in items[::-1]:
+                if item not in keep:
+                    items.remove(item)
 
     relics.sort(key=lambda r: (score_key(r), r.item_slot), reverse=True)
-    relics = ordered_unique_by_key(relics, needs_full_sim_key)
+    inplace_ordered_keep_by_key(relics, needs_full_sim_key)
     epics.sort(key=lambda e: (score_key(e), e.item_slot), reverse=True)
-    epics = ordered_unique_by_key(epics, needs_full_sim_key)
+    inplace_ordered_keep_by_key(epics, needs_full_sim_key)
 
     if LIGHT_WEAPON_EXPERT:
         solve_DAGGERS.append(EquipableItem(-2, HIGH_BOUND, 4, 112, elemental_mastery=int(HIGH_BOUND * 1.5)))
@@ -491,7 +472,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
     )
     weapon_score_func = lambda w: sum(map(score_key, tuple_expander(w)))
     srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
-    canidate_weapons = ordered_unique_by_key(srt_w, weapon_key_func)
+    canidate_weapons = ordered_keep_by_key(srt_w, weapon_key_func)
 
     solve_BEST_LIST: list[tuple[float, list[EquipableItem]]] = []
 
@@ -512,8 +493,8 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
     epics.sort(key=score_key, reverse=True)
     relics.sort(key=score_key, reverse=True)
     kf: Callable[[EquipableItem], Hashable] = lambda i: (i.item_slot, needs_full_sim_key(i))
-    epics = ordered_unique_by_key(epics, kf)
-    relics = ordered_unique_by_key(relics, kf)
+    inplace_ordered_keep_by_key(epics, kf)
+    inplace_ordered_keep_by_key(relics, kf)
 
     def re_key_func(pair: tuple[EquipableItem | None, EquipableItem | None]) -> Hashable:
         if not any(pair):
@@ -525,7 +506,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
         sc = re_s[0]
         if len(re_s) > 1:
             sc = sc + re_s[1]
-        ks = attrgetter("ap", "mp", "ra", "wp", "crit", "crit_mastery")(sc)
+        ks = attrgetter(*ALWAYS_SIMMED)(sc)
         return (pos_key, disables_second, *ks)
 
     distribs = {
@@ -563,7 +544,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
     pairs: list[tuple[EquipableItem | None, EquipableItem | None]]
     pairs = [*itertools.product(relics or [None], epics or [None]), *extra_pairs]  # type: ignore
     pairs.sort(key=re_score_key, reverse=True)
-    canidate_re_pairs = ordered_unique_by_key(pairs, re_key_func)
+    canidate_re_pairs = ordered_keep_by_key(pairs, re_key_func)
     pairs.sort(key=lambda p: re_score_key(p)[1:], reverse=True)
 
     if ns and not ns.exhaustive:
@@ -582,12 +563,10 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
         for weps in canidate_weapons:
             ret.extend(tuple_expander(weps))
-        return [(0, ordered_unique_by_key(ret, attrgetter("item_id")))]
+        return [(0, ordered_keep_by_key(ret, attrgetter("item_id")))]
 
     # everything below this line is performance sensitive, and runtime is based on how much the above
     # managed to reduce the permuations of possible gear.
-
-    base_stats = Stats(ns.baseap, mp=ns.basemp, ra=ns.basera, crit=ns.bcrit)
 
     if use_tqdm:
         maybe_progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pair")
@@ -667,13 +646,13 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
                 s = [*solve_DAGGERS, *solve_SHIELDS]
                 s.sort(key=score_key, reverse=True)
                 solve_CANIDATES["WEAPONS"] = [  # type: ignore
-                    (i,) for i in ordered_unique_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))
+                    (i,) for i in ordered_keep_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))
                 ]
             elif off_hand_disabled:
                 if WEILD_TYPE_TWO_HANDED:
                     continue
                 solve_CANIDATES["WEAPONS"] = [  # type: ignore
-                    (i,) for i in ordered_unique_by_key(solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp))
+                    (i,) for i in ordered_keep_by_key(solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp))
                 ]
             else:
                 solve_CANIDATES["WEAPONS"] = canidate_weapons  # type: ignore
@@ -696,33 +675,30 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
         for raw_items in inner:
             items = [*tuple_expander(raw_items), *forced_items]
-            statline: Stats = reduce(add, (i.as_stats() for i in (relic, epic, *items) if i))
-            if statline.ap < solve_AP or statline.mp < solve_MP or statline.wp < WP or statline.ra < RA:
-                continue
 
-            crit_chance = statline.crit + BASE_CRIT_CHANCE
-            crit_mastery = statline.crit_mastery + BASE_CRIT_MASTERY
+            statline: Stats = reduce(add, (i.as_stats() for i in (relic, epic, *items) if i), base_stats)
+            if WEILD_TYPE_TWO_HANDED:
+                statline = apply_w2h(statline)
 
             # GLOBAL GAME CONDITION
-            if crit_chance < -10:
+            if statline.critical_hit < -10:
                 continue
 
             generated_conditions = [get_item_conditions(item) for item in (*items, relic, epic) if item]
             mns, mxs = zip(*generated_conditions)
-            mns = reduce(and_, mns, SetMinimums())
+            mns = reduce(and_, mns, stat_mins)
             mxs = reduce(and_, mxs, SetMaximums())
 
-            if not (mns <= (statline + base_stats) <= mxs):
+            if not statline.is_between(mns, mxs):
                 continue
+            UNRAVEL_ACTIVE = UNRAVELING and statline.critical_hit >= 40
 
-            UNRAVEL_ACTIVE = UNRAVELING and crit_chance >= 40
-
-            crit_chance = max(min(crit_chance + 3, 100), 0)  # engine crit rate vs stat
+            crit_chance = max(min(statline.critical_hit + 3, 100), 0)  # engine crit rate vs stat
 
             score = sum(score_key(i) for i in (*items, relic, epic)) + BASE_RELEV_MASTERY
             score = (
-                (score + (crit_mastery if UNRAVEL_ACTIVE else 0)) * ((100 - crit_chance) / 100)
-                + (score + crit_mastery) * (crit_chance / 80)  # 1.25 * .01, includes crit math
+                (score + (statline.critical_mastery if UNRAVEL_ACTIVE else 0)) * ((100 - crit_chance) / 100)
+                + (score + statline.critical_mastery) * (crit_chance / 80)  # 1.25 * .01, includes crit math
             )
 
             worst_kept = min(i[0] for i in solve_BEST_LIST) if 0 < len(solve_BEST_LIST) < 3 else 0

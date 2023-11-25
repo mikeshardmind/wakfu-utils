@@ -20,7 +20,7 @@ from .object_parsing import EquipableItem
 # lv neccessary cause of souvenirs
 
 conditions: dict[int, Sequence[rst.Stats]] = {}
-NEGCRIT = rst.SetMinimums(crit=-10)
+NEGCRIT = rst.SetMinimums(critical_hit=-10)
 
 # Salty cape
 block_between_40_50 = [rst.SetMinimums(block=40), rst.SetMaximums(block=50)]
@@ -28,7 +28,7 @@ for item_id in (27293, 27294):
     conditions[item_id] = block_between_40_50
 
 # Lord Zaens's Cape, Hairlarious Cloak, Excarnus Veil (Souvenir)
-crit_between_40_50 = [rst.SetMinimums(crit=40), rst.SetMaximums(crit=50)]
+crit_between_40_50 = [rst.SetMinimums(critical_hit=40), rst.SetMaximums(critical_hit=50)]
 for item_id in (27445, 27446, 26302, 26322, 27695):
     conditions[item_id] = crit_between_40_50
 
@@ -68,7 +68,7 @@ for item_id in (26291, 26312):
     conditions[item_id] = block_lt_eq_20
 
 # mocking cap
-crit_lt_eq_25 = [rst.SetMaximums(crit=25)]
+crit_lt_eq_25 = [rst.SetMaximums(critical_hit=25)]
 for item_id in (26303, 26323):
     conditions[item_id] = crit_lt_eq_25
 
