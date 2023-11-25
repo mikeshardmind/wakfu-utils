@@ -16,10 +16,11 @@ import statistics
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from functools import lru_cache, reduce
-from operator import add, and_, attrgetter, itemgetter, mul
+from operator import add, and_, attrgetter, itemgetter
 from typing import Final, Protocol, TypeVar
 
 import tqdm
+from tqdm.contrib.itertools import product as tqdm_product  # type: ignore
 
 from .item_conditions import get_item_conditions
 from .object_parsing import EquipableItem, get_all_items, set_locale
@@ -663,13 +664,12 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
             k = REM_SLOTS.count("LEFT_HAND")
             ring_pairs = list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k else ()
             cans = [ring_pairs, *(solve_CANIDATES[k] for k in REM_SLOTS if k != "LEFT_HAND")]
-            cn_c = reduce(mul, map(len, cans), 1) / 3
         except KeyError as exc:
             log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
             continue
 
-        if cn_c > 5000 and use_tqdm:
-            inner = tqdm.tqdm(itertools.product(*filter(None, cans)), desc="Trying items with that pair", total=cn_c, leave=True)
+        if use_tqdm:
+            inner = tqdm_product(*filter(None, cans), desc="Trying items with that pair", leave=False)
         else:
             inner = itertools.product(*filter(None, cans))
 
