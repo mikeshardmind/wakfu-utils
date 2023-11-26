@@ -10,10 +10,12 @@ from __future__ import annotations
 from typing import Literal
 
 from msgspec import Struct, field, msgpack
+from msgspec.structs import asdict
 
 from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
-from .restructured_types import ClassesEnum, Priority, SetMinimums, StatPriority, Stats
+from .restructured_types import ClassesEnum, Priority, StatPriority, Stats
+from .restructured_types import SetMinimums as RealSetMins
 from .solver import SolveError, solve, v1Config
 from .wakforge_buildcodes import Buildv1 as WFBuild
 
@@ -59,11 +61,52 @@ _adaptive_tolerance_map: dict[int, int] = {
 v1Result = tuple[list[int] | None, str | None]
 
 
+# Exists because versioning
+class SetMinimums(Struct, frozen=True, gc=True):
+    ap: int = 0
+    mp: int = 0
+    wp: int = 0
+    ra: int = 0
+    crit: int = 0
+    crit_mastery: int = 0
+    elemental_mastery: int = 0
+    one_element_mastery: int = 0
+    two_element_mastery: int = 0
+    three_element_mastery: int = 0
+    distance_mastery: int = 0
+    rear_mastery: int = 0
+    heal_mastery: int = 0
+    beserk_mastery: int = 0
+    melee_mastery: int = 0
+    control: int = 0
+    block: int = 0
+    fd: int = 0
+    heals_performed: int = 0
+    lock: int = 0
+    dodge: int = 0
+
+    def to_real(self) -> RealSetMins:
+
+        data = asdict(self)
+        for new, old in (
+            ("critical_hit", "crit"),
+            ("critical_mastery", "crit_mastery"),
+            ("mastery_3_elements", "three_element_mastery"),
+            ("mastery_2_elements", "two_element_mastery"),
+            ("mastery_1_element", "one_element_mastery"),
+            ("healing_mastery", "heal_mastery"),
+            ("berserk_mastery", "beserk_mastery")
+        ):
+            data[new] = data.pop(old)
+
+        return RealSetMins(**data)
+
+
 def partial_solve_v1(
     *,
     lv: int,
     stats: Stats,
-    target_stats: SetMinimums,
+    target_stats: RealSetMins,
     equipped_items: list[int],
     num_mastery: int,
     allowed_rarities: list[int],
@@ -215,7 +258,7 @@ def partial_solve_v2(
         mp=mp,
         wp=wp,
         ra=ra,
-        stat_minimums=config.target_stats,
+        stat_minimums=config.target_stats.to_real(),
         base_stats=stats,
         baseap=stats.ap,
         basemp=stats.mp,
