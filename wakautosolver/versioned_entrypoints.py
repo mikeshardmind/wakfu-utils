@@ -55,7 +55,7 @@ _adaptive_tolerance_map: dict[int, int] = {
     185: 15,
     200: 15,
     215: 15,
-    230: 15,
+    230: 14,
 }
 
 v1Result = tuple[list[int] | None, str | None]
@@ -86,7 +86,6 @@ class SetMinimums(Struct, frozen=True, gc=True):
     dodge: int = 0
 
     def to_real(self) -> RealSetMins:
-
         data = asdict(self)
         for new, old in (
             ("critical_hit", "crit"),
@@ -95,7 +94,7 @@ class SetMinimums(Struct, frozen=True, gc=True):
             ("mastery_2_elements", "two_element_mastery"),
             ("mastery_1_element", "one_element_mastery"),
             ("healing_mastery", "heal_mastery"),
-            ("berserk_mastery", "beserk_mastery")
+            ("berserk_mastery", "beserk_mastery"),
         ):
             data[new] = data.pop(old)
 
@@ -169,9 +168,9 @@ def partial_solve_v1(
         zerk=zerk,
         rear=rear,
         dry_run=dry_run,
-        hard_cap_depth=25,
-        tolerance=_adaptive_tolerance_map.get(lv, 15),
-        search_depth=4 if dry_run else 2,
+        hard_cap_depth=35,
+        tolerance=_adaptive_tolerance_map.get(lv, 14),
+        search_depth=4 if dry_run else 1,
     )
 
     try:
@@ -219,6 +218,8 @@ def partial_solve_v2(
         p = b2048encode(msgpack.encode(msg))
         return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=p)
 
+    target_stats = config.target_stats.to_real()
+
     item_sources = load_item_source_data()
     forbidden_ids: set[int] = set()
     for source in config.forbidden_sources:
@@ -238,10 +239,10 @@ def partial_solve_v2(
     if build.classenum is ClassesEnum.Ecaflip:
         stats = stats + Stats(critical_hit=20)
     item_ids = [i.item_id for i in build.get_items() if i.item_id > 0]
-    ap = config.target_stats.ap - stats.ap
-    mp = config.target_stats.mp - stats.mp
-    wp = config.target_stats.wp - stats.wp
-    ra = config.target_stats.ra - stats.ra
+    ap = target_stats.ap - stats.ap
+    mp = target_stats.mp - stats.mp
+    wp = target_stats.wp - stats.wp
+    ra = target_stats.ra - stats.ra
 
     forbidden_rarities = [i for i in range(1, 8) if i not in config.allowed_rarities]
 
@@ -258,7 +259,7 @@ def partial_solve_v2(
         mp=mp,
         wp=wp,
         ra=ra,
-        stat_minimums=config.target_stats.to_real(),
+        stat_minimums=target_stats,
         base_stats=stats,
         baseap=stats.ap,
         basemp=stats.mp,
@@ -278,9 +279,9 @@ def partial_solve_v2(
         negrear=lookup.get(config.objectives.rear_mastery, "none"),
         negzerk=lookup.get(config.objectives.berserk_mastery, "none"),
         dry_run=config.dry_run,
-        hard_cap_depth=25,
-        tolerance=_adaptive_tolerance_map.get(build.level, 15),
-        search_depth=4 if config.dry_run else 2,
+        hard_cap_depth=35,
+        tolerance=_adaptive_tolerance_map.get(build.level, 14),
+        search_depth=4 if config.dry_run else 1,
         elements=config.objectives.elements,
     )
 
