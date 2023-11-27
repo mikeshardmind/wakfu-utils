@@ -15,9 +15,9 @@ import logging
 import statistics
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
-from functools import lru_cache, reduce
+from functools import lru_cache, partial, reduce
 from operator import add, and_, attrgetter, itemgetter
-from typing import Final, Protocol, TypeVar
+from typing import TYPE_CHECKING, Final, Protocol, TypeVar
 
 from .item_conditions import get_item_conditions
 from .object_parsing import EquipableItem, get_all_items, set_locale
@@ -28,7 +28,12 @@ from .wakforge_buildcodes import build_code_from_items
 # TODO: possibly enable this for pyodide use? want to look into the overhead more
 if "pyodide" not in sys.modules:
     import tqdm
-    from tqdm.contrib.itertools import product as tqdm_product  # type: ignore
+    from tqdm.contrib.itertools import product as _tqdm_product  # type: ignore
+
+    tqdm_product = partial(_tqdm_product, desc="Trying items with that pair", leave=False)
+    if TYPE_CHECKING:
+        tqdm_product = itertools.product
+
 else:
     tqdm = None
     tqdm_product = None
@@ -98,10 +103,11 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
     LOW_BOUND = max(ns.lv - ns.tolerance, 1)
 
     def _score_key(item: EquipableItem | Stats | None) -> float:
+        score = 0.0
         if not item:
-            return 0
+            return score
 
-        score = item.elemental_mastery
+        score += item.elemental_mastery
         if ns.melee:
             score += item.melee_mastery
         if ns.dist:
@@ -111,11 +117,11 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
         else:
             if item.berserk_mastery < 0:
                 if ns.negzerk == "full":
-                    mul = 1
+                    mul = 1.0
                 elif ns.negzerk == "half":
                     mul = 0.5
                 else:
-                    mul = 0
+                    mul = 0.0
 
                 score += item.berserk_mastery * mul
 
@@ -124,11 +130,11 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
         else:
             if item.rear_mastery < 0:
                 if ns.negrear == "full":
-                    mul = 1
+                    mul = 1.0
                 elif ns.negrear == "half":
                     mul = 0.5
                 else:
-                    mul = 0
+                    mul = 0.0
 
                 score += item.rear_mastery * mul
 
@@ -569,13 +575,13 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
         return unknown, v, s
 
     pairs: list[tuple[EquipableItem | None, EquipableItem | None]]
-    pairs = [*itertools.product(relics or [None], epics or [None]), *extra_pairs]  # type: ignore
+    pairs = [*itertools.product(relics or [None], epics or [None]), *extra_pairs]
     pairs.sort(key=re_score_key, reverse=True)
     canidate_re_pairs = ordered_keep_by_key(pairs, re_key_func)
     pairs.sort(key=lambda p: re_score_key(p)[1:], reverse=True)
 
     if ns and not ns.exhaustive:
-        per_item_factor = lambda llv, lls: 2 if lls == "LEFT_HAND" else 1  # type: ignore TODO
+        per_item_factor: Callable[[object, object], int] = lambda llv, lls: 2 if lls == "LEFT_HAND" else 1
         canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth]
         solve_CANIDATES = {k: v[: ns.search_depth + per_item_factor(ns.lv, k)] for k, v in solve_CANIDATES.items()}
         canidate_weapons = canidate_weapons[: int(ns.hard_cap_depth / 2)]
@@ -595,10 +601,13 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
     # everything below this line is performance sensitive, and runtime is based on how much the above
     # managed to reduce the permuations of possible gear.
 
+    maybe_progress_bar: Iterable[tuple[EquipableItem | None, EquipableItem | None]]
     if use_tqdm and tqdm:
         maybe_progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pair")
     else:
         maybe_progress_bar = canidate_re_pairs
+
+    solve_CANIDATES.pop("WEAPONS", None)
 
     for relic, epic in maybe_progress_bar:
         if relic and epic:
@@ -664,38 +673,34 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
                 except ValueError:
                     pass
 
+        weapons: list[tuple[EquipableItem] | tuple[EquipableItem, EquipableItem]] = []
         if not (main_hand_disabled and off_hand_disabled):
             REM_SLOTS.append("WEAPONS")
 
             if main_hand_disabled:
                 s = [*solve_DAGGERS, *solve_SHIELDS]
                 s.sort(key=score_key, reverse=True)
-                solve_CANIDATES["WEAPONS"] = [  # type: ignore
-                    (i,) for i in ordered_keep_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))
-                ]
+                weapons = [(i,) for i in ordered_keep_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))]
             elif off_hand_disabled:
-                solve_CANIDATES["WEAPONS"] = [  # type: ignore
-                    (i,) for i in ordered_keep_by_key(solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp))
-                ]
+                weapons = [(i,) for i in ordered_keep_by_key(solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp))]
             else:
-                solve_CANIDATES["WEAPONS"] = canidate_weapons  # type: ignore
+                weapons = canidate_weapons
 
-            solve_CANIDATES["WEAPONS"].sort(key=weapon_score_func, reverse=True)
+            weapons.sort(key=weapon_score_func, reverse=True)
 
         try:
             k = REM_SLOTS.count("LEFT_HAND")
             ring_pairs = list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k else ()
-            cans = [ring_pairs, *(solve_CANIDATES[k] for k in REM_SLOTS if k != "LEFT_HAND")]
+            cans = [ring_pairs, *(solve_CANIDATES[k] for k in REM_SLOTS if k not in ("LEFT_HAND", "WEAPONS"))]
+            if "WEAPONS" in REM_SLOTS:
+                cans.append(weapons)
         except KeyError as exc:
             log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
             continue
 
-        if use_tqdm and tqdm_product:
-            inner = tqdm_product(*filter(None, cans), desc="Trying items with that pair", leave=False)
-        else:
-            inner = itertools.product(*filter(None, cans))
+        gen_func = tqdm_product if use_tqdm and tqdm_product else itertools.product
 
-        for raw_items in inner:
+        for raw_items in gen_func(*filter(None, cans)):
             items = [*tuple_expander(raw_items), *forced_items]
 
             statline: Stats = reduce(add, (i.as_stats() for i in (relic, epic, *items) if i), base_stats)

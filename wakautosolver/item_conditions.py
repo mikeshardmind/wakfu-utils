@@ -88,9 +88,9 @@ for item_id in (27299, 27300, 26295, 26316, 27377, 27378):
     conditions[item_id] = ra_lt_eq_3
 
 # Ax of Reason
-ra_lt_eq_3 = [rst.SetMinimums(ra=2)]
+ra_gt_eq_2 = [rst.SetMinimums(ra=2)]
 for item_id in (27287, 27288):
-    conditions[item_id] = ra_lt_eq_3
+    conditions[item_id] = ra_gt_eq_2
 
 # Shadowed Boots
 wp_lt_eq_4 = [rst.SetMaximums(wp=4)]

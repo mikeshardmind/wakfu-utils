@@ -33,7 +33,7 @@ class Rune(Struct, array_like=True):
 class Item(Struct, array_like=True):
     item_id: int = -1
     assignable_elements: WFElements = WFElements.empty
-    rune_info: list[Rune] | list[object] = field(default_factory=lambda: [[] for _ in range(4)])
+    rune_info: list[Rune] | list[object] = field(default_factory=lambda: [Rune() for _ in range(4)])
     sublimations: list[int] = field(default_factory=list)
 
     def __bool__(self):
@@ -184,7 +184,7 @@ class Buildv1(Struct, array_like=True):
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
     items = [i for i in items if i.item_id > 0]  # filter out placeholder items
-    build = Buildv1(level=level)  # type: ignore
+    build = Buildv1(level=level)
     for item in items:
         build.add_item(item)
     encoded = msgpack.encode(build)
