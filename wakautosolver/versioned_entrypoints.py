@@ -7,6 +7,8 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 from __future__ import annotations
 
+import traceback
+import zlib
 from typing import Literal
 
 from msgspec import Struct, field, msgpack
@@ -214,8 +216,8 @@ def partial_solve_v2(
     try:
         config = msgpack.decode(msgpack.encode(config), type=v2Config)
     except Exception as exc:  # noqa: BLE001
-        msg = (exc.__class__.__name__, *map(str, exc.args))
-        p = b2048encode(msgpack.encode(msg))
+        msg = traceback.format_exception(exc)
+        p = b2048encode(zlib.compress(msgpack.encode(msg), level=9, wbits=-15))
         return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=p)
 
     target_stats = config.target_stats.to_real()
@@ -291,8 +293,8 @@ def partial_solve_v2(
     except (IndexError, SolveError):
         return v2Result(None, "No possible solution found", debug_info=None)
     except Exception as exc:  # noqa: BLE001
-        msg = (exc.__class__.__name__, *map(str, exc.args))
-        p = b2048encode(msgpack.encode(msg))
+        msg = traceback.format_exception(exc)
+        p = b2048encode(zlib.compress(msgpack.encode(msg), level=9, wbits=-15))
         return v2Result(None, "Unknown error, see debug info", debug_info=p)
 
     score, found_items = best
@@ -311,8 +313,8 @@ def partial_solve_v2(
                 else:
                     build.add_item(item)
             except RuntimeError as exc:
-                msg = (exc.__class__.__name__, *map(str, exc.args))
-                p = b2048encode(msgpack.encode(msg))
+                msg = traceback.format_exception(exc)
+                p = b2048encode(zlib.compress(msgpack.encode(msg), level=9, wbits=-15))
                 return v2Result(None, "Unknown error, see debug info", debug_info=p)
 
     debug_info = b2048encode(msgpack.encode({"sc": score}))
