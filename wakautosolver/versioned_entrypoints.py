@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import traceback
 import zlib
+from collections.abc import Callable
 from typing import Literal
 
 from msgspec import Struct, field, msgpack
@@ -208,6 +209,7 @@ def partial_solve_v2(
     *,
     build_code: str,
     config: v2Config,
+    progress_callback: Callable[[int, int], None] | None = None,
 ) -> v2Result:
     # pyodide proxies aren't actually lists...
     config.allowed_rarities = [i for i in config.allowed_rarities if i]
@@ -289,7 +291,7 @@ def partial_solve_v2(
     )
 
     try:
-        result = solve(cfg)
+        result = solve(cfg, progress_callback=progress_callback)
         best = result[0]
     except (IndexError, SolveError):
         return v2Result(None, "No possible solution found", debug_info=None)

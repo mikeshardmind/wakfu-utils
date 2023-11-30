@@ -87,7 +87,11 @@ class SolveError(Exception):
     pass
 
 
-def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[EquipableItem]]]:
+def solve(
+    ns: v1Config,
+    use_tqdm: bool = False,
+    progress_callback: Callable[[int, int], None] | None = None,
+) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
     set_locale(ns.locale)
@@ -404,17 +408,17 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
         dist = statistics.NormalDist.from_samples(adj_func(i) for i in items) if len(items) > 1 else None
 
-        def adjusted_key(item: EquipableItem, dist: statistics.NormalDist | None = dist) -> float:
+        def adjusted_key(item: EquipableItem, dist: statistics.NormalDist | None = dist) -> tuple[bool, float]:
             st = crit_score_key(item)
             if dist is None:
-                return st
+                return st > 0, st
             try:
                 adj = dist.zscore(adj_func(item))
             except statistics.StatisticsError:  # zscore when sigma = 0
                 adj = 0
             if adj:
-                return st + (adj * st * 0.2)
-            return st
+                return st > 0, st + (adj * st * 0.2)
+            return st > 0, st
 
         items.sort(key=adjusted_key, reverse=True)
 
@@ -620,7 +624,12 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
     solve_CANIDATES.pop("WEAPONS", None)
 
-    for relic, epic in maybe_progress_bar:
+    re_len = len(canidate_re_pairs)
+
+    for idx, (relic, epic) in enumerate(maybe_progress_bar, 1):
+        if progress_callback:
+            progress_callback(idx, re_len)
+
         if relic and epic:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
                 continue
