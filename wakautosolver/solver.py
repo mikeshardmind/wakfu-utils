@@ -413,7 +413,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
             except statistics.StatisticsError:  # zscore when sigma = 0
                 adj = 0
             if adj:
-                return st + (adj * st * 0.1)
+                return st + (adj * st * 0.2)
             return st
 
         items.sort(key=adjusted_key, reverse=True)
@@ -433,7 +433,7 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
             inplace_ordered_keep_by_key(bck, needs_full_sim_key)
             del items[adaptive_depth:]
 
-            for val in (0, 1):
+            for val in (0, 1, 2):
                 while True:
                     # avoid excluding too many items with some pathological -stat items
                     # see Nonsensical epps (item id: 29278)

@@ -6,7 +6,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
-__version__ = "2023.11.47"  # For the month of november, due to an earlier issue, this is now YYYY.MM.monotonic
+__version__ = "2023.11.48"  # For the month of november, due to an earlier issue, this is now YYYY.MM.monotonic
 
 from . import object_parsing, solver
 from .b2048 import decode as b2048_decode
