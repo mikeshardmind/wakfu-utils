@@ -19,6 +19,8 @@ from functools import lru_cache, partial, reduce
 from operator import add, and_, attrgetter, itemgetter
 from typing import TYPE_CHECKING, Final, Protocol, TypeVar
 
+from msgspec.structs import astuple
+
 from .item_conditions import get_item_conditions
 from .object_parsing import EquipableItem, get_all_items, set_locale
 from .restructured_types import ElementsEnum, SetMaximums, SetMinimums, Stats, apply_w2h, v1Config
@@ -303,7 +305,10 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
                     forced_slots[forced_sword.item_slot] += 1
 
         for item in (*forced_epics, *forced_relics):
-            forced_items.remove(item)
+            try:
+                forced_items.remove(item)
+            except Exception as exc:
+                log.exception("How? (wakforge had this actual error...)", exc_info=exc)
 
         for item in forced_items:
             forced_slots[item.item_slot] += 1
@@ -446,7 +451,10 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
 
                     if not added:
                         break
-                    if len([i for i in items if all(s >= val for s in attrgetter("ap", "mp", "ra", "wp")(i))]) >= k:
+
+                    _tc_items = [i for i in items if get_item_conditions(i) == (SetMinimums(), SetMaximums())]
+
+                    if len([i for i in _tc_items if all(s >= val for s in attrgetter("ap", "mp", "ra", "wp")(i))]) >= k:
                         break
 
             uniq = ordered_keep_by_key(items, needs_full_sim_key, k)
@@ -458,6 +466,9 @@ def solve(ns: v1Config, use_tqdm: bool = False) -> list[tuple[float, list[Equipa
             for i in items[::-1]:
                 if i not in uniq:
                     items.remove(i)
+
+        # And one last pass for identical item stats (especially on pets)
+        inplace_ordered_keep_by_key(items, lambda i: astuple(i.as_stats()), k)
 
     relics.sort(key=lambda r: (score_key(r), r.item_slot), reverse=True)
     inplace_ordered_keep_by_key(relics, needs_full_sim_key)

@@ -16,7 +16,7 @@ from msgspec.structs import asdict
 
 from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
-from .restructured_types import ClassesEnum, Priority, StatPriority, Stats
+from .restructured_types import DUMMY_MIN, ClassesEnum, Priority, StatPriority, Stats
 from .restructured_types import SetMinimums as RealSetMins
 from .solver import SolveError, solve, v1Config
 from .wakforge_buildcodes import Buildv1 as WFBuild
@@ -55,7 +55,7 @@ _adaptive_tolerance_map: dict[int, int] = {
     155: 15,
     170: 15,
     185: 15,
-    200: 15,
+    200: 14,
     215: 15,
     230: 14,
 }
@@ -65,27 +65,28 @@ v1Result = tuple[list[int] | None, str | None]
 
 # Exists because versioning
 class SetMinimums(Struct, frozen=True, gc=True):
-    ap: int = 0
-    mp: int = 0
-    wp: int = 0
-    ra: int = 0
-    crit: int = 0
-    crit_mastery: int = 0
-    elemental_mastery: int = 0
-    one_element_mastery: int = 0
-    two_element_mastery: int = 0
-    three_element_mastery: int = 0
-    distance_mastery: int = 0
-    rear_mastery: int = 0
-    heal_mastery: int = 0
-    beserk_mastery: int = 0
-    melee_mastery: int = 0
-    control: int = 0
-    block: int = 0
-    fd: int = 0
-    heals_performed: int = 0
-    lock: int = 0
-    dodge: int = 0
+    ap: int = DUMMY_MIN
+    mp: int = DUMMY_MIN
+    wp: int = DUMMY_MIN
+    ra: int = DUMMY_MIN
+    crit: int = DUMMY_MIN
+    crit_mastery: int = DUMMY_MIN
+    elemental_mastery: int = DUMMY_MIN
+    one_element_mastery: int = DUMMY_MIN
+    two_element_mastery: int = DUMMY_MIN
+    three_element_mastery: int = DUMMY_MIN
+    distance_mastery: int = DUMMY_MIN
+    rear_mastery: int = DUMMY_MIN
+    heal_mastery: int = DUMMY_MIN
+    beserk_mastery: int = DUMMY_MIN
+    melee_mastery: int = DUMMY_MIN
+    control: int = DUMMY_MIN
+    block: int = DUMMY_MIN
+    fd: int = DUMMY_MIN
+    heals_performed: int = DUMMY_MIN
+    lock: int = DUMMY_MIN
+    dodge: int = DUMMY_MIN
+    armor_given: int = DUMMY_MIN
 
     def to_real(self) -> RealSetMins:
         data = asdict(self)
