@@ -174,7 +174,7 @@ def partial_solve_v1(
         dry_run=dry_run,
         hard_cap_depth=35,
         tolerance=_adaptive_tolerance_map.get(lv, 14),
-        search_depth=4 if dry_run else 1,
+        search_depth=1 if dry_run else 1,
     )
 
     try:
@@ -286,7 +286,7 @@ def partial_solve_v2(
         dry_run=config.dry_run,
         hard_cap_depth=35,
         tolerance=_adaptive_tolerance_map.get(build.level, 14),
-        search_depth=3 if config.dry_run else 1,
+        search_depth=1 if config.dry_run else 1,
         elements=config.objectives.elements,
     )
 

@@ -394,7 +394,7 @@ def solve(
 
     def adj_func(item: EquipableItem) -> float:
         mins = tuple(i - j for i, j in zip(adj_getter(stat_mins), adj_getter(base_stats), strict=True))
-        perc_contr = [(i + 1) / (j or 1) for i, j in zip(adj_getter(item), mins, strict=True)]
+        perc_contr = [i / j if j > 0 else 1 for i, j in zip(adj_getter(item), mins, strict=True)]
         return sum(perc_contr) / len(perc_contr)
 
     # TODO: Break this loop out into dedicated function for pruning item pool
@@ -413,11 +413,11 @@ def solve(
             if dist is None:
                 return st > 0, st
             try:
-                adj = dist.zscore(adj_func(item))
+                adj = max(dist.zscore(adj_func(item)) + 1, 0)
             except statistics.StatisticsError:  # zscore when sigma = 0
                 adj = 0
             if adj:
-                return st > 0, st + (adj * st * 0.2)
+                return st > 0, st + (adj * 0.1 * st)
             return st > 0, st
 
         items.sort(key=adjusted_key, reverse=True)
@@ -461,16 +461,7 @@ def solve(
                     if len([i for i in _tc_items if all(s >= val for s in attrgetter("ap", "mp", "ra", "wp")(i))]) >= k:
                         break
 
-            uniq = ordered_keep_by_key(items, needs_full_sim_key, k)
-            for i in items[::-1]:
-                if i not in uniq:
-                    items.remove(i)
-        else:
-            # simply keep the uniq without trimming then...
-            for i in items[::-1]:
-                if i not in uniq:
-                    items.remove(i)
-
+        inplace_ordered_keep_by_key(items, needs_full_sim_key, k)
         # And one last pass for identical item stats (especially on pets)
         inplace_ordered_keep_by_key(items, lambda i: astuple(i.as_stats()), k)
 

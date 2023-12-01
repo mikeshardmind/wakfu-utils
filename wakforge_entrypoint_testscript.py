@@ -23,6 +23,19 @@ cfg = v2Config(
     ignore_existing_items=True,
 )
 
+code2 = "ಡƸɁၒმɱନനðÑƎ೮ðɀΑǁ৴ïɐłҬऌñਯƳ༔ŦЀ྾ჱևȏऍƿലØØ"
+
+cfg2 = v2Config(
+    allowed_rarities=[4, 5, 6, 7],
+    target_stats=SetMinimums(ap=12, mp=6, wp=4, ra=2),
+    objectives=StatPriority(
+        elements=ElementsEnum.water | ElementsEnum.air | ElementsEnum.earth,
+        distance_mastery=Priority.prioritized
+    ),
+    dry_run=False,
+    ignore_existing_items=True,
+)
+
 
 if __name__ == "__main__":
     sol = solve2(build_code=code, config=cfg, progress_callback=print)
