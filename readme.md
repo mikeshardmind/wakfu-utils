@@ -97,6 +97,14 @@ you should join their discord: https://discord.gg/k3v2fXQWJp instead
 as some issues may be wakforge specific.
 
 
+### Why can't we do better than a heuristic for stat minimums? Can't we determine on a per-slot basis the required ap, mp, wp, and range at least?
+
+Theoretically, we could. In practice, this isn't feasible
+
+See misc/better_than_heuristic_counterexample.py for an implementation
+and then note that it takes longer to run that, which only generates per slot stat possibilities
+than it does to run the current solver with a heuristic model
+
 ### Versioning
 
 Entrypoints intended for use by other code will be kept in a fashion considered non-breaking based on known use

@@ -497,7 +497,7 @@ class EquipableItem:
         self._ap: int = 0
         self._mp: int = 0
         self._wp: int = 0
-        self._range: int = 0
+        self._ra: int = 0
         self._control: int = 0
         self._block: int = 0
         self._critical_hit: int = 0
