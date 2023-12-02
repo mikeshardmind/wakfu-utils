@@ -26,7 +26,7 @@ downloader.py and compressed_data_gen.py
 ### Known limitations
 
 - Some items are not in the item data that were previously obtainable (won't fix)
-- Some items are in the item data and are no longer obtainable 
+- Some items are in the item data and are no longer obtainable
   (needs thought about handling, users can exclude by name currently)
 - Doesn't weight higher lv items higher based on runes possible (TODO)
 
@@ -96,6 +96,14 @@ If your feedback relates to how this is incoorporated into wakforge,
 you should join their discord: https://discord.gg/k3v2fXQWJp instead
 as some issues may be wakforge specific.
 
+
+### Versioning
+
+Entrypoints intended for use by other code will be kept in a fashion considered non-breaking based on known use
+by other projects that are actively working with me to leverage the solver code.
+If you want to leverage this and need stability, reach out.
+
+The actual package version is in the format YYYY.MM.Patch_version. This is mostly arbitrary
 
 ### Disclaimer
 

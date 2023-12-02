@@ -7,6 +7,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 # This is a way to test things the way wakforge uses them
+import os
 
 from wakautosolver.object_parsing import get_all_items
 from wakautosolver.restructured_types import ElementsEnum
@@ -27,18 +28,21 @@ code2 = "ಡƸɁၒმɱନനðÑƎ೮ðɀΑǁ৴ïɐłҬऌñਯƳ༔ŦЀ྾�
 
 cfg2 = v2Config(
     allowed_rarities=[4, 5, 6, 7],
-    target_stats=SetMinimums(ap=12, mp=6, wp=4, ra=2),
+    target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=2),
     objectives=StatPriority(
         elements=ElementsEnum.water | ElementsEnum.air | ElementsEnum.earth,
         distance_mastery=Priority.prioritized
     ),
     dry_run=False,
-    ignore_existing_items=True,
+    ignore_existing_items=False,
 )
 
 
 if __name__ == "__main__":
-    sol = solve2(build_code=code, config=cfg, progress_callback=print)
+    os.environ["USE_TQDM"] = "1"
+    sol = solve2(build_code=code2, config=cfg2)
     items = [i for i in get_all_items() if i.item_id in sol.item_ids]
     items.sort(key=lambda i: (i.is_relic, i.is_epic, i.item_slot), reverse=True)
+    if sol.error_code:
+        print(sol.error_code)  # noqa: T201
     print(*items, sep="\n")  # noqa: T201

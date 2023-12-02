@@ -12,6 +12,7 @@ import argparse
 import collections
 import itertools
 import logging
+import os
 import statistics
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
@@ -87,12 +88,18 @@ class SolveError(Exception):
     pass
 
 
+class ImpossibleStatError(SolveError):
+    pass
+
+
 def solve(
     ns: v1Config,
     use_tqdm: bool = False,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
+
+    use_tqdm = use_tqdm or bool(os.getenv("USE_TQDM", None))
 
     set_locale(ns.locale)
 
@@ -213,15 +220,30 @@ def solve(
         elemental_mastery=ns.bmast,
     )
 
+    # An interesting query
+    # ┌───────────────────────┬────┬────┬────┬────┬──────────────┬───────────────────────────────────┐
+    # | Item name (en)        │ ap │ mp │ wp │ ra │   position   │ first ALS bracket combo available │
+    # │ Gobball Amulet        │ 1  │ 0  │ 0  │ 0  │ NECK         │ 20                                │
+    # │ Gobball Cape          │ 1  │ 0  │ 0  │ 0  │ BACK         │ 20                                │
+    # │ Kapow Thongs          │ 0  │ 1  │ 0  │ 0  │ LEGS         │ 50                                │
+    # │ Magmacrak Breastplate │ 0  │ 1  │ 0  │ 0  │ CHEST        │ 50                                │
+    # │ Conquered Raziel      │ 1  │ 0  │ 0  │ 0  │ FIRST_WEAPON │ 50                                │
+    # │ Gufet'Helm            │ 0  │ 1  │ 0  │ 1  │ HEAD         │ 230                               │
+    # └───────────────────────┴────┴────┴────┴────┴──────────────┴───────────────────────────────────┘
+
+    common_ap_mp_sum_gt_0 = {
+        "BACK": 20,
+        "NECK": 20,
+        "FIRST_WEAPON": 50,
+        "CHEST": 50,
+        "LEGS": 50,
+    }
+
     BASE_STAT_SCORE = _score_key(base_stats)
 
-    def initial_filter(item: EquipableItem) -> bool:
-        return bool(
-            (item.item_id not in FORBIDDEN)
-            and (item.name not in FORBIDDEN_NAMES)
-            and (not has_currently_unhandled_item_condition(item))
-            and ((item.item_rarity in allowed_rarities) or (item.item_slot in ("MOUNT", "PET")))
-        )
+    def item_condition_conflicts_requested_stats(item: EquipableItem) -> bool:
+        _mins, maxs = get_item_conditions(item)
+        return any(smin > smax for smin, smax in zip(*map(astuple, (stat_mins, maxs))))
 
     def level_filter(item: EquipableItem) -> bool:
         if item.item_slot in ("MOUNT", "PET"):
@@ -251,6 +273,10 @@ def solve(
         forced_by_name.sort(key=score_key, reverse=True)
         forced_by_name = ordered_keep_by_key(forced_by_name, key=attrgetter("name", "item_slot"), k=1)
         forced_items.extend(forced_by_name)
+
+        if any(item_condition_conflicts_requested_stats(item) for item in forced_items):
+            msg = "Forced item has a condition which conflicts with requested stats"
+            raise ImpossibleStatError(msg)
 
         if len(forced_items) < len(_fids) + len(_fns):
             msg = (
@@ -332,6 +358,148 @@ def solve(
         forced_items = []
         forced_relics = []
         forced_epics = []
+
+    @lru_cache
+    def missing_common_major(item: EquipableItem) -> bool:
+        """
+        Ignores the cases of: Eternal Sword, Guffet Helm, Lyfamulet
+        """
+        req = 0
+        if item.is_epic or item.is_relic:
+            req += 1
+
+        if common_ap_mp_sum_gt_0.get(item.item_slot, 999) <= ns.lv:
+            req += 1
+
+        if (item.ap + item.mp) < req:
+            return True
+
+        return False
+
+    _af_items = ordered_keep_by_key([*forced_epics, *forced_relics, *forced_items], attrgetter("item_id"), 1)
+    _af_stats = reduce(add, (i.as_stats() for i in _af_items), Stats())
+    _af_slots = [i.item_slot for i in _af_items]
+    FINDABLE_AP_MP_NEEDED = sum(attrgetter("ap", "mp")(stat_mins - base_stats - _af_stats))
+
+    findableAP_MP = sum(1 for islot, lv in common_ap_mp_sum_gt_0.items() if islot not in _af_slots and lv <= ns.lv)
+    # TODO: dynamic from sql to not need re-checking/expanding each time
+    # TODO: Both of these are technically still possible to be impossible if forced slots preclude
+    # TODO: some of the below also impossible based on forbidden items...
+    if (not forced_epics) and 7 in allowed_rarities:
+        findableAP_MP += 1
+    if (not forced_relics) and ns.lv >= 50 and 5 in allowed_rarities:
+        findableAP_MP += 1
+        if ns.lv >= 200 and "FIRST_WEAPON" not in _af_slots:
+            findableAP_MP += 1  # eternal sword
+    if ns.lv >= 230:
+        if "HEAD" not in _af_slots:  # guffet helm
+            findableAP_MP += 1
+        if "NECK" not in _af_slots:  # lyfamulet
+            findableAP_MP += 1
+
+    if findableAP_MP < FINDABLE_AP_MP_NEEDED:
+        msg = "Literally impossible AP MP reqs"
+        raise ImpossibleStatError(msg)
+
+    # See interesting_queries.sql, TODO: embed sql data and handle this better
+
+    # ┌───────────────────┬────┬──────────────┬────────────────────────────┐
+    # │  Item name (en)   │ ap │   position   │ first ALS bracket ap avail │
+    # │ Gobball Amulet    │ 1  │ NECK         │ 20                         │
+    # │ Gobball Cape      │ 1  │ BACK         │ 20                         │
+    # │ Conquered Raziel  │ 1  │ FIRST_WEAPON │ 50                         │
+    # │ Feathered Armor I │ 1  │ CHEST        │ 80                         │
+    # │ Niteynite Boots   │ 1  │ LEGS         │ 200                        │
+    # │ Disembodier       │ 2  │ FIRST_WEAPON │ 200                        │
+    # └───────────────────┴────┴──────────────┴────────────────────────────┘
+    # ┌───────────────────────┬────┬───────────────┬────────────────────────────┐
+    # │    Item name (en)     │ mp │   position    │ first ALS bracket mp avail │
+    # │ Kapow Thongs          │ 1  │ LEGS          │ 50                         │
+    # │ Penn Knives           │ 1  │ SECOND_WEAPON │ 50                         │
+    # │ Magmacrak Breastplate │ 1  │ CHEST         │ 50                         │
+    # │ Chrysalied            │ 1  │ FIRST_WEAPON  │ 50                         │
+    # │ Toxy Cloak            │ 1  │ BACK          │ 80                         │
+    # │ Celestial Brooch      │ 1  │ NECK          │ 170                        │
+    # │ Famished Boots        │ 2  │ LEGS          │ 230                        │
+    # │ Gufet'Helm            │ 1  │ HEAD          │ 230                        │
+    # │ Age-Old Shovel        │ 2  │ FIRST_WEAPON  │ 230                        │
+    # └───────────────────────┴────┴───────────────┴────────────────────────────┘
+    # ┌───────────────────────┬────┬───────────────┬────────────────────────────┐
+    # │    Item name (en)     │ ra │   position    │ first ALS bracket ra avail │
+    # │ Peckish Helmet        │ 1  │ HEAD          │ 35                         │
+    # │ Kings' Staff          │ 1  │ FIRST_WEAPON  │ 65                         │
+    # │ Polnuds               │ 1  │ LEGS          │ 80                         │
+    # │ Aspirant              │ 1  │ NECK          │ 80                         │
+    # │ Broken Sword          │ 2  │ FIRST_WEAPON  │ 170                        │
+    # │ Beach Bandage         │ 1  │ LEFT_HAND     │ 185                        │
+    # │ Moon Aegis            │ 1  │ SECOND_WEAPON │ 185                        │
+    # │ Horned Headgear       │ 2  │ HEAD          │ 200                        │
+    # │ Hooklettes            │ 1  │ SHOULDERS     │ 200                        │
+    # │ YeCh'Ti'Wawa Amulet   │ 2  │ NECK          │ 215                        │
+    # │ Destroyer Breastplate │ 1  │ CHEST         │ 230                        │
+    # │ Vile IV Emblem        │ 1  │ ACCESSORY     │ 230                        │
+    # │ Tinker Belt           │ 1  │ BELT          │ 230                        │
+    # └───────────────────────┴────┴───────────────┴────────────────────────────┘
+    # ┌─────────────────────────────────┬────┬───────────────┬────────────────────────────┐
+    # │         Item name (en)          │ wp │   position    │ first ALS bracket wp avail │
+    # │ Beltedy                         │ 1  │ BELT          │ 20                         │
+    # │ The Anchor                      │ 1  │ FIRST_WEAPON  │ 50                         │
+    # │ Canopy Emblem                   │ 1  │ ACCESSORY     │ 50                         │
+    # │ Charming Bow Meow               │ 1  │ PET           │ 50                         │
+    # │ Rigid Cire Momore's Rigid Armor │ 1  │ CHEST         │ 65                         │
+    # │ Tortuous Escutcheon             │ 1  │ SECOND_WEAPON │ 65                         │
+    # │ Synwel's Ring                   │ 1  │ LEFT_HAND     │ 80                         │
+    # │ Excarnus Stripes                │ 1  │ SHOULDERS     │ 80                         │
+    # │ Balloots                        │ 1  │ LEGS          │ 200                        │
+    # │ Sumorse Cape                    │ 1  │ BACK          │ 215                        │
+    # │ Amulet of Time                  │ 1  │ NECK          │ 230                        │
+    # └─────────────────────────────────┴────┴───────────────┴────────────────────────────┘
+
+    # fmt: off
+    # TODO: also handle wp, ra
+    f_avail = {
+        "ap": {"NECK": (20,), "BACK": (20, ), "FIRST_WEAPON": (50, 200), "CHEST": (80,), "LEGS": (200,)},
+        "mp": {
+            # We leave out the +2 mp weapon because it conflicts with a lower level dagger
+            "LEGS": (50, 230), "SECOND_WEAPON": (50,), "CHEST": (50,), "FIRST_WEAPON": (50,),
+            "BACK": (80,), "NECK": (170,), "HEAD": (230,)
+        },
+    }
+    # fmt: on
+
+    for stat, data_dict in f_avail.items():
+        needed: int = attrgetter(stat)(stat_mins - base_stats - _af_stats)
+        orig_needed = needed
+
+        if (not forced_epics) and stat in ("mp", "ap") and 7 in allowed_rarities:
+            needed -= 1
+
+        if (not forced_relics) and stat in ("mp", "ap") and 5 in allowed_rarities and ns.lv >= 50:
+            needed -= 1
+
+        for slot, lvs in data_dict.items():
+            if _af_slots.count(slot) >= (2 if slot == "LEFT_HAND" else 1):
+                continue
+            if slot == "SECOND_WEAPON" and any(i.disables_second_weapon for i in _af_items):
+                continue
+
+            s = sum(1 for lv in lvs if lv <= ns.lv)
+
+            needed -= s
+
+        if needed > 0:
+            msg = f"Impossible to get {orig_needed} {stat}"
+            raise ImpossibleStatError(msg)
+
+    def initial_filter(item: EquipableItem) -> bool:
+        return bool(
+            (item.item_id not in FORBIDDEN)
+            and (item.name not in FORBIDDEN_NAMES)
+            and (not has_currently_unhandled_item_condition(item))
+            and ((item.item_rarity in allowed_rarities) or (item.item_slot in ("MOUNT", "PET")))
+            and (findableAP_MP > FINDABLE_AP_MP_NEEDED or not missing_common_major(item))
+            and not item_condition_conflicts_requested_stats(item)
+        )
 
     OBJS: Final[list[EquipableItem]] = list(filter(initial_filter, ALL_OBJS))
     del ALL_OBJS
@@ -427,15 +595,10 @@ def solve(
 
         if not ns.exhaustive:
             items.sort(key=lambda i: (i in uniq, adjusted_key(i)), reverse=True)
-            adaptive_depth = ns.search_depth - 1 + k
-
-            if ns.lv < 50:  # Needed due to item design and low level -wp items
-                adaptive_depth += 2
-
             bck = items.copy()
             bck.sort(key=adjusted_key, reverse=True)
-            inplace_ordered_keep_by_key(bck, needs_full_sim_key)
-            del items[adaptive_depth:]
+            inplace_ordered_keep_by_key(bck, needs_full_sim_key, k)
+            del items[k:]
 
             for val in (0, 1, 2):
                 while True:
@@ -462,8 +625,6 @@ def solve(
                         break
 
         inplace_ordered_keep_by_key(items, needs_full_sim_key, k)
-        # And one last pass for identical item stats (especially on pets)
-        inplace_ordered_keep_by_key(items, lambda i: astuple(i.as_stats()), k)
 
     relics.sort(key=lambda r: (score_key(r), r.item_slot), reverse=True)
     inplace_ordered_keep_by_key(relics, needs_full_sim_key)

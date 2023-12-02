@@ -19,7 +19,7 @@ from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
 from .restructured_types import DUMMY_MIN, ClassesEnum, Priority, StatPriority, Stats
 from .restructured_types import SetMinimums as RealSetMins
-from .solver import SolveError, solve, v1Config
+from .solver import ImpossibleStatError, SolveError, solve, v1Config
 from .wakforge_buildcodes import Buildv1 as WFBuild
 
 ClassNames = Literal[
@@ -286,13 +286,15 @@ def partial_solve_v2(
         dry_run=config.dry_run,
         hard_cap_depth=35,
         tolerance=_adaptive_tolerance_map.get(build.level, 14),
-        search_depth=1 if config.dry_run else 1,
+        search_depth=1,
         elements=config.objectives.elements,
     )
 
     try:
         result = solve(cfg, progress_callback=progress_callback)
         best = result[0]
+    except ImpossibleStatError as exc:
+        return v2Result(None, exc.args[0], debug_info=None)
     except (IndexError, SolveError):
         return v2Result(None, "No possible solution found", debug_info=None)
     except Exception as exc:  # noqa: BLE001
