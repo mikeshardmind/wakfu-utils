@@ -8,7 +8,11 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 
 # This is a way to test things the way wakforge uses them
 import os
+import zlib
 
+from msgspec import msgpack
+
+from wakautosolver.b2048 import decode
 from wakautosolver.object_parsing import get_all_items
 from wakautosolver.restructured_types import ElementsEnum
 from wakautosolver.versioned_entrypoints import Priority, SetMinimums, StatPriority, v2Config
@@ -53,11 +57,28 @@ cfg3 = v2Config(
 )
 
 
+code4 = "ಡƸɀИযΟԛཉÛƄΕɌॷതǐĨсఖ৶ΛѵƣਨਪɆສɓ྾྾ଢƟၿદӾಏॐӧѩôԉӚਊ৮ǧ႕ȖՔఆкഖണшĤȆఝΦҡүŻҹঌఱබဇмʒโནԛБତওണॳǀ"
+
+cfg4 = v2Config(
+    allowed_rarities=[1,2,3,4,5,6,7],
+    target_stats=SetMinimums(ap=12, mp=6, wp=8, ra=3),
+    objectives=StatPriority(
+        elements=ElementsEnum.fire,
+        distance_mastery=Priority.prioritized,
+    ),
+    dry_run=False,
+    ignore_existing_items=True,
+)
+
+
 if __name__ == "__main__":
     os.environ["USE_TQDM"] = "1"
-    sol = solve2(build_code=code2, config=cfg2)
+    sol = solve2(build_code=code4, config=cfg4)
     items = [i for i in get_all_items() if i.item_id in sol.item_ids]
     items.sort(key=lambda i: (i.is_relic, i.is_epic, i.item_slot), reverse=True)
     if sol.error_code:
-        print(sol.error_code, sol.debug_info, sep="\n")  # noqa: T201
+        print(sol.error_code)  # noqa: T201
+    if sol.debug_info:
+        err = msgpack.decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
+        print(*err)  # noqa: T201
     print(*items, sep="\n")  # noqa: T201
