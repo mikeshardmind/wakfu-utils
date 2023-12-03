@@ -86,8 +86,21 @@ cfg5 = v2Config(
     ignore_existing_items=True,
 )
 
-codes = [code1, code2, code3, code4, code5]
-configs = [cfg1, cfg2, cfg3, cfg4, cfg5]
+code6 = "ಡƸɀИॠѩГཪÕळĦҙड੮ǑŀϑÕƈĉɉ୲Ì༦ØØ"
+
+cfg6 = v2Config(
+    allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
+    target_stats=SetMinimums(ap=13, mp=5, wp=6, ra=0),
+    objectives=StatPriority(
+        elements=ElementsEnum.fire,
+        distance_mastery=Priority.prioritized,
+    ),
+    dry_run=True,
+    ignore_existing_items=True,
+)
+
+codes = [code1, code2, code3, code4, code5, code6]
+configs = [cfg1, cfg2, cfg3, cfg4, cfg5, cfg6]
 
 
 def runner(loud: bool = True) -> None:
@@ -102,7 +115,7 @@ def runner(loud: bool = True) -> None:
     else:
         aprint = builtins.print
 
-    for idx, (code, config) in enumerate(reversed(list(zip(codes, configs))), 1):
+    for idx, (code, config) in enumerate(zip(codes, configs), 1):
         err_print("Trying situation", idx)
         start = time.perf_counter()
         sol = solve2(build_code=code, config=config)
@@ -130,6 +143,6 @@ def runner(loud: bool = True) -> None:
 
 if __name__ == "__main__":
     try:
-        runner(loud=False)
+        runner(loud=True)
     except KeyboardInterrupt:
         pass

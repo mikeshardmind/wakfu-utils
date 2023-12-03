@@ -11,7 +11,6 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 import enum
-import operator
 from collections.abc import Callable
 from typing import Literal
 
@@ -120,16 +119,90 @@ class Stats(Struct, frozen=True, gc=True):
         if not isinstance(other, Stats):
             return NotImplemented
 
-        return Stats(*(operator.sub(s, o) for s, o in zip(astuple(self), astuple(other), strict=True)))
+        return Stats(
+            self.ap - other.ap,
+            self.mp - other.mp,
+            self.wp - other.wp,
+            self.ra - other.ra,
+            self.critical_hit - other.critical_hit,
+            self.critical_mastery - other.critical_mastery,
+            self.elemental_mastery - other.elemental_mastery,
+            self.mastery_3_elements - other.mastery_3_elements,
+            self.mastery_2_elements - other.mastery_2_elements,
+            self.mastery_1_element - other.mastery_1_element,
+            self.distance_mastery - other.distance_mastery,
+            self.rear_mastery - other.rear_mastery,
+            self.healing_mastery - other.healing_mastery,
+            self.berserk_mastery - other.berserk_mastery,
+            self.melee_mastery - other.melee_mastery,
+            self.control - other.control,
+            self.block - other.block,
+            self.fd - other.fd,
+            self.heals_performed - other.heals_performed,
+            self.lock - other.lock,
+            self.dodge - other.dodge,
+            self.armor_given - other.armor_given,
+        )
 
     def __add__(self, other: object) -> Stats:
         if not isinstance(other, Stats):
             return NotImplemented
 
-        return Stats(*(operator.add(s, o) for s, o in zip(astuple(self), astuple(other), strict=True)))
+        return Stats(
+            self.ap + other.ap,
+            self.mp + other.mp,
+            self.wp + other.wp,
+            self.ra + other.ra,
+            self.critical_hit + other.critical_hit,
+            self.critical_mastery + other.critical_mastery,
+            self.elemental_mastery + other.elemental_mastery,
+            self.mastery_3_elements + other.mastery_3_elements,
+            self.mastery_2_elements + other.mastery_2_elements,
+            self.mastery_1_element + other.mastery_1_element,
+            self.distance_mastery + other.distance_mastery,
+            self.rear_mastery + other.rear_mastery,
+            self.healing_mastery + other.healing_mastery,
+            self.berserk_mastery + other.berserk_mastery,
+            self.melee_mastery + other.melee_mastery,
+            self.control + other.control,
+            self.block + other.block,
+            self.fd + other.fd,
+            self.heals_performed + other.heals_performed,
+            self.lock + other.lock,
+            self.dodge + other.dodge,
+            self.armor_given + other.armor_given,
+        )
 
-    def is_between(self, mins: SetMinimums, maxs: SetMaximums) -> bool:
-        return all(mns <= s <= mxs for mns, s, mxs in zip(*map(astuple, (mins, self, maxs)), strict=True))
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, Stats):
+            return NotImplemented
+
+        return all(
+            (
+                self.ap <= other.ap,
+                self.mp <= other.mp,
+                self.wp <= other.wp,
+                self.ra <= other.ra,
+                self.critical_hit <= other.critical_hit,
+                self.critical_mastery <= other.critical_mastery,
+                self.elemental_mastery <= other.elemental_mastery,
+                self.mastery_3_elements <= other.mastery_3_elements,
+                self.mastery_2_elements <= other.mastery_2_elements,
+                self.mastery_1_element <= other.mastery_1_element,
+                self.distance_mastery <= other.distance_mastery,
+                self.rear_mastery <= other.rear_mastery,
+                self.healing_mastery <= other.healing_mastery,
+                self.berserk_mastery <= other.berserk_mastery,
+                self.melee_mastery <= other.melee_mastery,
+                self.control <= other.control,
+                self.block <= other.block,
+                self.fd <= other.fd,
+                self.heals_performed <= other.heals_performed,
+                self.lock <= other.lock,
+                self.dodge <= other.dodge,
+                self.armor_given <= other.armor_given,
+            )
+        )
 
 
 DUMMY_MIN: int = -1_000_000
@@ -176,7 +249,61 @@ class SetMinimums(Stats, frozen=True, gc=False):
         if not isinstance(other, SetMinimums):
             return NotImplemented
 
-        return SetMinimums(*(max(s, o) for s, o in zip(astuple(self), astuple(other), strict=True)))
+        return SetMinimums(
+            max(self.ap, other.ap),
+            max(self.mp, other.mp),
+            max(self.wp, other.wp),
+            max(self.ra, other.ra),
+            max(self.critical_hit, other.critical_hit),
+            max(self.critical_mastery, other.critical_mastery),
+            max(self.elemental_mastery, other.elemental_mastery),
+            max(self.mastery_3_elements, other.mastery_3_elements),
+            max(self.mastery_2_elements, other.mastery_2_elements),
+            max(self.mastery_1_element, other.mastery_1_element),
+            max(self.distance_mastery, other.distance_mastery),
+            max(self.rear_mastery, other.rear_mastery),
+            max(self.healing_mastery, other.healing_mastery),
+            max(self.berserk_mastery, other.berserk_mastery),
+            max(self.melee_mastery, other.melee_mastery),
+            max(self.control, other.control),
+            max(self.block, other.block),
+            max(self.fd, other.fd),
+            max(self.heals_performed, other.heals_performed),
+            max(self.lock, other.lock),
+            max(self.dodge, other.dodge),
+            max(self.armor_given, other.armor_given),
+        )
+
+    def __le__(self, other: object):
+        if not isinstance(other, Stats):
+            return NotImplemented
+
+        return all(
+            (
+                self.ap <= other.ap,
+                self.mp <= other.mp,
+                self.wp <= other.wp,
+                self.ra <= other.ra,
+                self.critical_hit <= other.critical_hit,
+                self.critical_mastery <= other.critical_mastery,
+                self.elemental_mastery <= other.elemental_mastery,
+                self.mastery_3_elements <= other.mastery_3_elements,
+                self.mastery_2_elements <= other.mastery_2_elements,
+                self.mastery_1_element <= other.mastery_1_element,
+                self.distance_mastery <= other.distance_mastery,
+                self.rear_mastery <= other.rear_mastery,
+                self.healing_mastery <= other.healing_mastery,
+                self.berserk_mastery <= other.berserk_mastery,
+                self.melee_mastery <= other.melee_mastery,
+                self.control <= other.control,
+                self.block <= other.block,
+                self.fd <= other.fd,
+                self.heals_performed <= other.heals_performed,
+                self.lock <= other.lock,
+                self.dodge <= other.dodge,
+                self.armor_given <= other.armor_given,
+            )
+        )
 
 
 class SetMaximums(Stats, frozen=True, gc=False):
@@ -211,7 +338,30 @@ class SetMaximums(Stats, frozen=True, gc=False):
         if not isinstance(other, SetMaximums):
             return NotImplemented
 
-        return SetMaximums(*(min(s, o) for s, o in zip(astuple(self), astuple(other), strict=True)))
+        return SetMaximums(
+            min(self.ap, other.ap),
+            min(self.mp, other.mp),
+            min(self.wp, other.wp),
+            min(self.ra, other.ra),
+            min(self.critical_hit, other.critical_hit),
+            min(self.critical_mastery, other.critical_mastery),
+            min(self.elemental_mastery, other.elemental_mastery),
+            min(self.mastery_3_elements, other.mastery_3_elements),
+            min(self.mastery_2_elements, other.mastery_2_elements),
+            min(self.mastery_1_element, other.mastery_1_element),
+            min(self.distance_mastery, other.distance_mastery),
+            min(self.rear_mastery, other.rear_mastery),
+            min(self.healing_mastery, other.healing_mastery),
+            min(self.berserk_mastery, other.berserk_mastery),
+            min(self.melee_mastery, other.melee_mastery),
+            min(self.control, other.control),
+            min(self.block, other.block),
+            min(self.fd, other.fd),
+            min(self.heals_performed, other.heals_performed),
+            min(self.lock, other.lock),
+            min(self.dodge, other.dodge),
+            min(self.armor_given, other.armor_given),
+        )
 
 
 def effective_mastery(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> float:

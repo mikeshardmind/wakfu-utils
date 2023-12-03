@@ -103,7 +103,7 @@ for item_id in (26994, 26995, 26996, 26300, 26319):
     conditions[item_id] = wp_gt_eq_8
 
 
-def get_item_conditions(item: EquipableItem) -> tuple[rst.SetMinimums, rst.SetMaximums]:
+def get_item_conditions(item: EquipableItem) -> tuple[rst.SetMinimums | None, rst.SetMaximums | None]:
     item_conds = conditions.get(item.item_id, [])
     set_mins: list[rst.SetMinimums] = []
     set_maxs: list[rst.SetMaximums] = []
@@ -114,6 +114,14 @@ def get_item_conditions(item: EquipableItem) -> tuple[rst.SetMinimums, rst.SetMa
         elif isinstance(c, rst.SetMaximums):
             set_maxs.append(c)
 
-    mins = reduce(and_, set_mins, rst.SetMinimums())
-    maxs = reduce(and_, set_maxs, rst.SetMaximums())
+    mins = None
+    if len(set_mins) == 1:
+        mins = set_mins[0]
+    elif set_mins:
+        mins = reduce(and_, set_mins)
+    maxs = None
+    if len(set_maxs) == 1:
+        maxs = set_maxs[0]
+    elif set_maxs:
+        maxs = reduce(and_, set_maxs)
     return mins, maxs

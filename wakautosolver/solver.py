@@ -186,7 +186,7 @@ def solve(
         return base_score + ((item.critical_hit + base_stats.critical_hit + 11) / 80) * base_score
 
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
-        return any(i.unhandled() for i in get_item_conditions(item))
+        return any(i.unhandled() for i in get_item_conditions(item) if i)
 
     #    │ 26494   │ Amakna Sword  │
     #    │ 26495   │ Sufokia Sword │
@@ -243,6 +243,8 @@ def solve(
 
     def item_condition_conflicts_requested_stats(item: EquipableItem) -> bool:
         _mins, maxs = get_item_conditions(item)
+        if not maxs:
+            return False
         return any(smin > smax for smin, smax in zip(*map(astuple, (stat_mins, maxs))))
 
     def level_filter(item: EquipableItem) -> bool:
@@ -599,53 +601,22 @@ def solve(
     for key in ("FIRST_WEAPON", "SECOND_WEAPON"):
         solve_CANIDATES.pop(key, None)
 
-    def adj_func(item: EquipableItem) -> float:
-        sm, ln = 0, 0
-
-        for stat in stat_mins.get_sim_keys():
-            needed = getattr(stat_mins, stat) - getattr(base_stats, stat) - getattr(_af_stats, stat)
-
-            if needed > 0:
-                ln += 1
-                sm += getattr(item, stat)
-
-        return sm / ln if ln else 1
-
     # TODO: Break this loop out into dedicated function for pruning item pool
     for items in (solve_ONEH, solve_TWOH, solve_DAGGERS, *solve_CANIDATES.values()):
         if not items:
             continue
         slot = items[0].item_slot
 
-        items.sort(key=score_key, reverse=True)
+        items.sort(key=crit_score_key, reverse=True)
         inplace_ordered_keep_by_key(items, attrgetter("name", "is_souvenir"))
 
-        dist = statistics.NormalDist.from_samples(adj_func(i) for i in items) if len(items) > 1 else None
-
-        def adjusted_key(item: EquipableItem, dist: statistics.NormalDist | None = dist) -> tuple[bool, float]:
-            st = crit_score_key(item)
-            if dist is None:
-                return st > 0, st
-            try:
-                adj = max(dist.zscore(adj_func(item)) + 1, 0)
-            except statistics.StatisticsError:  # zscore when sigma = 0
-                adj = 0
-            if adj:
-                return st > 0, st + (adj * 0.1 * st)
-            return st > 0, st
-
-        items.sort(key=adjusted_key, reverse=True)
-
         k = 2 if slot == "LEFT_HAND" else 1
-        uniq = ordered_keep_by_key(items, needs_full_sim_key, k)
 
         if not ns.exhaustive:
-            items.sort(key=lambda i: (i in uniq, adjusted_key(i)), reverse=True)
             bck = items.copy()
             best = items[: ns.search_depth + k]
             items.clear()
             items.extend(best)
-            bck.sort(key=adjusted_key, reverse=True)
             inplace_ordered_keep_by_key(bck, needs_full_sim_key, k)
 
             for val in (0, 1, 2):
@@ -672,7 +643,7 @@ def solve(
                     if len([i for i in _tc_items if all(s >= val for s in attrgetter("ap", "mp", "ra", "wp")(i))]) >= k:
                         break
 
-        items.sort(key=adjusted_key, reverse=True)
+        items.sort(key=crit_score_key, reverse=True)
         inplace_ordered_keep_by_key(items, needs_full_sim_key, k)
 
     relics.sort(key=lambda r: (score_key(r), r.item_slot), reverse=True)
@@ -805,6 +776,9 @@ def solve(
             items.extend(bck[: k + ns.search_depth])
             # wp items really suck
             needed_wp = stat_mins.wp - base_stats.wp - _af_stats.wp
+            for it in items:
+                if it.wp > 0:
+                    needed_wp -= 1
             for _ in range(min(k, needed_wp)):
                 for item in bck:
                     if item.wp > 0 and item not in items:
@@ -969,10 +943,10 @@ def solve(
 
             generated_conditions = [get_item_conditions(item) for item in (*items, relic, epic) if item]
             mns, mxs = zip(*generated_conditions)
-            mns = reduce(and_, mns, stat_mins)
-            mxs = reduce(and_, mxs, SetMaximums())
+            mns = reduce(and_, filter(None, mns), stat_mins)
+            mxs = reduce(and_, filter(None, mxs), SetMaximums())
 
-            if not statline.is_between(mns, mxs):
+            if not mns <= statline <= mxs:
                 continue
             UNRAVEL_ACTIVE = ns.unraveling and statline.critical_hit >= 40
 

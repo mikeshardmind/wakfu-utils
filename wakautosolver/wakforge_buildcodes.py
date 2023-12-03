@@ -25,7 +25,7 @@ from .restructured_types import ElementsEnum as WFElements
 
 
 class Rune(Struct, array_like=True):
-    effect_id: int = - 1
+    effect_id: int = -1
     color: int = -1
     level: int = -1
 
