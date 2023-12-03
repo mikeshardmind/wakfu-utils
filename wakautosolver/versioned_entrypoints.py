@@ -205,6 +205,10 @@ class v2Result(Struct):
     debug_info: str | None = None
 
 
+def compressed_encode(obj: object) -> str:
+    return b2048encode(zlib.compress(msgpack.encode(obj), level=9, wbits=-15))
+
+
 def partial_solve_v2(
     *,
     build_code: str,
@@ -220,8 +224,7 @@ def partial_solve_v2(
         config = msgpack.decode(msgpack.encode(config), type=v2Config)
     except Exception as exc:  # noqa: BLE001
         msg = traceback.format_exception(exc)
-        p = b2048encode(zlib.compress(msgpack.encode(msg), level=9, wbits=-15))
-        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=p)
+        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=compressed_encode(msg))
 
     target_stats = config.target_stats.to_real()
 
@@ -234,8 +237,7 @@ def partial_solve_v2(
 
     if not config.objectives.is_valid:
         msg = ("objectives", config.objectives)
-        p = b2048encode(msgpack.encode(msg))
-        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=p)
+        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=compressed_encode(msg))
 
     build = WFBuild.from_code(build_code)
     if config.ignore_existing_items:
@@ -299,8 +301,7 @@ def partial_solve_v2(
         return v2Result(None, "No possible solution found", debug_info=None)
     except Exception as exc:  # noqa: BLE001
         msg = traceback.format_exception(exc)
-        p = b2048encode(zlib.compress(msgpack.encode(msg), level=9, wbits=-15))
-        return v2Result(None, "Unknown error, see debug info", debug_info=p)
+        return v2Result(None, "Unknown error, see debug info", debug_info=compressed_encode(msg))
 
     score, found_items = best
 
@@ -319,9 +320,8 @@ def partial_solve_v2(
                     build.add_item(item)
             except RuntimeError as exc:
                 msg = traceback.format_exception(exc)
-                p = b2048encode(zlib.compress(msgpack.encode(msg), level=9, wbits=-15))
-                return v2Result(None, "Unknown error, see debug info", debug_info=p)
+                return v2Result(None, "Unknown error, see debug info", debug_info=compressed_encode(msg))
 
-    debug_info = b2048encode(msgpack.encode({"sc": score}))
+    debug_info = compressed_encode({"score": score})
 
     return v2Result(build.to_code(), None, found_item_ids, debug_info=debug_info)

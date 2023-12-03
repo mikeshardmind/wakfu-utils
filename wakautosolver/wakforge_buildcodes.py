@@ -18,23 +18,23 @@ from msgspec.structs import astuple
 
 from . import b2048
 from ._build_codes import Stats as AllocatedStats
-from ._typing_memes import STAT_MAX, UP_TO_5, UP_TO_10, UP_TO_11, UP_TO_20, UP_TO_40, ZERO_OR_ONE
+from ._typing_memes import STAT_MAX, UP_TO_5, UP_TO_10, UP_TO_20, UP_TO_40, ZERO_OR_ONE
 from .object_parsing import EquipableItem
 from .restructured_types import ClassesEnum as WFClasses
 from .restructured_types import ElementsEnum as WFElements
 
 
 class Rune(Struct, array_like=True):
-    effect_id: int | None = None
-    color: int | None = None
-    level: UP_TO_11 = 0
+    effect_id: int = - 1
+    color: int = -1
+    level: int = -1
 
 
 class Item(Struct, array_like=True):
     item_id: int = -1
     assignable_elements: WFElements = WFElements.empty
-    rune_info: list[Rune] | list[object] = field(default_factory=lambda: [Rune() for _ in range(4)])
-    sublimations: list[int] = field(default_factory=list)
+    rune_info: list[Rune] = field(default_factory=lambda: [Rune() for _ in range(4)])
+    sublimation: int = -1
 
     def __bool__(self):
         return self.item_id > 0
@@ -179,7 +179,8 @@ class Buildv1(Struct, array_like=True):
 
     def to_code(self) -> str:
         packed = msgpack.encode(self)
-        return b2048.encode(packed)
+        compressed = zlib.compress(packed, level=9, wbits=-15)
+        return b2048.encode(compressed)
 
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:

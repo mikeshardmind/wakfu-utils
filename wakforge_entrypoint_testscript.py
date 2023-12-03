@@ -11,6 +11,7 @@ import builtins
 import os
 import time
 import zlib
+from typing import Any
 
 from msgspec import msgpack
 
@@ -101,7 +102,7 @@ def runner(loud: bool = True) -> None:
     else:
         aprint = builtins.print
 
-    for idx, (code, config) in enumerate(zip(codes, configs), 1):
+    for idx, (code, config) in enumerate(reversed(list(zip(codes, configs))), 1):
         err_print("Trying situation", idx)
         start = time.perf_counter()
         sol = solve2(build_code=code, config=config)
@@ -113,15 +114,22 @@ def runner(loud: bool = True) -> None:
             err_print(sol.error_code)
         if sol.debug_info:
             try:
-                err = msgpack.decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
+                err: list[str] | dict[str, Any] = msgpack.decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
             except Exception:  # noqa: S110, BLE001
                 pass
             else:
-                err_print(*err)
+                if isinstance(err, list):
+                    aprint(*err)
+                if isinstance(err, dict):
+                    aprint(*(f"{k}={v}" for k, v in err.items()))
+
         aprint(*items, sep="\n")
         if sol.build_code:
             aprint(sol.build_code)
 
 
 if __name__ == "__main__":
-    runner(loud=False)
+    try:
+        runner(loud=False)
+    except KeyboardInterrupt:
+        pass
