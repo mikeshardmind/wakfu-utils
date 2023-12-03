@@ -372,8 +372,8 @@ _EFFECT_MAP: dict[int, Callable[[list[int]], list[tuple[str, int]]]] = {
     132: lambda d: [("_fire_mastery", 0 - d[0])],
     149: lambda d: [("_critical_mastery", d[0])],
     150: lambda d: [("_critical_hit", d[0])],
-    160: lambda d: [("_range", d[0])],
-    161: lambda d: [("_range", 0 - d[0])],
+    160: lambda d: [("_ra", d[0])],
+    161: lambda d: [("_ra", 0 - d[0])],
     162: lambda d: [("_prospecting", d[0])],
     166: lambda d: [("_wisdom", d[0])],
     # apparently the devs *are* cruel enough for -wis gear to exist

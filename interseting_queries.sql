@@ -31,21 +31,21 @@ WITH part AS
           ap,
           mp,
           wp,
-          [range],
-          RANK() OVER(PARTITION BY position, ap, mp, wp, [range]
+          ra,
+          RANK() OVER(PARTITION BY position, ap, mp, wp, ra
                       ORDER BY floor((item_lv - 6) / 15) * 15 + 20, item_id ASC) AS r
    FROM items
    NATURAL JOIN item_names
    NATURAL JOIN item_types
      WHERE item_lv > 0
-     AND NOT (ap = 0 AND mp = 0 AND wp = 0 AND [range] = 0)
-     AND (ap >= 0 AND mp >= 0 AND wp >= 0 AND [range] >= 0)
+     AND NOT (ap = 0 AND mp = 0 AND wp = 0 AND ra = 0)
+     AND (ap >= 0 AND mp >= 0 AND wp >= 0 AND ra >= 0)
      AND item_rarity not in (5,7))  -- excludes relics and epics
 SELECT en as [Item name (en)],
        ap,
        mp,
        wp,
-       [range] as ra,
+       ra as ra,
        position,
        floor((min(item_lv) - 6) / 15) * 15 + 20 as [first ALS bracket combo available]
 FROM part
@@ -62,7 +62,7 @@ WITH part AS
           ap,
           mp,
           wp,
-          [range],
+          ra,
           RANK() OVER(PARTITION BY position, ap
                       ORDER BY floor((item_lv - 6) / 15) * 15 + 20, item_id ASC) AS r
    FROM items
@@ -89,7 +89,7 @@ WITH part AS
           ap,
           mp,
           wp,
-          [range],
+          ra,
           RANK() OVER(PARTITION BY position, mp
                       ORDER BY floor((item_lv - 6) / 15) * 15 + 20, item_id ASC) AS r
    FROM items
@@ -115,7 +115,7 @@ WITH part AS
           ap,
           mp,
           wp,
-          [range],
+          ra,
           RANK() OVER(PARTITION BY position, wp
                       ORDER BY floor((item_lv - 6) / 15) * 15 + 20, item_id ASC) AS r
    FROM items

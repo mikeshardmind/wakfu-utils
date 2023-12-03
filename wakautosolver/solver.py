@@ -464,6 +464,11 @@ def solve(
             "LEGS": (50, 230), "SECOND_WEAPON": (50,), "CHEST": (50,), "FIRST_WEAPON": (50,),
             "BACK": (80,), "NECK": (170,), "HEAD": (230,)
         },
+        "ra": {
+            "HEAD": (35, 200), "FIRST_WEAPON": (65, 170), "LEGS": (80,), "NECK": (80, 215),
+            "LEFT_HAND": (185,), "SHOULDERS": (200,), "CHEST": (230,), "ACCESSORY": (230,),
+            "BELT": (230,),
+        },
     }
     # fmt: on
 
@@ -471,11 +476,30 @@ def solve(
         needed: int = attrgetter(stat)(stat_mins - base_stats - _af_stats)
         orig_needed = needed
 
-        if (not forced_epics) and stat in ("mp", "ap") and 7 in allowed_rarities:
-            needed -= 1
+        if (not forced_epics) and 7 in allowed_rarities:
+            if stat in ("mp", "ap"):
+                needed -= 1
+            if stat == "ra":
+                if ns.lv >= 140 >= LOW_BOUND:
+                    needed -= 1  # sigiknight ring
+                elif ns.lv >= 155 >= LOW_BOUND:
+                    needed -= 1  # golden belt
+                elif ns.lv < 200 and ns.lv >= 185 >= LOW_BOUND:
+                    needed -= 1  # azure dreggon headgear
 
-        if (not forced_relics) and stat in ("mp", "ap") and 5 in allowed_rarities and ns.lv >= 50:
-            needed -= 1
+        if (not forced_relics) and 5 in allowed_rarities:
+            if ns.lv >= 50 and stat in ("mp", "ap"):
+                needed -= 1
+            if stat == "ra":
+                if ns.lv >= 140 >= LOW_BOUND:
+                    # asse shield or soft oak hat
+                    needed -= 1
+                elif ns.lv >= 155 >= LOW_BOUND:
+                    # golden keychain
+                    needed -= 1
+                elif ns.lv < 200 and ns.lv >= 180 >= LOW_BOUND:
+                    # Moon epaulettes
+                    needed -= 1
 
         for slot, lvs in data_dict.items():
             if _af_slots.count(slot) >= (2 if slot == "LEFT_HAND" else 1):
@@ -514,15 +538,32 @@ def solve(
     for stu in AOBJS.values():
         stu.sort(key=score_key, reverse=True)
 
+    def compat_with_forced(item: EquipableItem) -> bool:
+        c = (original_forced_counts or {}).get(item.item_slot, 0)
+        if c >= (2 if item.item_slot == "LEFT_HAND" else 1):
+            return False
+        if item.item_slot == "SECOND_WEAPON":  # noqa: SIM102
+            if any(i.disables_second_weapon for i in (*forced_items, *forced_epics, *forced_relics)):
+                return False
+        return True
+
     relics = forced_relics or [
         item
         for item in OBJS
-        if item.is_relic and initial_filter(item) and relic_epic_level_filter(item) and item.item_id not in NATION_RELIC_EPIC_IDS
+        if item.is_relic
+        and initial_filter(item)
+        and compat_with_forced(item)
+        and relic_epic_level_filter(item)
+        and item.item_id not in NATION_RELIC_EPIC_IDS
     ]
     epics = forced_epics or [
         item
         for item in OBJS
-        if item.is_epic and initial_filter(item) and relic_epic_level_filter(item) and item.item_id not in NATION_RELIC_EPIC_IDS
+        if item.is_epic
+        and initial_filter(item)
+        and compat_with_forced(item)
+        and relic_epic_level_filter(item)
+        and item.item_id not in NATION_RELIC_EPIC_IDS
     ]
 
     solve_CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
