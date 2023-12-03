@@ -7,7 +7,9 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 # This is a way to test things the way wakforge uses them
+import builtins
 import os
+import time
 import zlib
 
 from msgspec import msgpack
@@ -34,8 +36,7 @@ cfg2 = v2Config(
     allowed_rarities=[4, 5, 6, 7],
     target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=2),
     objectives=StatPriority(
-        elements=ElementsEnum.water | ElementsEnum.air | ElementsEnum.earth,
-        distance_mastery=Priority.prioritized
+        elements=ElementsEnum.water | ElementsEnum.air | ElementsEnum.earth, distance_mastery=Priority.prioritized
     ),
     dry_run=False,
     ignore_existing_items=False,
@@ -60,7 +61,7 @@ cfg3 = v2Config(
 code4 = "ಡƸɀИযΟԛཉÛƄΕɌॷതǐĨсఖ৶ΛѵƣਨਪɆສɓ྾྾ଢƟၿદӾಏॐӧѩôԉӚਊ৮ǧ႕ȖՔఆкഖണшĤȆఝΦҡүŻҹঌఱබဇмʒโནԛБତওണॳǀ"
 
 cfg4 = v2Config(
-    allowed_rarities=[1,2,3,4,5,6,7],
+    allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
     target_stats=SetMinimums(ap=12, mp=6, wp=8, ra=3),
     objectives=StatPriority(
         elements=ElementsEnum.fire,
@@ -71,14 +72,56 @@ cfg4 = v2Config(
 )
 
 
+code5 = "ಡƸɁ৯௫ѹƂ༔Õƥഌïটζǆƈछඖǘആǁêཁ༓Ø"
+
+cfg5 = v2Config(
+    allowed_rarities=[4, 5, 6, 7],
+    target_stats=SetMinimums(ap=13, mp=5, wp=6, ra=0),
+    objectives=StatPriority(
+        elements=ElementsEnum.fire | ElementsEnum.water | ElementsEnum.air,
+        melee_mastery=Priority.prioritized,
+    ),
+    dry_run=False,
+    ignore_existing_items=True,
+)
+
+codes = [code1, code2, code3, code4, code5]
+configs = [cfg1, cfg2, cfg3, cfg4, cfg5]
+
+
+def runner(loud: bool = True) -> None:
+    if loud:
+        os.environ["USE_TQDM"] = "1"
+
+    err_print = builtins.print
+    if not loud:
+
+        def aprint(*values: object, sep: str | None = " ") -> None:
+            pass
+    else:
+        aprint = builtins.print
+
+    for idx, (code, config) in enumerate(zip(codes, configs), 1):
+        err_print("Trying situation", idx)
+        start = time.perf_counter()
+        sol = solve2(build_code=code, config=config)
+        stop = time.perf_counter()
+        err_print(f"Time taken: {stop - start:g}s")
+        items = [i for i in get_all_items() if i.item_id in sol.item_ids]
+        items.sort(key=lambda i: (i.is_relic, i.is_epic, i.item_slot), reverse=True)
+        if sol.error_code:
+            err_print(sol.error_code)
+        if sol.debug_info:
+            try:
+                err = msgpack.decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
+            except Exception:  # noqa: S110, BLE001
+                pass
+            else:
+                err_print(*err)
+        aprint(*items, sep="\n")
+        if sol.build_code:
+            aprint(sol.build_code)
+
+
 if __name__ == "__main__":
-    os.environ["USE_TQDM"] = "1"
-    sol = solve2(build_code=code4, config=cfg4)
-    items = [i for i in get_all_items() if i.item_id in sol.item_ids]
-    items.sort(key=lambda i: (i.is_relic, i.is_epic, i.item_slot), reverse=True)
-    if sol.error_code:
-        print(sol.error_code)  # noqa: T201
-    if sol.debug_info:
-        err = msgpack.decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
-        print(*err)  # noqa: T201
-    print(*items, sep="\n")  # noqa: T201
+    runner(loud=False)

@@ -377,11 +377,11 @@ def solve(
         return False
 
     _af_items = ordered_keep_by_key([*forced_epics, *forced_relics, *forced_items], attrgetter("item_id"), 1)
-    _af_stats = reduce(add, (i.as_stats() for i in _af_items), Stats())
+    _af_stats: Stats = reduce(add, (i.as_stats() for i in _af_items), Stats())
     _af_slots = [i.item_slot for i in _af_items]
     FINDABLE_AP_MP_NEEDED = sum(attrgetter("ap", "mp")(stat_mins - base_stats - _af_stats))
-
     findableAP_MP = sum(1 for islot, lv in common_ap_mp_sum_gt_0.items() if islot not in _af_slots and lv <= ns.lv)
+
     # TODO: dynamic from sql to not need re-checking/expanding each time
     # TODO: Both of these are technically still possible to be impossible if forced slots preclude
     # TODO: some of the below also impossible based on forbidden items...
@@ -389,8 +389,6 @@ def solve(
         findableAP_MP += 1
     if (not forced_relics) and ns.lv >= 50 and 5 in allowed_rarities:
         findableAP_MP += 1
-        if ns.lv >= 200 and "FIRST_WEAPON" not in _af_slots:
-            findableAP_MP += 1  # eternal sword
     if ns.lv >= 230:
         if "HEAD" not in _af_slots:  # guffet helm
             findableAP_MP += 1
@@ -554,6 +552,7 @@ def solve(
         and initial_filter(item)
         and compat_with_forced(item)
         and relic_epic_level_filter(item)
+        and (findableAP_MP > FINDABLE_AP_MP_NEEDED or not missing_common_major(item))
         and item.item_id not in NATION_RELIC_EPIC_IDS
     ]
     epics = forced_epics or [
@@ -563,6 +562,7 @@ def solve(
         and initial_filter(item)
         and compat_with_forced(item)
         and relic_epic_level_filter(item)
+        and (findableAP_MP > FINDABLE_AP_MP_NEEDED or not missing_common_major(item))
         and item.item_id not in NATION_RELIC_EPIC_IDS
     ]
 
@@ -599,12 +599,17 @@ def solve(
     for key in ("FIRST_WEAPON", "SECOND_WEAPON"):
         solve_CANIDATES.pop(key, None)
 
-    adj_getter = attrgetter(*stat_mins.get_sim_keys())
-
     def adj_func(item: EquipableItem) -> float:
-        mins = tuple(i - j for i, j in zip(adj_getter(stat_mins), adj_getter(base_stats), strict=True))
-        perc_contr = [i / j if j > 0 else 1 for i, j in zip(adj_getter(item), mins, strict=True)]
-        return sum(perc_contr) / len(perc_contr)
+        sm, ln = 0, 0
+
+        for stat in stat_mins.get_sim_keys():
+            needed = getattr(stat_mins, stat) - getattr(base_stats, stat) - getattr(_af_stats, stat)
+
+            if needed > 0:
+                ln += 1
+                sm += getattr(item, stat)
+
+        return sm / ln if ln else 1
 
     # TODO: Break this loop out into dedicated function for pruning item pool
     for items in (solve_ONEH, solve_TWOH, solve_DAGGERS, *solve_CANIDATES.values()):
@@ -637,9 +642,11 @@ def solve(
         if not ns.exhaustive:
             items.sort(key=lambda i: (i in uniq, adjusted_key(i)), reverse=True)
             bck = items.copy()
+            best = items[: ns.search_depth + k]
+            items.clear()
+            items.extend(best)
             bck.sort(key=adjusted_key, reverse=True)
             inplace_ordered_keep_by_key(bck, needs_full_sim_key, k)
-            del items[k:]
 
             for val in (0, 1, 2):
                 while True:
@@ -665,6 +672,7 @@ def solve(
                     if len([i for i in _tc_items if all(s >= val for s in attrgetter("ap", "mp", "ra", "wp")(i))]) >= k:
                         break
 
+        items.sort(key=adjusted_key, reverse=True)
         inplace_ordered_keep_by_key(items, needs_full_sim_key, k)
 
     relics.sort(key=lambda r: (score_key(r), r.item_slot), reverse=True)
@@ -789,9 +797,44 @@ def solve(
     pairs.sort(key=lambda p: re_score_key(p)[1:], reverse=True)
 
     if ns and not ns.exhaustive:
-        per_item_factor: Callable[[object, object], int] = lambda llv, lls: 2 if lls == "LEFT_HAND" else 1
         canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth]
-        solve_CANIDATES = {k: v[: ns.search_depth + per_item_factor(ns.lv, k)] for k, v in solve_CANIDATES.items()}
+        for slot, items in solve_CANIDATES.items():
+            bck = items.copy()
+            k = 2 if slot == "LEFT_HAND" else 1
+            items.clear()
+            items.extend(bck[: k + ns.search_depth])
+            # wp items really suck
+            needed_wp = stat_mins.wp - base_stats.wp - _af_stats.wp
+            for _ in range(min(k, needed_wp)):
+                for item in bck:
+                    if item.wp > 0 and item not in items:
+                        items.append(item)
+                        break
+            # so do range, but less so
+            needed_ra = stat_mins.ra - base_stats.ra - _af_stats.ra
+            if needed_ra > 0:
+                for stat in ("ap", "mp"):
+                    getter = attrgetter("ra", stat)
+                    c = 0
+                    for item in items:
+                        ra, other = getter(item)
+                        if ra > 0 and other > 0:
+                            c += ra
+                            if c >= k:
+                                break
+                    else:
+                        found = False
+                        for val in reversed(range(1, needed_ra + 1)):
+                            if found:
+                                break
+                            for item in bck:
+                                if item not in items:
+                                    ra, other = getter(item)
+                                    if ra >= val and other > 0:
+                                        items.append(item)
+                                        found = True
+                                        break
+
         canidate_weapons = canidate_weapons[: int(ns.hard_cap_depth / 2)]
 
     if ns.dry_run:
