@@ -99,8 +99,19 @@ cfg6 = v2Config(
     ignore_existing_items=True,
 )
 
+code7 = "ಡƸɁ৸ĤΏʩउढϩพშɦϸၷ྾ऄǿþПဧषဦţͽ౨ϢඦɻɅϸຢͽɀØ"
+cfg7 = v2Config(
+    allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
+    target_stats=SetMinimums(ap=10, mp=3, wp=7, ra=0),
+    objectives=StatPriority(),
+    dry_run=False,
+    ignore_existing_items=False,
+)
+
 codes = [code1, code2, code3, code4, code5, code6]
 configs = [cfg1, cfg2, cfg3, cfg4, cfg5, cfg6]
+codes = [code7] or codes  # noqa: SIM222
+configs = [cfg7] or configs  # noqa: SIM222
 
 
 def runner(loud: bool = True) -> None:

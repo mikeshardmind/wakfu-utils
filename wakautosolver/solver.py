@@ -209,7 +209,7 @@ def solve(
     # locale based, only works if user is naming it in locale used and case sensitive currently.
     FORBIDDEN_NAMES: list[str] = ns.forbid if (ns and ns.forbid) else []
 
-    stat_mins = ns.stat_minimums or SetMinimums(ap=ns.ap, mp=ns.mp, wp=ns.wp, ra=ns.ra)
+    stat_mins = ns.stat_minimums if ns.stat_minimums else SetMinimums(ap=ns.ap, mp=ns.mp, wp=ns.wp, ra=ns.ra)
     base_stats = ns.base_stats or Stats(
         ns.baseap,
         mp=ns.basemp,
@@ -809,7 +809,7 @@ def solve(
                                         found = True
                                         break
 
-        canidate_weapons = canidate_weapons[: int(ns.hard_cap_depth / 2)]
+        canidate_weapons = canidate_weapons[: int(ns.hard_cap_depth)]
 
     if ns.dry_run:
         ret: list[EquipableItem] = []
