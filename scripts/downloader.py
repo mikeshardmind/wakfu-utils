@@ -13,7 +13,7 @@ from typing import Any, Optional
 
 import aiohttp
 
-_DEFAULT_VERSION = "1.81.1.15"
+_DEFAULT_VERSION = "1.82.1.18"
 _FTYPES = (
     "items",
     "actions",
