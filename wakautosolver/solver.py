@@ -486,6 +486,10 @@ def solve(
                     needed -= 1  # golden belt
                 elif ns.lv < 200 and ns.lv >= 185 >= LOW_BOUND:
                     needed -= 1  # azure dreggon headgear
+            if stat == "ap":  # noqa: SIM102
+                # Harlock's boots
+                if ns.lv >= 140 >= LOW_BOUND:
+                    needed -= 1
 
         if (not forced_relics) and 5 in allowed_rarities:
             if ns.lv >= 50 and stat in ("mp", "ap"):

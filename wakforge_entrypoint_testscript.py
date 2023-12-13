@@ -108,10 +108,20 @@ cfg7 = v2Config(
     ignore_existing_items=False,
 )
 
+code8 = "ಡƸɀИòѩඹངÕळĦҙड੮ǑŀϑÕƈĉɩྋ੯იઙ੪ई྾კևქऒŝɧʫഌɗËѪওক௴০ĠØ།"
+cfg8 = v2Config(
+    allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
+    target_stats=SetMinimums(ap=13, mp=5, wp=-2, ra=2),
+    objectives=StatPriority(distance_mastery=Priority.prioritized, elements=ElementsEnum.earth | ElementsEnum.water | ElementsEnum.air),
+    dry_run=False,
+    ignore_existing_items=False,
+)
+
+
 codes = [code1, code2, code3, code4, code5, code6]
 configs = [cfg1, cfg2, cfg3, cfg4, cfg5, cfg6]
-codes = [code7] or codes  # noqa: SIM222
-configs = [cfg7] or configs  # noqa: SIM222
+codes = [code8] or codes  # noqa: SIM222
+configs = [cfg8] or configs  # noqa: SIM222
 
 
 def runner(loud: bool = True) -> None:
