@@ -17,7 +17,8 @@ from msgspec.structs import asdict
 
 from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
-from .restructured_types import DUMMY_MIN, ClassesEnum, Priority, StatPriority, Stats
+from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassesEnum, Priority, StatPriority, Stats
+from .restructured_types import SetMaximums as RealSetMaxs
 from .restructured_types import SetMinimums as RealSetMins
 from .solver import ImpossibleStatError, SolveError, solve, v1Config
 from .wakforge_buildcodes import Buildv1 as WFBuild
@@ -103,6 +104,46 @@ class SetMinimums(Struct, frozen=True, gc=True):
             data[new] = data.pop(old)
 
         return RealSetMins(**data)
+
+
+class SetMaximums(Struct, frozen=True, gc=True):
+    ap: int = DUMMY_MAX
+    mp: int = DUMMY_MAX
+    wp: int = DUMMY_MAX
+    ra: int = DUMMY_MAX
+    crit: int = DUMMY_MAX
+    crit_mastery: int = DUMMY_MAX
+    elemental_mastery: int = DUMMY_MAX
+    one_element_mastery: int = DUMMY_MAX
+    two_element_mastery: int = DUMMY_MAX
+    three_element_mastery: int = DUMMY_MAX
+    distance_mastery: int = DUMMY_MAX
+    rear_mastery: int = DUMMY_MAX
+    heal_mastery: int = DUMMY_MAX
+    beserk_mastery: int = DUMMY_MAX
+    melee_mastery: int = DUMMY_MAX
+    control: int = DUMMY_MAX
+    block: int = DUMMY_MAX
+    fd: int = DUMMY_MAX
+    heals_performed: int = DUMMY_MAX
+    lock: int = DUMMY_MAX
+    dodge: int = DUMMY_MAX
+    armor_given: int = DUMMY_MAX
+
+    def to_real(self) -> RealSetMaxs:
+        data = asdict(self)
+        for new, old in (
+            ("critical_hit", "crit"),
+            ("critical_mastery", "crit_mastery"),
+            ("mastery_3_elements", "three_element_mastery"),
+            ("mastery_2_elements", "two_element_mastery"),
+            ("mastery_1_element", "one_element_mastery"),
+            ("healing_mastery", "heal_mastery"),
+            ("berserk_mastery", "beserk_mastery"),
+        ):
+            data[new] = data.pop(old)
+
+        return RealSetMaxs(**data)
 
 
 def partial_solve_v1(
@@ -196,6 +237,7 @@ class v2Config(Struct):
     forbidden_items: list[int] = field(default_factory=list)
     ignore_existing_items: bool = False
     forbidden_sources: list[Literal["arch", "horde", "pvp", "ultimate_boss"]] = field(default_factory=list)
+    stats_maxs: SetMaximums = field(default_factory=SetMaximums)
 
 
 class v2Result(Struct):
@@ -267,6 +309,7 @@ def partial_solve_v2(
         wp=wp,
         ra=ra,
         stat_minimums=target_stats,
+        stat_maximums=config.stats_maxs.to_real(),
         base_stats=stats,
         baseap=stats.ap,
         basemp=stats.mp,

@@ -411,6 +411,7 @@ class v1Config(Struct, kw_only=True):
     ra: int = 0
     base_stats: Stats | None = None
     stat_minimums: SetMinimums | None = None
+    stat_maximums: SetMaximums | None = None
     num_mastery: int = 3
     dist: bool = False
     melee: bool = False

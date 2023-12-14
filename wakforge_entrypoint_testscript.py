@@ -18,7 +18,7 @@ from msgspec import msgpack
 from wakautosolver.b2048 import decode
 from wakautosolver.object_parsing import get_all_items
 from wakautosolver.restructured_types import ElementsEnum
-from wakautosolver.versioned_entrypoints import Priority, SetMinimums, StatPriority, v2Config
+from wakautosolver.versioned_entrypoints import Priority, SetMaximums, SetMinimums, StatPriority, v2Config
 from wakautosolver.versioned_entrypoints import partial_solve_v2 as solve2
 
 code1 = "ಡƸɀИযΟԛཉÛƄΕɌॷതǐĨсఖ৶ΛѵƣਨਪɆສɓ྾྾ଢƂՀદӾಏॐӧѩôԉӚਊ৮ǧ႕ȖՔఆкഖണшĤȆఝΦҡүŻҹঌఱබဇмʒโང؏ĐƅઢხॳØ"
@@ -111,20 +111,21 @@ cfg7 = v2Config(
 code8 = "ಡƸɀИòѩඹངÕळĦҙड੮ǑŀϑÕƈĉɩྋ੯იઙ੪ई྾კևქऒŝɧʫഌɗËѪওক௴০ĠØ།"
 cfg8 = v2Config(
     allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
-    target_stats=SetMinimums(ap=13, mp=5, wp=-2, ra=2),
-    objectives=StatPriority(distance_mastery=Priority.prioritized, elements=ElementsEnum.earth | ElementsEnum.water | ElementsEnum.air),
+    target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=2),
+    stats_maxs=SetMaximums(wp=4),
+    objectives=StatPriority(
+        distance_mastery=Priority.prioritized, elements=ElementsEnum.earth | ElementsEnum.water | ElementsEnum.air
+    ),
     dry_run=False,
     ignore_existing_items=False,
 )
 
 
-codes = [code1, code2, code3, code4, code5, code6]
-configs = [cfg1, cfg2, cfg3, cfg4, cfg5, cfg6]
-codes = [code8] or codes  # noqa: SIM222
-configs = [cfg8] or configs  # noqa: SIM222
+all_codes = [code1, code2, code3, code4, code5, code6, code7, code8]
+all_configs = [cfg1, cfg2, cfg3, cfg4, cfg5, cfg6, cfg7, cfg8]
 
 
-def runner(loud: bool = True) -> None:
+def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
     if loud:
         os.environ["USE_TQDM"] = "1"
 
@@ -136,7 +137,9 @@ def runner(loud: bool = True) -> None:
     else:
         aprint = builtins.print
 
-    for idx, (code, config) in enumerate(zip(codes, configs), 1):
+    cc_iter = enumerate(codes_and_configs if codes_and_configs else zip(all_codes, all_configs), 1)
+
+    for idx, (code, config) in cc_iter:
         err_print("Trying situation", idx)
         start = time.perf_counter()
         sol = solve2(build_code=code, config=config)
@@ -164,6 +167,20 @@ def runner(loud: bool = True) -> None:
 
 if __name__ == "__main__":
     try:
-        runner(loud=True)
+        code = "ಡƸɀИòѩඹངÕळĦҙड੮ǑŀϑÕƈĉɩྋ੯იઙ੪ई྾კևქऒŝɧʫഌɗËѪওক௴০ĠØ།"
+        cfg = v2Config(
+            allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
+            target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=2),
+            stats_maxs=SetMaximums(wp=4),
+            objectives=StatPriority(
+                distance_mastery=Priority.prioritized, elements=ElementsEnum.earth | ElementsEnum.water | ElementsEnum.air
+            ),
+            dry_run=False,
+            ignore_existing_items=False,
+            forbidden_sources=[],  # can be any or none of ["arch", "horde", "pvp", "ultimate_boss"]
+            forbidden_items=[],  # the item ids
+        )
+
+        runner((code, cfg), loud=True)
     except KeyboardInterrupt:
         pass

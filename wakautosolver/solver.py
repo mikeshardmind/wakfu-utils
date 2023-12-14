@@ -210,6 +210,7 @@ def solve(
     FORBIDDEN_NAMES: list[str] = ns.forbid if (ns and ns.forbid) else []
 
     stat_mins = ns.stat_minimums if ns.stat_minimums else SetMinimums(ap=ns.ap, mp=ns.mp, wp=ns.wp, ra=ns.ra)
+    stat_maxs = ns.stat_maximums if ns.stat_maximums else SetMaximums()
     base_stats = ns.base_stats or Stats(
         ns.baseap,
         mp=ns.basemp,
@@ -948,7 +949,7 @@ def solve(
             generated_conditions = [get_item_conditions(item) for item in (*items, relic, epic) if item]
             mns, mxs = zip(*generated_conditions)
             mns = reduce(and_, filter(None, mns), stat_mins)
-            mxs = reduce(and_, filter(None, mxs), SetMaximums())
+            mxs = reduce(and_, filter(None, mxs), stat_maxs)
 
             if not mns <= statline <= mxs:
                 continue
@@ -957,10 +958,9 @@ def solve(
             crit_chance = max(min(statline.critical_hit + 3, 100), 0)  # engine crit rate vs stat
 
             score = sum(score_key(i) for i in (*items, relic, epic)) + BASE_STAT_SCORE
-            score = (
-                (score + (statline.critical_mastery if UNRAVEL_ACTIVE else 0)) * ((100 - crit_chance) / 100)
-                + (score + statline.critical_mastery) * (crit_chance / 80)  # 1.25 * .01, includes crit math
-            )
+            score = (score + (statline.critical_mastery if UNRAVEL_ACTIVE else 0)) * ((100 - crit_chance) / 100) + (
+                score + statline.critical_mastery
+            ) * (crit_chance / 80) * (100 + statline.fd) / 100
 
             worst_kept = min(i[0] for i in solve_BEST_LIST) if 0 < len(solve_BEST_LIST) < 3 else 0
 
