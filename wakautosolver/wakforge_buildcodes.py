@@ -127,6 +127,8 @@ class Buildv1(Struct, array_like=True):
     passive_4: int = -1
     passive_5: int = -1
     passive_6: int = -1
+    epic_sublimation_id: int = -1
+    relic_sublimation_id: int = -1
 
     @classmethod
     def from_code(cls, code: str) -> Buildv1:
