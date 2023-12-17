@@ -779,6 +779,17 @@ def solve(
             k = 2 if slot == "LEFT_HAND" else 1
             items.clear()
             items.extend(bck[: k + ns.search_depth])
+
+            # This can happen if people don't give the solver good infomration
+            # like omitting elements at low levels, while also not requesting
+            # a combination ap+mp that is max available
+            # Frankly, I don't want to support this kind of build. The solver is intended to
+            # give people things that are going to help them, and builds like this won't,
+            # but whatever. Doing this for now.
+            if all(missing_common_major(item) for item in items):
+                it = next(iter(i for i in bck if not missing_common_major(i)), None)
+                if it is not None:
+                    items.append(it)
             # wp items really suck
             needed_wp = stat_mins.wp - base_stats.wp - _af_stats.wp
             for it in items:
