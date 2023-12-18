@@ -309,7 +309,7 @@ def solve(
                     raise SolveError(msg)
                 forced_ring = (fr,)
 
-        forced_epics = [*(i for i in forced_items if i.is_epic), *forced_ring]
+        forced_epics = [*(i for i in forced_items if i.is_epic), *(i for i in forced_ring if i not in forced_items)]
         if len(forced_epics) > 1:
             msg = "Unable to force multiple epics into one set"
         if forced_epics:
