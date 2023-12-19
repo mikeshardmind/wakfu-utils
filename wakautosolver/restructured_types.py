@@ -61,6 +61,29 @@ class ElementsEnum(enum.IntFlag, boundary=enum.STRICT):
     air = 1 << 3
 
 
+ClassElements: dict[ClassesEnum, ElementsEnum] = {
+    ClassesEnum.EMPTY: ElementsEnum.empty,
+    ClassesEnum.Feca: ElementsEnum.earth | ElementsEnum.fire | ElementsEnum.water,
+    ClassesEnum.Osa: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Enu: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.water,
+    ClassesEnum.Sram: ElementsEnum.fire | ElementsEnum.water | ElementsEnum.air,
+    ClassesEnum.Xel: ElementsEnum.fire | ElementsEnum.water | ElementsEnum.air,
+    ClassesEnum.Eca: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.water,
+    ClassesEnum.Eni: ElementsEnum.fire | ElementsEnum.water | ElementsEnum.air,
+    ClassesEnum.Iop: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Cra: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Sadi: ElementsEnum.water | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Sac: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Panda: ElementsEnum.earth | ElementsEnum.fire | ElementsEnum.water,
+    ClassesEnum.Rogue: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Masq: ElementsEnum.fire | ElementsEnum.water | ElementsEnum.air,
+    ClassesEnum.Ougi: ElementsEnum.water | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Fog: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.water,
+    ClassesEnum.Elio: ElementsEnum.water | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Hupper: ElementsEnum.water | ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.air,
+}
+
+
 class Priority(enum.IntEnum):
     unvalued = 0
     prioritized = 1

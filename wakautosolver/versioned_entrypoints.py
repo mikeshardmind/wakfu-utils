@@ -17,7 +17,7 @@ from msgspec.structs import asdict
 
 from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
-from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassesEnum, Priority, StatPriority, Stats
+from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassElements, ClassesEnum, ElementsEnum, Priority, StatPriority, Stats
 from .restructured_types import SetMaximums as RealSetMaxs
 from .restructured_types import SetMinimums as RealSetMins
 from .solver import ImpossibleStatError, SolveError, solve, v1Config
@@ -354,16 +354,23 @@ def partial_solve_v2(
         return v2Result(None, None, found_item_ids, None)
 
     ecount = config.objectives.elements.bit_count()
+    remaining_elements = [e for e in ElementsEnum if e not in config.objectives.elements]
+    remaining_elements.sort(key=ClassElements[build.classenum].__contains__, reverse=True)
+
     for item in found_items:
-        if item.item_id not in item_ids:
-            try:
-                if getattr(item, f"_mastery_{ecount}_elements", 0):
-                    build.add_item(item, config.objectives.elements)
-                else:
-                    build.add_item(item)
-            except RuntimeError as exc:
-                msg = traceback.format_exception(exc)
-                return v2Result(None, "Unknown error, see debug info", debug_info=compressed_encode(msg))
+        num_random = item.num_random_mastery
+        elements = config.objectives.elements if num_random else ElementsEnum.empty
+        
+        for e in remaining_elements[: num_random - ecount]:
+            elements |= e
+        try:
+            if item.item_id in item_ids:
+                build.add_elements_to_item(item.item_id, elements)
+            else:
+                build.add_item(item, elements)
+        except RuntimeError as exc:
+            msg = traceback.format_exception(exc)
+            return v2Result(None, "Unknown error, see debug info", debug_info=compressed_encode(msg))
 
     debug_info = compressed_encode({"score": score})
 

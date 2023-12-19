@@ -277,6 +277,16 @@ class EquipableItem(Struct, frozen=True, array_like=True):
         return _item_to_stats(self)
 
     @property
+    def num_random_mastery(self) -> int:
+        if self.mastery_3_elements:
+            return 3
+        if self.mastery_2_elements:
+            return 2
+        if self.mastery_1_element:
+            return 1
+        return 0
+
+    @property
     def is_relic(self) -> bool:
         return self.item_rarity == 5
 

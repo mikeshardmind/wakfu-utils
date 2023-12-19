@@ -173,7 +173,7 @@ if __name__ == "__main__":
             target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=2),
             stats_maxs=SetMaximums(wp=4),
             objectives=StatPriority(
-                distance_mastery=Priority.prioritized, elements=ElementsEnum.earth | ElementsEnum.water | ElementsEnum.air
+                distance_mastery=Priority.prioritized, elements=ElementsEnum.earth | ElementsEnum.water
             ),
             dry_run=False,
             ignore_existing_items=False,
