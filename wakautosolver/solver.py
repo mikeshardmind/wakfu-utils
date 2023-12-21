@@ -183,7 +183,7 @@ def solve(
         if item is None:
             return 0
         base_score = score_key(item)
-        return base_score + ((item.critical_hit + base_stats.critical_hit + 11) / 80) * base_score
+        return base_score + ((item.critical_hit + base_stats.critical_hit) / 80) * base_score
 
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
         return any(i.unhandled() for i in get_item_conditions(item) if i)
@@ -776,7 +776,11 @@ def solve(
         canidate_re_pairs = canidate_re_pairs[: ns.hard_cap_depth]
         for slot, items in solve_CANIDATES.items():
             bck = items.copy()
-            k = 2 if slot == "LEFT_HAND" else 1
+            k = 1
+            if slot == "LEFT_HAND":
+                k = 2
+            elif slot == "PET":
+                k = 4
             items.clear()
             items.extend(bck[: k + ns.search_depth])
 
@@ -849,7 +853,6 @@ def solve(
         maybe_progress_bar = canidate_re_pairs
 
     solve_CANIDATES.pop("WEAPONS", None)
-
     re_len = len(canidate_re_pairs)
 
     for idx, (relic, epic) in enumerate(maybe_progress_bar, 1):
@@ -964,14 +967,26 @@ def solve(
 
             if not mns <= statline <= mxs:
                 continue
-            UNRAVEL_ACTIVE = ns.unraveling and statline.critical_hit >= 40
 
-            crit_chance = max(min(statline.critical_hit + 3, 100), 0)  # engine crit rate vs stat
+            critical_hit = statline.critical_hit + 3
+            UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
 
-            score = sum(score_key(i) for i in (*items, relic, epic)) + BASE_STAT_SCORE
-            score = (score + (statline.critical_mastery if UNRAVEL_ACTIVE else 0)) * ((100 - crit_chance) / 100) + (
-                score + statline.critical_mastery
-            ) * (crit_chance / 80) * (100 + statline.fd) / 100
+            crit_chance = max(min(critical_hit, 100), 0)  # engine crit rate vs stat
+
+            base_score = sum(score_key(i) for i in (*items, relic, epic)) + BASE_STAT_SCORE
+
+            non_crit_score = base_score
+            if UNRAVEL_ACTIVE:
+                base_score += statline.critical_mastery
+            non_crit_score *= (100 - crit_chance) / 100
+            non_crit_score *= (100 + statline.fd) / 100
+
+            crit_score = base_score + statline.critical_mastery
+            crit_score *= (crit_chance) / 100
+            crit_score *= (100 + statline.fd) / 100
+            crit_score *= 1.25
+
+            score = crit_score + non_crit_score
 
             worst_kept = min(i[0] for i in solve_BEST_LIST) if 0 < len(solve_BEST_LIST) < 3 else 0
 
@@ -983,6 +998,7 @@ def solve(
                 solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
                 solve_BEST_LIST = solve_BEST_LIST[:5]
                 solve_BEST_LIST.append(tup)
+                solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
 
     return solve_BEST_LIST
 

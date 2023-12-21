@@ -167,13 +167,12 @@ def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
 
 if __name__ == "__main__":
     try:
-        code = "ಡƸɀИòѩඹངÕळĦҙड੮ǑŀϑÕƈĉɩྋ੯იઙ੪ई྾კևქऒŝɧʫഌɗËѪওক௴০ĠØ།"
+        code = "ಡƸɉ৯ହѩГཪÛƎएŀडതǀÆŃÖÆǵʧѹຫȌઍ࿃ჳძЏΎțʈշɛɄǐਧΤපсēไȠവҋġѫయಙഭΩউୠĆƚಠƊຽӪʣĲష࿅ȶചƬΥՓთ၌എउØ"
         cfg = v2Config(
             allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
-            target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=2),
-            stats_maxs=SetMaximums(wp=4),
+            target_stats=SetMinimums(ap=12, mp=6, wp=6, ra=1),
             objectives=StatPriority(
-                distance_mastery=Priority.prioritized, elements=ElementsEnum.earth | ElementsEnum.water
+                elements=ElementsEnum.earth | ElementsEnum.water | ElementsEnum.fire
             ),
             dry_run=False,
             ignore_existing_items=False,

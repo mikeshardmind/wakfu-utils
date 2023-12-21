@@ -285,8 +285,6 @@ def partial_solve_v2(
     if config.ignore_existing_items:
         build.clear_items()
     stats = build.get_allocated_stats().to_stat_values(build.classenum)
-    if build.classenum is ClassesEnum.Ecaflip:
-        stats = stats + Stats(critical_hit=20)
     item_ids = [i.item_id for i in build.get_items() if i.item_id > 0]
     ap = target_stats.ap - stats.ap
     mp = target_stats.mp - stats.mp
@@ -360,7 +358,7 @@ def partial_solve_v2(
     for item in found_items:
         num_random = item.num_random_mastery
         elements = config.objectives.elements if num_random else ElementsEnum.empty
-        
+
         for e in remaining_elements[: num_random - ecount]:
             elements |= e
         try:
