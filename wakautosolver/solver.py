@@ -475,7 +475,6 @@ def solve(
 
     for stat, data_dict in f_avail.items():
         needed: int = attrgetter(stat)(stat_mins - base_stats - _af_stats)
-        orig_needed = needed
 
         if (not forced_epics) and 7 in allowed_rarities:
             if stat in ("mp", "ap"):
@@ -517,7 +516,7 @@ def solve(
             needed -= s
 
         if needed > 0:
-            msg = f"Impossible to get {orig_needed} {stat}"
+            msg = f"Impossible to get {getattr(stat_mins, stat, '??')} {stat} with the specified conditions"
             raise ImpossibleStatError(msg)
 
     def initial_filter(item: EquipableItem) -> bool:
