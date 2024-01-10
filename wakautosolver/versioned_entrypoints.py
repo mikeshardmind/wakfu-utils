@@ -304,6 +304,7 @@ def partial_solve_v2(
 
     cfg = v1Config(
         lv=build.level,
+        wakfu_class=build.classenum,
         ap=ap,
         mp=mp,
         wp=wp,

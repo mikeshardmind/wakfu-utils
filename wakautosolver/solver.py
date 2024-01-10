@@ -24,7 +24,7 @@ from msgspec.structs import astuple
 
 from .item_conditions import get_item_conditions
 from .object_parsing import EquipableItem, get_all_items, set_locale
-from .restructured_types import ElementsEnum, SetMaximums, SetMinimums, Stats, apply_w2h, v1Config
+from .restructured_types import ClassesEnum, ElementsEnum, SetMaximums, SetMinimums, Stats, apply_w2h, v1Config
 from .utils import only_once
 from .wakforge_buildcodes import build_code_from_items
 
@@ -120,7 +120,9 @@ def solve(
         if not item:
             return score
 
-        score += item.elemental_mastery
+        elemental_modifier = 1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1
+
+        score += item.elemental_mastery * elemental_modifier
         if ns.melee:
             score += item.melee_mastery
         if ns.dist:
@@ -155,11 +157,11 @@ def solve(
             score += item.healing_mastery
 
         if ns.num_mastery == 1:
-            score += item.mastery_1_element
+            score += item.mastery_1_element * elemental_modifier
         if ns.num_mastery <= 2:
-            score += item.mastery_2_elements
+            score += item.mastery_2_elements * elemental_modifier
         if ns.num_mastery <= 3:
-            score += item.mastery_3_elements
+            score += item.mastery_3_elements * elemental_modifier
 
         # This isn't perfect, Doziak epps are weird.
         if (n := ns.elements.bit_count()) and not isinstance(item, Stats):
@@ -172,7 +174,7 @@ def solve(
                 element_vals += item.water_mastery
             if ElementsEnum.fire in ns.elements:
                 element_vals += item.fire_mastery
-            score += element_vals / n
+            score += element_vals / n * elemental_modifier
 
         return score
 
@@ -854,6 +856,16 @@ def solve(
     solve_CANIDATES.pop("WEAPONS", None)
     re_len = len(canidate_re_pairs)
 
+    # Everything in this section can be improved.
+    # Major things to consider:
+    #   - do an initial pass with random sampling, using the results to further prune options
+    #        - downside: nondeterministic output
+    #        - upside: initial prior attempt resulted in speed increases of about 2x
+    #        verdict: revisit this after other speed improvements are explored if speed is still an issue
+    #   - Start with solving best non-relic epics and discard any relic/epics that can't beat that immediately.
+    #   - Restructure data to allow this to be a vectorizable problem
+    #      - Challenges exist here around class specific behavior
+
     for idx, (relic, epic) in enumerate(maybe_progress_bar, 1):
         if progress_callback:
             progress_callback(idx, re_len)
@@ -969,6 +981,10 @@ def solve(
                 continue
 
             critical_hit = statline.critical_hit + 3
+
+            if ns.wakfu_class == ClassesEnum.Ecaflip and critical_hit > 100:
+                statline += Stats(fd=0.5 * critical_hit - 100)
+
             UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
 
             crit_chance = max(min(critical_hit, 100), 0)  # engine crit rate vs stat
@@ -977,7 +993,7 @@ def solve(
 
             non_crit_score = base_score
             if UNRAVEL_ACTIVE:
-                base_score += statline.critical_mastery
+                base_score += statline.critical_mastery * (1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1)
             non_crit_score *= (100 - crit_chance) / 100
             non_crit_score *= (100 + statline.fd) / 100
 

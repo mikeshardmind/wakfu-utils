@@ -122,7 +122,7 @@ class Stats(Struct, frozen=True, gc=True):
     melee_mastery: int = 0
     control: int = 0
     block: int = 0
-    fd: int = 0
+    fd: float = 0
     heals_performed: int = 0
     lock: int = 0
     dodge: int = 0
@@ -432,6 +432,7 @@ class v1Config(Struct, kw_only=True):
     mp: int = 2
     wp: int = 0
     ra: int = 0
+    wakfu_class: ClassesEnum = ClassesEnum.EMPTY
     base_stats: Stats | None = None
     stat_minimums: SetMinimums | None = None
     stat_maximums: SetMaximums | None = None
