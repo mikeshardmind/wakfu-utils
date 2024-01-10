@@ -189,8 +189,8 @@ class Buildv1(Struct, array_like=True):
 
     def to_code(self) -> str:
         packed = msgpack.encode(self)
-        compressed = zlib.compress(packed, level=9, wbits=-15)
-        return b2048.encode(compressed)
+        compressor = zlib.compressobj(level=9, wbits=-15)
+        return b2048.encode(compressor.compress(packed) + compressor.flush())
 
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
@@ -198,9 +198,9 @@ def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
     build = Buildv1(level=level)
     for item in items:
         build.add_item(item)
-    encoded = msgpack.encode(build)
-    compressed = zlib.compress(encoded, level=9, wbits=-15)
-    return b2048.encode(compressed)
+    packed = msgpack.encode(build)
+    compressor = zlib.compressobj(level=9, wbits=-15)
+    return b2048.encode(compressor.compress(packed) + compressor.flush())
 
 
 def build_from_code(code: str) -> Buildv1:

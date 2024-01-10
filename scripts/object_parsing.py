@@ -15,9 +15,10 @@ import logging
 import pathlib
 from collections.abc import Callable
 from functools import cached_property
-from typing import Any, Literal, Self, TypedDict, TypeVar
+from typing import Any, Literal, TypedDict, TypeVar
 
 import msgspec
+from typing_extensions import Self
 
 
 class PosData(TypedDict):
@@ -569,7 +570,7 @@ class EquipableItem:
         return [obj for element in decompressed if (obj := cls.from_json_data(element))]
 
     @classmethod
-    def from_json_data(cls, data: Any) -> EquipableItem | None:  # noqa: ANN401
+    def from_json_data(cls: type[Self], data: Any) -> Self | None:  # noqa: ANN401
         base_details = data["definition"]["item"]
         base_params = base_details["baseParameters"]
         item_type_id = base_params["itemTypeId"]

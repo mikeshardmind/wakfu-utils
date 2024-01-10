@@ -122,7 +122,9 @@ class v1Build(Struct, array_like=True):
 
 
 def encode_build(build: v1Build) -> str:
-    return base2048.encode(zlib.compress(msgpack.encode(build), level=9, wbits=-15))
+    compressor = zlib.compressobj(level=9, wbits=-15)
+    packed = msgpack.encode(build)
+    return base2048.encode(compressor.compress(packed) + compressor.flush())
 
 
 def decode_build(build_str: str) -> v1Build:

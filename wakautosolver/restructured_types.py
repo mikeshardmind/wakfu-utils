@@ -53,7 +53,7 @@ class ClassesEnum(enum.IntEnum):
     Huppermage = Hupper
 
 
-class ElementsEnum(enum.IntFlag, boundary=enum.STRICT):
+class ElementsEnum(enum.IntFlag):
     empty = 0
     fire = 1 << 0
     earth = 1 << 1

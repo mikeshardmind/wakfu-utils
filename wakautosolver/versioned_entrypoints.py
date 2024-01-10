@@ -17,7 +17,7 @@ from msgspec.structs import asdict
 
 from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
-from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassElements, ClassesEnum, ElementsEnum, Priority, StatPriority, Stats
+from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassElements, ElementsEnum, Priority, StatPriority, Stats
 from .restructured_types import SetMaximums as RealSetMaxs
 from .restructured_types import SetMinimums as RealSetMins
 from .solver import ImpossibleStatError, SolveError, solve, v1Config
@@ -248,7 +248,9 @@ class v2Result(Struct):
 
 
 def compressed_encode(obj: object) -> str:
-    return b2048encode(zlib.compress(msgpack.encode(obj), level=9, wbits=-15))
+    compressor = zlib.compressobj(level=9, wbits=-15)
+    packed = msgpack.encode(obj)
+    return b2048encode(compressor.compress(packed) + compressor.flush())
 
 
 def partial_solve_v2(

@@ -946,9 +946,10 @@ def solve(
             log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
             continue
 
-        gen_func = tqdm_product if use_tqdm and tqdm_product else itertools.product
+        filtered = filter(None, cans)
+        gen = tqdm_product(*filtered) if use_tqdm and tqdm_product else itertools.product(*filtered)
 
-        for raw_items in gen_func(*filter(None, cans)):
+        for raw_items in gen:
             items = [*tuple_expander(raw_items), *forced_items]
 
             statline: Stats = reduce(add, (i.as_stats() for i in (relic, epic, *items) if i), base_stats)

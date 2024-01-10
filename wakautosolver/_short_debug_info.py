@@ -28,7 +28,10 @@ class Wakforge_v2ShortError(Struct, array_like=True):
     message: str = ""
 
     def pack(self) -> str:
-        return b2048.encode(zlib.compress(msgpack.encode(self), level=9, wbits=-15))
+        compressor = zlib.compressobj(level=9, wbits=-15)
+        packed = msgpack.encode(self)
+
+        return b2048.encode(compressor.compress(packed) + compressor.flush())
 
     @classmethod
     def from_packed(cls: type[Wakforge_v2ShortError], s: str, /) -> Wakforge_v2ShortError:
