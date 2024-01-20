@@ -12,6 +12,7 @@ import enum
 import zlib
 
 from msgspec import Struct, field, msgpack
+from msgspec.structs import astuple
 
 from . import b2048 as base2048
 from .restructured_types import ClassesEnum as ClassName
@@ -69,6 +70,13 @@ class Stats(Struct, array_like=True):
     control: bool = False
     di: bool = False
     major_res: bool = False
+
+    def is_fully_allocated(self, level: int, /) -> bool:
+        points = level - 1
+        for lv in (25, 75, 125, 175):
+            if level >= lv:
+                points += 1
+        return sum(astuple(self)) == points
 
     def to_stat_values(self, cl: ClassName | None) -> _Stats:
         e_mast = self.elemental_mastery * 5

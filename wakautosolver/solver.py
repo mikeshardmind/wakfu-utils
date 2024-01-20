@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Final, Protocol, TypeVar
 
 from msgspec.structs import astuple
 
+from ._build_codes import Stats as StatSpread
 from .item_conditions import get_item_conditions
 from .object_parsing import EquipableItem, get_all_items, set_locale
 from .restructured_types import ClassesEnum, ElementsEnum, SetMaximums, SetMinimums, Stats, apply_w2h, v1Config
@@ -96,6 +97,7 @@ def solve(
     ns: v1Config,
     use_tqdm: bool = False,
     progress_callback: Callable[[int, int], None] | None = None,
+    point_spread: StatSpread | None = None,
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
@@ -267,7 +269,7 @@ def solve(
         return not (item.is_epic or item.is_relic)
 
     forced_slots: collections.Counter[str] = collections.Counter()
-    original_forced_counts: collections.Counter[str] | None = None
+    original_forced_counts: collections.Counter[str] = collections.Counter()
     if ns and (ns.idforce or ns.nameforce):
         _fids = ns.idforce or ()
         _fns = ns.nameforce or ()
@@ -390,18 +392,38 @@ def solve(
     # TODO: dynamic from sql to not need re-checking/expanding each time
     # TODO: Both of these are technically still possible to be impossible if forced slots preclude
     # TODO: some of the below also impossible based on forbidden items...
+
+    eternal_findable = False
+
     if (not forced_epics) and 7 in allowed_rarities:
         findableAP_MP += 1
     if (not forced_relics) and ns.lv >= 50 and 5 in allowed_rarities:
         findableAP_MP += 1
+        if ns.lv >= 200 and "FIRST_WEAPON" not in _af_slots and 26593 not in ns.idforbid:
+            findableAP_MP += 1
+            eternal_findable = True
+
     if ns.lv >= 230:
         if "HEAD" not in _af_slots:  # guffet helm
             findableAP_MP += 1
         if "NECK" not in _af_slots:  # lyfamulet
             findableAP_MP += 1
 
-    if findableAP_MP < FINDABLE_AP_MP_NEEDED:
+    if point_spread and not point_spread.is_fully_allocated(ns.lv):
+        msg = "Literally impossible AP MP reqs (Note: Stats were not fully allocated)"
+    else:
         msg = "Literally impossible AP MP reqs"
+
+    if findableAP_MP == FINDABLE_AP_MP_NEEDED and eternal_findable:
+        try:
+            eternal_sword = next(i for i in ALL_OBJS if i.item_id == 26593)
+        except StopIteration:
+            raise ImpossibleStatError(msg) from None
+        else:
+            forced_relics.append(eternal_sword)
+            original_forced_counts["FIRST_WEAPON"] += 1
+
+    if findableAP_MP < FINDABLE_AP_MP_NEEDED:
         raise ImpossibleStatError(msg)
 
     # See interesting_queries.sql, TODO: embed sql data and handle this better
@@ -519,6 +541,8 @@ def solve(
 
         if needed > 0:
             msg = f"Impossible to get {getattr(stat_mins, stat, '??')} {stat} with the specified conditions"
+            if point_spread and not point_spread.is_fully_allocated(ns.lv):
+                msg += " (Note: Stats were not fully allocated)"
             raise ImpossibleStatError(msg)
 
     def initial_filter(item: EquipableItem) -> bool:

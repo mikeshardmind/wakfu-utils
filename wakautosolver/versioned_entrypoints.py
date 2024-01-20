@@ -286,7 +286,8 @@ def partial_solve_v2(
     build = WFBuild.from_code(build_code)
     if config.ignore_existing_items:
         build.clear_items()
-    stats = build.get_allocated_stats().to_stat_values(build.classenum)
+    point_spread = build.get_allocated_stats()
+    stats = point_spread.to_stat_values(build.classenum)
     item_ids = [i.item_id for i in build.get_items() if i.item_id > 0]
     ap = target_stats.ap - stats.ap
     mp = target_stats.mp - stats.mp
@@ -337,7 +338,7 @@ def partial_solve_v2(
     )
 
     try:
-        result = solve(cfg, progress_callback=progress_callback)
+        result = solve(cfg, progress_callback=progress_callback, point_spread=point_spread)
         best = result[0]
     except ImpossibleStatError as exc:
         return v2Result(None, exc.args[0], debug_info=None)
