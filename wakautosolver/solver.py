@@ -1007,7 +1007,7 @@ def solve(
             critical_hit = statline.critical_hit + 3
 
             if ns.wakfu_class == ClassesEnum.Ecaflip and critical_hit > 100:
-                statline += Stats(fd=0.5 * critical_hit - 100)
+                statline += Stats(fd=0.5 * (critical_hit - 100))
 
             UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
 
