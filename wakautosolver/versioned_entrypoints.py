@@ -323,6 +323,7 @@ def partial_solve_v2(
         num_mastery=config.objectives.elements.bit_count(),
         forbid_rarity=forbidden_rarities,
         idforce=item_ids,
+        idforbid=[i for i in config.forbidden_items if i],
         dist=config.objectives.distance_mastery == Priority.prioritized,
         melee=config.objectives.melee_mastery == Priority.prioritized,
         heal=config.objectives.heal_mastery == Priority.prioritized,
