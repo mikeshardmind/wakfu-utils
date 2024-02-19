@@ -104,7 +104,7 @@ class StatPriority(Struct, frozen=True, array_like=True):
         return all(x < 2 for x in (self.distance_mastery, self.melee_mastery, self.heal_mastery))
 
 
-class Stats(Struct, frozen=True, gc=True):
+class Stats(Struct, frozen=True, gc=False):
     ap: int = 0
     mp: int = 0
     wp: int = 0
@@ -127,16 +127,6 @@ class Stats(Struct, frozen=True, gc=True):
     lock: int = 0
     dodge: int = 0
     armor_given: int = 0
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Stats):
-            return NotImplemented
-        return astuple(self) == astuple(other)
-
-    def __ne__(self, other: object) -> bool:
-        if not isinstance(other, Stats):
-            return NotImplemented
-        return astuple(self) != astuple(other)
 
     def __sub__(self, other: object) -> Stats:
         if not isinstance(other, Stats):

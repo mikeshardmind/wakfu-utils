@@ -890,6 +890,9 @@ def solve(
     #   - Restructure data to allow this to be a vectorizable problem
     #      - Challenges exist here around class specific behavior
 
+    l_add = lru_cache(add)
+    l_and = lru_cache(and_)
+
     for idx, (relic, epic) in enumerate(maybe_progress_bar, 1):
         if progress_callback:
             progress_callback(idx, re_len)
@@ -988,7 +991,7 @@ def solve(
         for raw_items in gen:
             items = [*tuple_expander(raw_items), *forced_items]
 
-            statline: Stats = reduce(add, (i.as_stats() for i in (relic, epic, *items) if i), base_stats)
+            statline: Stats = reduce(l_add, (i.as_stats() for i in (relic, epic, *items) if i), base_stats)
             if ns.twoh and any(i.disables_second_weapon for i in items):
                 statline = apply_w2h(statline)
 
@@ -998,8 +1001,8 @@ def solve(
 
             generated_conditions = [get_item_conditions(item) for item in (*items, relic, epic) if item]
             mns, mxs = zip(*generated_conditions)
-            mns = reduce(and_, filter(None, mns), stat_mins)
-            mxs = reduce(and_, filter(None, mxs), stat_maxs)
+            mns = reduce(l_and, filter(None, mns), stat_mins)
+            mxs = reduce(l_and, filter(None, mxs), stat_maxs)
 
             if not mns <= statline <= mxs:
                 continue
@@ -1039,6 +1042,9 @@ def solve(
                 solve_BEST_LIST = solve_BEST_LIST[:5]
                 solve_BEST_LIST.append(tup)
                 solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
+
+        if not ns.exhaustive and idx > max(re_len / 4, 10) and solve_BEST_LIST:
+            break
 
     return solve_BEST_LIST
 

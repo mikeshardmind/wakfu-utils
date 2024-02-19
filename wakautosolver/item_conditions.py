@@ -8,7 +8,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 from collections.abc import Sequence
-from functools import reduce
+from functools import lru_cache, reduce
 from operator import and_
 
 from . import restructured_types as rst
@@ -103,6 +103,7 @@ for item_id in (26994, 26995, 26996, 26300, 26319):
     conditions[item_id] = wp_gt_eq_8
 
 
+@lru_cache
 def get_item_conditions(item: EquipableItem) -> tuple[rst.SetMinimums | None, rst.SetMaximums | None]:
     item_conds = conditions.get(item.item_id, [])
     set_mins: list[rst.SetMinimums] = []
