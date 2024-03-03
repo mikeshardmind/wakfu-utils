@@ -277,7 +277,7 @@ def solve(
         forced_items = [i for i in ALL_OBJS if i.item_id in _fids]
         # Handle names a little differently to avoid an issue with duplicate names
         forced_by_name = [i for i in ALL_OBJS if i.name in _fns]
-        forced_by_name.sort(key=score_key, reverse=True)
+        forced_by_name.sort(key=lambda i: (score_key(i), i.item_rarity), reverse=True)
         forced_by_name = ordered_keep_by_key(forced_by_name, key=attrgetter("name", "item_slot"), k=1)
         forced_items.extend(forced_by_name)
 
@@ -637,8 +637,10 @@ def solve(
             continue
         slot = items[0].item_slot
 
+        rarity_handler = attrgetter("item_rarity", "name", "is_souvenir", "is_relic", "is_epic")
+        items.sort(key=rarity_handler, reverse=True)
+        inplace_ordered_keep_by_key(items, rarity_handler)
         items.sort(key=crit_score_key, reverse=True)
-        inplace_ordered_keep_by_key(items, attrgetter("name", "is_souvenir"))
 
         k = 2 if slot == "LEFT_HAND" else 1
 
