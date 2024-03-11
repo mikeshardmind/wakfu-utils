@@ -7,6 +7,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 import bz2
+from pathlib import Path
 
 import apsw
 from msgspec import Struct, msgpack
@@ -75,7 +76,10 @@ class SourceData(Struct, frozen=True, array_like=True):
 
 
 if __name__ == "__main__":
-    conn = apsw.Connection("items.db")
+
+    base_path = Path(__file__).parent.with_name("wakautosolver") / "data"
+    db_str = str(base_path / "items.db")
+    conn = apsw.Connection(db_str)
     cursor = conn.cursor()
     rows = cursor.execute(
         """
@@ -87,7 +91,7 @@ if __name__ == "__main__":
     items = [Item(*row) for row in rows]
     data = msgpack.encode(items)
     bz2_comp = bz2.compress(data, compresslevel=9)
-    with open("stat_only_bundle.bz2", mode="wb") as fp:
+    with (base_path / "stat_only_bundle.bz2").open(mode="wb") as fp:
         fp.write(bz2_comp)
 
     rows = cursor.execute(
@@ -103,7 +107,7 @@ if __name__ == "__main__":
 
     data = msgpack.encode(loc_items)
     bz2_comp = bz2.compress(data, compresslevel=9)
-    with open("locale_bundle.bz2", mode="wb") as fp:
+    with (base_path / "locale_bundle.bz2").open(mode="wb") as fp:
         fp.write(bz2_comp)
 
     data = [
@@ -123,5 +127,5 @@ if __name__ == "__main__":
     datastruct = SourceData(*data)
     data = msgpack.encode(datastruct)
     bz2_comp = bz2.compress(data, compresslevel=9)
-    with open("source_info.bz2", mode="wb") as fp:
+    with (base_path / "source_info.bz2").open(mode="wb") as fp:
         fp.write(bz2_comp)

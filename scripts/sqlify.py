@@ -10,6 +10,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 
 import json
 import re
+from pathlib import Path
 
 import apsw
 import object_parsing
@@ -182,10 +183,16 @@ if __name__ == "__main__":
     items = object_parsing.EquipableItem.from_bz2_bundled()
     all_item_ids = {i._item_id for i in items}  # pyright: ignore[reportPrivateUsage]
 
-    conn = apsw.Connection("items.db")
+    base_path = Path(__file__).parent.with_name("wakautosolver") / "data"
+    base_path.mkdir(parents=True, exist_ok=True)
+    db_path = (base_path / "items.db").resolve()
+    db_path.unlink(missing_ok=True)
+    conn = apsw.Connection(str(db_path))
     conn.execute(SCHEMA)
 
     data: list[dict[str, int]] = []
+
+    json_data_path = Path(__file__).with_name("json_data")
 
     with conn:
         for item in items:
@@ -206,10 +213,10 @@ if __name__ == "__main__":
             titles,
         )
 
-        with open("json_data/blueprints.json", mode="rb") as bp:
+        with (json_data_path / "blueprints.json").open(mode="rb") as bp:
             bpdata = json.load(bp)
 
-        with open("json_data/recipeResults.json", mode="rb") as results_are_why_ankama:
+        with (json_data_path / "recipeResults.json").open(mode="rb") as results_are_why_ankama:
             recresults = {i["recipeId"]: i["productedItemId"] for i in json.load(results_are_why_ankama)}
 
         blueprints: set[int] = set()
@@ -232,16 +239,18 @@ if __name__ == "__main__":
 
         item_id_regex = re.compile(r"^(\d{1,6})\w?.*$", re.DOTALL)
 
+        com_path = Path(__file__).parent.parent / "community_sourced_data"
+
         for path, table_name in (
-            ("../community_sourced_data/archdrops.txt", "archmonster_items"),
-            ("../community_sourced_data/hordes.txt", "horde_items"),
-            ("../community_sourced_data/ah_finite_exclusions.txt", "ah_finite_exclusions"),
-            ("../community_sourced_data/pvp.txt", "pvp_items"),
-            ("../community_sourced_data/ubs.txt", "ub_items"),
-            ("../community_sourced_data/unobtainable.txt", "unobtainable_items"),
+            ("archdrops.txt", "archmonster_items"),
+            ("hordes.txt", "horde_items"),
+            ("ah_finite_exclusions.txt", "ah_finite_exclusions"),
+            ("pvp.txt", "pvp_items"),
+            ("ubs.txt", "ub_items"),
+            ("unobtainable.txt", "unobtainable_items"),
         ):
             item_ids: list[int] = []
-            with open(path, encoding="utf-8") as ub_data:
+            with (com_path / path).open(encoding="utf-8") as ub_data:
                 lines = [stripped for line in ub_data.readlines() if (stripped := line.strip())]
                 for line in lines:
                     if m := item_id_regex.match(line):
@@ -252,7 +261,7 @@ if __name__ == "__main__":
                 [(i,) for i in item_ids],
             )
 
-        with open("json_data/recipes.json", mode="rb") as rcp:
+        with (json_data_path / "recipes.json").open(mode="rb") as rcp:
             recipes = json.load(rcp)
 
         recipes_limited = {

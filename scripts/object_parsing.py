@@ -15,10 +15,9 @@ import logging
 import pathlib
 from collections.abc import Callable
 from functools import cached_property
-from typing import Any, Literal, TypedDict, TypeVar
+from typing import Any, Literal, Self, TypedDict, TypeVar
 
 import msgspec
-from typing_extensions import Self
 
 
 class PosData(TypedDict):

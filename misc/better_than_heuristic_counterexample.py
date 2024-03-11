@@ -15,7 +15,6 @@ from typing import Literal
 
 import apsw
 from numpy import add
-from typing_extensions import LiteralString
 
 from wakautosolver.restructured_types import DUMMY_MIN, SetMinimums, Stats
 from wakautosolver.wakforge_buildcodes import v1BuildSlotsOrder
@@ -32,11 +31,11 @@ WHERE item_lv >= :min_lv
 """
 
 
-def format_query(stats: list[LiteralString], rarities: list[int]) -> LiteralString:
+def format_query(stats: list[str], rarities: list[int]) -> str:
     """Currently expected to only ever be [ap, mp, wp, range]"""
     cols = ", ".join(f"[{column}]" for column in stats)
     safe_rarities = ("1", "2", "3", "4", "5", "6", "7")
-    raritiy_str: LiteralString = ", ".join(r for r in safe_rarities if int(r) in rarities)
+    raritiy_str: str = ", ".join(r for r in safe_rarities if int(r) in rarities)
     return FORMATTABLE_QUERY.format(columns=cols, rarities=raritiy_str)
 
 
@@ -47,9 +46,9 @@ def stat_wheeling(
     if not available_slots:
         return ret
 
-    allowed: list[LiteralString] = ["ap", "mp", "wp", "ra"]
+    allowed: list[str] = ["ap", "mp", "wp", "ra"]
 
-    cols: list[LiteralString] = [s for s in allowed if getattr(stat_mins, s, DUMMY_MIN) > DUMMY_MIN]
+    cols: list[str] = [s for s in allowed if getattr(stat_mins, s, DUMMY_MIN) > DUMMY_MIN]
 
     conn = apsw.Connection(str(path), flags=apsw.SQLITE_OPEN_READONLY)
 

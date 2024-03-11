@@ -8,6 +8,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 from __future__ import annotations
 
 import bz2
+from pathlib import Path
 
 import msgspec
 
@@ -16,7 +17,8 @@ Exists just to generate a smaller file intended for use in minimal distributions
 """
 
 if __name__ == "__main__":
-    with open("json_data/items.json", mode="rb") as fp:
+    base_path = Path(__file__).parent
+    with (base_path / "json_data" / "items.json").open(mode="rb") as fp:
         data = msgspec.json.decode(fp.read())
 
     # Fully math based tools don't need the flavor text
@@ -27,5 +29,5 @@ if __name__ == "__main__":
     # for this data set, bz2 using highest compression level (which is default)
     # outperforms lzma and gzip,
     # both with defaults and with attempts at adaptive tuning.
-    with open("item_data.bz2", mode="wb") as fp:
+    with (base_path / "item_data.bz2").open(mode="wb") as fp:
         fp.write(compressed_bz2)

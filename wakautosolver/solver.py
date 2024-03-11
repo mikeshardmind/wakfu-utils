@@ -140,7 +140,7 @@ def solve(
                 else:
                     mul = 0.0
 
-                score += item.berserk_mastery * mul
+                score -= item.berserk_mastery * mul
 
         if ns.rear:
             score += item.rear_mastery
@@ -153,7 +153,7 @@ def solve(
                 else:
                     mul = 0.0
 
-                score += item.rear_mastery * mul
+                score -= item.rear_mastery * mul
 
         if ns.heal:
             score += item.healing_mastery
@@ -639,7 +639,8 @@ def solve(
 
         rarity_handler = attrgetter("item_rarity", "name", "is_souvenir", "is_relic", "is_epic")
         items.sort(key=rarity_handler, reverse=True)
-        inplace_ordered_keep_by_key(items, rarity_handler)
+        uniq_handler = attrgetter("name", "is_souvenir", "is_relic", "is_epic")
+        inplace_ordered_keep_by_key(items, uniq_handler)
         items.sort(key=crit_score_key, reverse=True)
 
         k = 2 if slot == "LEFT_HAND" else 1
@@ -708,9 +709,9 @@ def solve(
             *itertools.product(solve_ONEH, (solve_DAGGERS + solve_SHIELDS)),
         )
 
-    def tuple_expander(seq: Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]) -> Iterator[EquipableItem]:
+    def tuple_expander(seq: Iterable[Iterable[EquipableItem] | EquipableItem]) -> Iterator[EquipableItem]:
         for item in seq:
-            if isinstance(item, tuple):
+            if isinstance(item, Iterable):
                 yield from item
             else:
                 yield item

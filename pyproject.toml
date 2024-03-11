@@ -1,7 +1,7 @@
 [tool.pyright]
 include = ["wakautosolver", "scripts"]
 typeCheckingMode = "strict"
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 
 [tool.ruff]
 
@@ -21,6 +21,7 @@ extend-ignore = [
     "C90",  # mccabe complexity memes
     "ANN101", # missing "Self" annotation, self is implicit
     "ANN102", # Same, but for cls
+    "ANN201", # return types
     "ANN204",  # special method return types
     "PLR0913", # number of function arguments
     "UP007", # "Use | For Union" doesn't account for typevar tuple unpacking.
@@ -45,14 +46,13 @@ extend-ignore = [
 [project]
 name="wakautosolver"
 license = "MPL-2.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Michael Hall", email = "michael@michaelhall.tech" }]
 readme = "readme.md"
 dynamic = ["version"]
 dependencies = [
     "msgspec>=0.18.4",
     "tqdm>=4.66.1",
-    "typing_extensions>=4.8.0",
 ]
 
 [project.urls]

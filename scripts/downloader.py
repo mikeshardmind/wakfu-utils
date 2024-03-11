@@ -13,7 +13,6 @@ from typing import Any, Optional
 
 import aiohttp
 
-_DEFAULT_VERSION = "1.82.1.19"
 _FTYPES = (
     "items",
     "actions",
@@ -30,7 +29,7 @@ _FTYPES = (
 
 
 #: Available for checking if version is known to work with object_parsing code
-VERSIONS_TESTED = ("1.81.1.13", "1.81.1.15")
+VERSIONS_TESTED = ("1.81.1.13", "1.81.1.15", "1.83.1.21", "1.83.1.23")
 
 
 async def _grab_file(
@@ -49,14 +48,18 @@ async def networking(specific_files: Optional[list[str]] = None) -> None:
     file_types = _FTYPES if not specific_files else tuple(f for f in _FTYPES if f in specific_files)
 
     async with aiohttp.ClientSession() as session:
-        WAKFU_VERSION = os.environ.get("WAKFU_VERSION") or _DEFAULT_VERSION
+        ver = os.environ.get("WAKFU_VERSION") or None
+
+        if not ver:
+            async with session.get("https://wakfu.cdn.ankama.com/gamedata/config.json") as r:
+                data = await r.json()
+                ver = data["version"]
 
         results: dict[str, Any] = {}
-        coros = {_grab_file(session, results, WAKFU_VERSION, file_type) for file_type in file_types}
+        coros = {_grab_file(session, results, ver, file_type) for file_type in file_types}
         await asyncio.gather(*coros)
 
-    base_path_env = os.environ.get("WRITE_PATH")
-    base_path = pathlib.Path(base_path_env) if base_path_env else pathlib.Path.cwd() / "json_data"
+    base_path = pathlib.Path(__file__).with_name("json_data")
     base_path.mkdir(parents=True, exist_ok=True)
 
     for name, data in results.items():
@@ -65,5 +68,8 @@ async def networking(specific_files: Optional[list[str]] = None) -> None:
             fp.write(data)
 
 
+def main():
+    asyncio.run(networking())
+
 if __name__ == "__main__":
-    results = asyncio.run(networking())
+    main()
