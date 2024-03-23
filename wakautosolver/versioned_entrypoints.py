@@ -15,6 +15,8 @@ from typing import Literal
 from msgspec import Struct, field, msgpack
 from msgspec.structs import asdict
 
+from . import __version__
+from ._short_debug_info import Wakforge_v2ShortError, v2BuildConfig
 from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
 from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassElements, ElementsEnum, Priority, StatPriority, Stats
@@ -22,8 +24,6 @@ from .restructured_types import SetMaximums as RealSetMaxs
 from .restructured_types import SetMinimums as RealSetMins
 from .solver import ImpossibleStatError, SolveError, solve, v1Config
 from .wakforge_buildcodes import Buildv1 as WFBuild
-from ._short_debug_info import Wakforge_v2ShortError, v2BuildConfig
-from . import __version__
 
 ClassNames = Literal[
     "Feca",

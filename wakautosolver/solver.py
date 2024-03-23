@@ -795,7 +795,30 @@ def solve(
         return unknown, v, s
 
     pairs: list[tuple[EquipableItem | None, EquipableItem | None]]
-    pairs = [*itertools.product(relics or [None], epics or [None]), *extra_pairs]
+
+    def valid(item_pair: tuple[EquipableItem | None, EquipableItem | None]) -> bool:
+        relic, epic = item_pair
+        if relic and epic and relic.item_slot == epic.item_slot:
+            if relic.item_slot != "LEFT_HAND":
+                return False
+            k = 0
+            if relic not in forced_relics:
+                k += 1
+            if epic not in forced_epics:
+                k += 1
+
+            if 2 - forced_slots["LEFT_HAND"] < k:
+                return False
+        else:
+            for item in item_pair:
+                if item and item not in (*forced_relics, *forced_epics):
+                    slot_max = 1 if item.item_slot == "LEFT_HAND" else 0
+                    if forced_slots[item.item_slot] > slot_max:
+                        return False
+        return True
+
+    pairs = [pair for pair in (*itertools.product(relics or [None], epics or [None]), *extra_pairs) if valid(pair)]
+
     pairs.sort(key=re_score_key, reverse=True)
     canidate_re_pairs = ordered_keep_by_key(pairs, re_key_func)
     pairs.sort(key=lambda p: re_score_key(p)[1:], reverse=True)
@@ -900,6 +923,7 @@ def solve(
         if progress_callback:
             progress_callback(idx, re_len)
 
+
         if relic and epic:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
                 continue
@@ -948,7 +972,8 @@ def solve(
         main_hand_disabled = False
         off_hand_disabled = False
 
-        for item in (relic, epic, *forced_items):
+        for item in (*forced_items, relic, epic):
+
             if item is None:
                 continue
             if item.item_slot == "FIRST_WEAPON":
@@ -961,7 +986,7 @@ def solve(
                 try:
                     REM_SLOTS.remove(item.item_slot)
                 except ValueError:
-                    pass
+                    continue
 
         weapons: list[tuple[EquipableItem] | tuple[EquipableItem, EquipableItem]] = []
         if not (main_hand_disabled and off_hand_disabled):
@@ -980,7 +1005,7 @@ def solve(
 
         try:
             k = REM_SLOTS.count("LEFT_HAND")
-            ring_pairs = list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k else ()
+            ring_pairs = list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k > 0 else ()
             cans = [ring_pairs, *(solve_CANIDATES[k] for k in REM_SLOTS if k not in ("LEFT_HAND", "WEAPONS"))]
             if "WEAPONS" in REM_SLOTS:
                 cans.append(weapons)
