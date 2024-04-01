@@ -15881,6 +15881,40 @@ INSERT INTO items VALUES(31464,230,6,133,403,0,0,1,0,0,0,6,80,80,0,220,0,220,0,0
 INSERT INTO items VALUES(31465,230,6,134,609,0,0,0,1,0,0,3,80,80,0,0,0,0,0,0,0,0,0,0,0,0,0,350,0,0,0,0,0,0,0,0,45,0,0,0,0);
 INSERT INTO items VALUES(31466,230,6,132,643,1,0,0,0,0,0,0,75,75,0,0,0,0,0,0,0,0,0,0,0,0,0,330,0,0,0,0,0,0,0,0,35,0,0,10,0);
 
+DROP TABLE IF EXISTS legacy_items;
+CREATE TABLE legacy_items (
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    PRIMARY KEY (item_id)
+) STRICT, WITHOUT ROWID ;
+INSERT INTO legacy_items VALUES(15284);
+INSERT INTO legacy_items VALUES(15285);
+INSERT INTO legacy_items VALUES(15286);
+INSERT INTO legacy_items VALUES(15287);
+INSERT INTO legacy_items VALUES(15288);
+INSERT INTO legacy_items VALUES(15289);
+INSERT INTO legacy_items VALUES(15290);
+INSERT INTO legacy_items VALUES(15291);
+INSERT INTO legacy_items VALUES(15292);
+INSERT INTO legacy_items VALUES(15293);
+INSERT INTO legacy_items VALUES(15294);
+INSERT INTO legacy_items VALUES(15295);
+INSERT INTO legacy_items VALUES(15296);
+INSERT INTO legacy_items VALUES(15297);
+INSERT INTO legacy_items VALUES(15298);
+INSERT INTO legacy_items VALUES(15299);
+INSERT INTO legacy_items VALUES(18670);
+INSERT INTO legacy_items VALUES(18671);
+INSERT INTO legacy_items VALUES(18672);
+INSERT INTO legacy_items VALUES(18673);
+INSERT INTO legacy_items VALUES(18674);
+INSERT INTO legacy_items VALUES(18675);
+INSERT INTO legacy_items VALUES(18676);
+INSERT INTO legacy_items VALUES(18677);
+INSERT INTO legacy_items VALUES(18678);
+INSERT INTO legacy_items VALUES(18679);
+INSERT INTO legacy_items VALUES(18680);
+INSERT INTO legacy_items VALUES(18681);
+
 DROP TABLE IF EXISTS pvp_items;
 CREATE TABLE pvp_items (
     item_id INTEGER NOT NULL REFERENCES items(item_id),
@@ -20848,22 +20882,6 @@ CREATE TABLE unobtainable_items (
     item_id INTEGER NOT NULL REFERENCES items(item_id),
     PRIMARY KEY (item_id)
 ) STRICT, WITHOUT ROWID ;
-INSERT INTO unobtainable_items VALUES(15284);
-INSERT INTO unobtainable_items VALUES(15285);
-INSERT INTO unobtainable_items VALUES(15286);
-INSERT INTO unobtainable_items VALUES(15287);
-INSERT INTO unobtainable_items VALUES(15288);
-INSERT INTO unobtainable_items VALUES(15289);
-INSERT INTO unobtainable_items VALUES(15290);
-INSERT INTO unobtainable_items VALUES(15291);
-INSERT INTO unobtainable_items VALUES(15292);
-INSERT INTO unobtainable_items VALUES(15293);
-INSERT INTO unobtainable_items VALUES(15294);
-INSERT INTO unobtainable_items VALUES(15295);
-INSERT INTO unobtainable_items VALUES(15296);
-INSERT INTO unobtainable_items VALUES(15297);
-INSERT INTO unobtainable_items VALUES(15298);
-INSERT INTO unobtainable_items VALUES(15299);
 INSERT INTO unobtainable_items VALUES(20790);
 INSERT INTO unobtainable_items VALUES(20791);
 INSERT INTO unobtainable_items VALUES(29966);
