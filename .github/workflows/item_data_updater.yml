@@ -9,6 +9,7 @@ on:
       # if we change any of the tools that generate data, check
       - "scripts/**"
       - update.sh
+      - "community_sourced_data/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}

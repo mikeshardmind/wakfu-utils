@@ -24,7 +24,7 @@ from msgspec.structs import astuple
 
 from ._build_codes import Stats as StatSpread
 from .item_conditions import get_item_conditions
-from .object_parsing import EquipableItem, get_all_items, set_locale
+from .object_parsing import EquipableItem, get_all_items, load_item_source_data, set_locale
 from .restructured_types import ClassesEnum, ElementsEnum, SetMaximums, SetMinimums, Stats, apply_w2h, v1Config
 from .utils import only_once
 from .wakforge_buildcodes import build_code_from_items
@@ -598,7 +598,13 @@ def solve(
         and item.item_id not in NATION_RELIC_EPIC_IDS
     ]
 
-    solve_CANIDATES: dict[str, list[EquipableItem]] = {k: v.copy() for k, v in AOBJS.items()}
+    _soft_unobtainable = load_item_source_data().legacy_items - {
+        item.item_id for item in (*forced_items, *forced_relics, *forced_epics)
+    }
+
+    solve_CANIDATES: dict[str, list[EquipableItem]] = {
+        k: [item for item in v if item.item_id not in _soft_unobtainable] for k, v in AOBJS.items()
+    }
 
     def needs_full_sim_key(item: EquipableItem) -> Hashable:
         keys = {"disables_second_weapon", *ALWAYS_SIMMED}

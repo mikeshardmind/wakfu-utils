@@ -28,6 +28,11 @@ CREATE TABLE IF NOT EXISTS unobtainable_items (
     PRIMARY KEY (item_id)
 ) STRICT, WITHOUT ROWID ;
 
+CREATE TABLE IF NOT EXISTS legacy_items (
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    PRIMARY KEY (item_id)
+) STRICT, WITHOUT ROWID ;
+
 CREATE TABLE IF NOT EXISTS ub_items (
     item_id INTEGER NOT NULL REFERENCES items(item_id),
     PRIMARY KEY (item_id)
@@ -248,6 +253,7 @@ if __name__ == "__main__":
             ("pvp.txt", "pvp_items"),
             ("ubs.txt", "ub_items"),
             ("unobtainable.txt", "unobtainable_items"),
+            ("legacy.txt", "legacy_items"),
         ):
             item_ids: list[int] = []
             with (com_path / path).open(encoding="utf-8") as ub_data:

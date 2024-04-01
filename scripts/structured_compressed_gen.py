@@ -73,6 +73,7 @@ class SourceData(Struct, frozen=True, array_like=True):
     non_finite_arch_horde: frozenset[int]
     pvp: frozenset[int]
     ultimate_boss: frozenset[int]
+    legacy_items: frozenset[int]
 
 
 if __name__ == "__main__":
@@ -121,6 +122,7 @@ if __name__ == "__main__":
             "ah_finite_exclusions",
             "pvp_items",
             "ub_items",
+            "legacy_items",
         )
     ]
 

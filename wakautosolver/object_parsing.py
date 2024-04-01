@@ -368,6 +368,7 @@ class SourceData(Struct, frozen=True, array_like=True):
     non_finite_arch_horde: frozenset[int]
     pvp: frozenset[int]
     ultimate_boss: frozenset[int]
+    legacy_items: frozenset[int]
 
 
 LocaleBundle = dict[int, LocaleData]
