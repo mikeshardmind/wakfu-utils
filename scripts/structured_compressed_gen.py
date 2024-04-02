@@ -123,6 +123,7 @@ if __name__ == "__main__":
             "pvp_items",
             "ub_items",
             "legacy_items",
+            "blueprints",
         )
     ]
 

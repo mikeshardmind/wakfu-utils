@@ -238,7 +238,7 @@ class v2Config(Struct):
     objectives: StatPriority = field(default_factory=StatPriority)
     forbidden_items: list[int] = field(default_factory=list)
     ignore_existing_items: bool = False
-    forbidden_sources: list[Literal["arch", "horde", "pvp", "ultimate_boss"]] = field(default_factory=list)
+    forbidden_sources: list[Literal["arch", "horde", "pvp", "ultimate_boss", "blueprints"]] = field(default_factory=list)
     stats_maxs: SetMaximums = field(default_factory=SetMaximums)
 
 
@@ -278,6 +278,15 @@ def partial_solve_v2(
     forbidden_ids: set[int] = set()
     for source in config.forbidden_sources:
         forbidden_ids |= getattr(item_sources, source)
+
+    allowed_sources = [
+        s for s in ("arch", "horde", "pvp", "ultimate_boss") if s not in config.forbidden_sources
+    ]  # The only blueprint that overlaps another category is tal-kasha's broadsowrd.
+    # This is not to be unexcluded right now, as the recipe also is ub dependent.
+
+    for source in allowed_sources:  # in case of multiple sources
+        forbidden_ids -= getattr(item_sources, source)
+
     forbidden_ids -= item_sources.non_finite_arch_horde
     config.forbidden_items.extend(forbidden_ids)
 

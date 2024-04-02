@@ -369,6 +369,7 @@ class SourceData(Struct, frozen=True, array_like=True):
     pvp: frozenset[int]
     ultimate_boss: frozenset[int]
     legacy_items: frozenset[int]
+    blueprints: frozenset[int]
 
 
 LocaleBundle = dict[int, LocaleData]
