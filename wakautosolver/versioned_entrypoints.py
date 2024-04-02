@@ -375,11 +375,7 @@ def partial_solve_v2(
                 build.add_item(item, elements)
         except RuntimeError as exc:
             msg = "".join(traceback.format_exception(exc))
-            err = Wakforge_v2ShortError(
-                version=__version__,
-                solve_params=v2BuildConfig(build, config.objectives),
-                message=msg
-            )
+            err = Wakforge_v2ShortError(version=__version__, solve_params=v2BuildConfig(build, config.objectives), message=msg)
             return v2Result(None, "Unknown error, see debug info", debug_info=compressed_encode(err))
 
     debug_info = compressed_encode({"score": score})

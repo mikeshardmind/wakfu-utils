@@ -98,6 +98,7 @@ def solve(
     use_tqdm: bool = False,
     progress_callback: Callable[[int, int], None] | None = None,
     point_spread: StatSpread | None = None,
+    passives: list[int] | None = None,
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
@@ -608,6 +609,8 @@ def solve(
 
     def needs_full_sim_key(item: EquipableItem) -> Hashable:
         keys = {"disables_second_weapon", *ALWAYS_SIMMED}
+        if passives and 5100 in passives:
+            keys.add("block")
         return attrgetter(*keys)(item)
 
     if original_forced_counts:
@@ -929,7 +932,6 @@ def solve(
         if progress_callback:
             progress_callback(idx, re_len)
 
-
         if relic and epic:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
                 continue
@@ -979,7 +981,6 @@ def solve(
         off_hand_disabled = False
 
         for item in (*forced_items, relic, epic):
-
             if item is None:
                 continue
             if item.item_slot == "FIRST_WEAPON":
@@ -1043,8 +1044,31 @@ def solve(
 
             critical_hit = statline.critical_hit + 3
 
+            # Note: keep the class here even if it isn't needed for ease of reference
+
+            # innate passive
             if ns.wakfu_class == ClassesEnum.Ecaflip and critical_hit > 100:
                 statline += Stats(fd=0.5 * (critical_hit - 100))
+
+            # Bravery
+            if ns.wakfu_class == ClassesEnum.Iop and passives and 5100 in passives and ns.lv >= 90:
+                block_mod = min(max(0, statline.block // 2), 20)
+                if block_mod:
+                    statline += Stats(block=block_mod)
+
+            # Sram to the bone
+            if ns.wakfu_class == ClassesEnum.Sram and passives and 4610 in passives and ns.lv >= 100:
+                # TODO: (?) We assume shards will make up any missing lock/dodge right now
+                statline += Stats(critical_hit=20 if ns.lv < 200 else 30)
+
+            if ns.wakfu_class == ClassesEnum.Masq and passives:
+                # TODO: (?) We assume shards will make up any missing lock/dodge right now
+                if 7096 in passives and ns.lv >= 20:  # artful locker
+                    melee_mod = min(max(0, statline.lock // 2), ns.lv * 2)
+                    statline += Stats(melee_mastery=melee_mod)
+                if 7109 in passives and ns.lv >= 85:  # artful dodge
+                    distance_mod = min(max(0, statline.dodge // 2), ns.lv * 2)
+                    statline += Stats(distance_mastery=distance_mod)
 
             UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
 

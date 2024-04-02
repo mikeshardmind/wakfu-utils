@@ -192,6 +192,10 @@ class Buildv1(Struct, array_like=True):
         compressor = zlib.compressobj(level=9, wbits=-15)
         return b2048.encode(compressor.compress(packed) + compressor.flush())
 
+    def get_passives(self) -> list[int]:
+        passives = (self.passive_1, self.passive_2, self.passive_3, self.passive_4, self.passive_5, self.passive_6)
+        return [p for p in passives if p > -1]
+
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
     items = [i for i in items if i.item_id > 0]  # filter out placeholder items
