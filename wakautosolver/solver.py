@@ -1054,7 +1054,7 @@ def solve(
             if ns.wakfu_class == ClassesEnum.Iop and passives and 5100 in passives and ns.lv >= 90:
                 block_mod = min(max(0, statline.block // 2), 20)
                 if block_mod:
-                    statline += Stats(block=block_mod)
+                    statline += Stats(critical_hit==block_mod)
 
             # Sram to the bone
             if ns.wakfu_class == ClassesEnum.Sram and passives and 4610 in passives and ns.lv >= 100:
