@@ -432,3 +432,31 @@
 29816 Magmog Talisman
 29818 Gobbalrog Ring
 29820 Dragon Pig Baldric
+3195 Ice Shushu Sword
+31341 Tal Kasha's Broadsword
+31351 Eternal Stripes
+31352 Eternal Stripes
+31357
+31358
+31359
+31360
+31339
+31340
+31349
+31350
+31347
+31348
+31353
+31354
+31345
+31346
+31337
+31338
+31380
+31381
+31355
+31356
+31343
+31344
+
+
