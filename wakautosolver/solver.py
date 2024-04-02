@@ -1064,10 +1064,10 @@ def solve(
             if ns.wakfu_class == ClassesEnum.Masq and passives:
                 # TODO: (?) We assume shards will make up any missing lock/dodge right now
                 if 7096 in passives and ns.lv >= 20:  # artful locker
-                    melee_mod = min(max(0, statline.lock // 2), ns.lv * 2)
+                    melee_mod = min(max(0, ns.lv * 2), ns.lv * 2)
                     statline += Stats(melee_mastery=melee_mod)
                 if 7109 in passives and ns.lv >= 85:  # artful dodge
-                    distance_mod = min(max(0, statline.dodge // 2), ns.lv * 2)
+                    distance_mod = min(max(0, ns.lv * 2), ns.lv * 2)
                     statline += Stats(distance_mastery=distance_mod)
 
             UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
