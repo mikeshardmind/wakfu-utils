@@ -226,6 +226,13 @@ def solve(
         elemental_mastery=ns.bmast,
     )
 
+    # STAT MODIFYING PASSIVES
+    # Things that unconditionally, and without regard for other stats, modify
+    # stat quantities (ie. xelor's memory passive)
+
+    if ns.wakfu_class == ClassesEnum.Xelor and passives and 756 in passives:  # Memory
+        base_stats += Stats(wp=6, mp=-2)
+
     # An interesting query
     # ┌───────────────────────┬────┬────┬────┬────┬──────────────┬───────────────────────────────────┐
     # | Item name (en)        │ ap │ mp │ wp │ ra │   position   │ first ALS bracket combo available │
