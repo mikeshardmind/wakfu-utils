@@ -19,7 +19,7 @@ from . import __version__
 from ._short_debug_info import Wakforge_v2ShortError, v2BuildConfig
 from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
-from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassElements, ElementsEnum, Priority, StatPriority, Stats
+from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassElements, ElementsEnum, Priority, StatPriority
 from .restructured_types import SetMaximums as RealSetMaxs
 from .restructured_types import SetMinimums as RealSetMins
 from .solver import ImpossibleStatError, SolveError, solve, v1Config
@@ -146,90 +146,6 @@ class SetMaximums(Struct, frozen=True, gc=True):
             data[new] = data.pop(old)
 
         return RealSetMaxs(**data)
-
-
-def partial_solve_v1(
-    *,
-    lv: int,
-    stats: Stats,
-    target_stats: RealSetMins,
-    equipped_items: list[int],
-    num_mastery: int,
-    allowed_rarities: list[int],
-    dist: bool = False,
-    melee: bool = False,
-    heal: bool = False,
-    zerk: bool = False,
-    rear: bool = False,
-    dry_run: bool = False,
-) -> v1Result:
-    """
-    Doesn't handle sublimations, passives, etc yet
-
-    Use from pyodide:
-
-    // passing in other values besides the below
-    // may cause problems with solve quality for v1
-    let targets = SetMinimum.callKwargs({ap: 12, mp: 6, ra: 2, wp: 0});
-
-
-    // for the full list of supported Stats, see Stats class
-    let stats = Stats.callKwargs({ap: 7, mp: 4, ...});
-
-    let [result, error] = partial_solve_v1.callKwargs(
-        {
-        stats: stats,
-        target_stats: targets,
-        }
-    )
-    """
-
-    ap = target_stats.ap - stats.ap
-    mp = target_stats.mp - stats.mp
-    ra = target_stats.ra - stats.ra
-    wp = target_stats.wp - stats.wp
-
-    forbidden_rarities = [i for i in range(1, 8) if i not in allowed_rarities]
-
-    equipped = [i for i in equipped_items if i] if equipped_items else []
-
-    cfg = v1Config(
-        lv=lv,
-        ap=ap,
-        mp=mp,
-        wp=wp,
-        ra=ra,
-        baseap=stats.ap,
-        basemp=stats.mp,
-        basera=stats.ra,
-        bawewp=stats.wp,
-        bcrit=stats.critical_hit - 3,  # wakforge is doing something wrong here, won't be fixes for this entrypoint
-        bcmast=stats.critical_mastery,
-        bmast=stats.elemental_mastery,
-        num_mastery=num_mastery,
-        forbid_rarity=forbidden_rarities,
-        idforce=equipped,
-        dist=dist,
-        melee=melee,
-        heal=heal,
-        zerk=zerk,
-        rear=rear,
-        dry_run=dry_run,
-        hard_cap_depth=15,
-        tolerance=_adaptive_tolerance_map.get(lv, 14),
-        search_depth=1 if dry_run else 1,
-    )
-
-    try:
-        result = solve(cfg)
-        best = result[0]
-    except (IndexError, SolveError):
-        return (None, "No possible solution found")
-
-    _score, items = best
-    item_ids = [i.item_id for i in items]
-    return (item_ids, None)
-
 
 class v2Config(Struct):
     allowed_rarities: list[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6, 7])
