@@ -174,3 +174,4 @@ base_cfg.toml
 
 !wakautosolver/data/*.bz2
 !wakautosolver/data/*.db
+.pdm-python
