@@ -253,7 +253,11 @@ def solve(
         if 20003 in passives:  # Motivation
             base_stats += Stats(ap=1, fd=-0.2)
         if 20006 in passives:  # Carnage
-            base_stats += Stats(fd=0.15)
+            if ns.lv >= 175:
+                base_stats += Stats(fd=0.15)
+            elif ns.lv >= 75:
+                base_stats += Stats(fd=0.10)
+
 
     if ns.wakfu_class == ClassesEnum.Xelor and passives and 756 in passives:  # Memory
         base_stats += Stats(wp=6, mp=-2)
@@ -737,7 +741,7 @@ def solve(
                     c += 3
                 case _:
                     pass
-        x = 0.25 * max(c, 6)
+        x = 0.25 * min(c, 6)
         solve_DAGGERS.append(EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * x)))
 
     # Tt be reused below
@@ -1098,7 +1102,7 @@ def solve(
             if ns.wakfu_class == ClassesEnum.Iop and passives and 5100 in passives and ns.lv >= 90:
                 block_mod = min(max(0, statline.block // 2), 20)
                 if block_mod:
-                    statline += Stats(critical_hit == block_mod)
+                    statline += Stats(critical_hit=block_mod)
 
             # Sram to the bone
             if ns.wakfu_class == ClassesEnum.Sram and passives and 4610 in passives and ns.lv >= 100:
@@ -1143,7 +1147,7 @@ def solve(
                         elif sub == 29002:
                             neutrality_c += 3
 
-                    fd_mod = 8 * max(neutrality_c, 4)
+                    fd_mod = 8 * min(neutrality_c, 4)
 
             base_score = non_crit_score = score_key(_is)
 
