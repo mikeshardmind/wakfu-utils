@@ -51,8 +51,7 @@ T_contra = TypeVar("T_contra", contravariant=True)
 
 
 class SupportsWrite(Protocol[T_contra]):
-    def write(self, s: T_contra, /) -> object:
-        ...
+    def write(self, s: T_contra, /) -> object: ...
 
 
 ALWAYS_SIMMED = "ap", "mp", "ra", "wp", "critical_hit", "critical_mastery"
@@ -99,6 +98,7 @@ def solve(
     progress_callback: Callable[[int, int], None] | None = None,
     point_spread: StatSpread | None = None,
     passives: list[int] | None = None,
+    sublimations: list[int] | None = None,
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
 
@@ -226,9 +226,34 @@ def solve(
         elemental_mastery=ns.bmast,
     )
 
+    influence_level = 0
+    if sublimations:
+        for sublimation in sublimations:
+            match sublimation:
+                case 28871:
+                    influence_level += 1
+                case 27152:
+                    influence_level += 2
+                case 28872:
+                    influence_level += 3
+                case 24132:
+                    ns.unraveling = True
+                case 27186:
+                    ns.twoh = True
+                case _:
+                    pass
+
+    base_stats += Stats(critical_hit=3 * min(influence_level, 6))
+
     # STAT MODIFYING PASSIVES
     # Things that unconditionally, and without regard for other stats, modify
     # stat quantities (ie. xelor's memory passive)
+
+    if passives:
+        if 20003 in passives:  # Motivation
+            base_stats += Stats(ap=1, fd=-0.2)
+        if 20006 in passives:  # Carnage
+            base_stats += Stats(fd=0.15)
 
     if ns.wakfu_class == ClassesEnum.Xelor and passives and 756 in passives:  # Memory
         base_stats += Stats(wp=6, mp=-2)
@@ -251,8 +276,6 @@ def solve(
         "CHEST": 50,
         "LEGS": 50,
     }
-
-    BASE_STAT_SCORE = _score_key(base_stats)
 
     def item_condition_conflicts_requested_stats(item: EquipableItem) -> bool:
         _mins, maxs = get_item_conditions(item)
@@ -702,6 +725,20 @@ def solve(
 
     if ns.lwx:
         solve_DAGGERS.append(EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * 1.5)))
+    elif sublimations:
+        c = 0
+        for sub in sublimations:
+            match sub:
+                case 28908:
+                    c += 1
+                case 28807:
+                    c += 2
+                case 28909:
+                    c += 3
+                case _:
+                    pass
+        x = 0.25 * max(c, 6)
+        solve_DAGGERS.append(EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * x)))
 
     # Tt be reused below
 
@@ -1061,7 +1098,7 @@ def solve(
             if ns.wakfu_class == ClassesEnum.Iop and passives and 5100 in passives and ns.lv >= 90:
                 block_mod = min(max(0, statline.block // 2), 20)
                 if block_mod:
-                    statline += Stats(critical_hit==block_mod)
+                    statline += Stats(critical_hit == block_mod)
 
             # Sram to the bone
             if ns.wakfu_class == ClassesEnum.Sram and passives and 4610 in passives and ns.lv >= 100:
@@ -1081,17 +1118,44 @@ def solve(
 
             crit_chance = max(min(critical_hit, 100), 0)  # engine crit rate vs stat
 
-            base_score = sum(score_key(i) for i in (*items, relic, epic)) + BASE_STAT_SCORE
+            _is = base_stats
+            for item in (*items, relic, epic):
+                if item is not None:
+                    _is += item.as_stats()
 
-            non_crit_score = base_score
+            fd_mod = 0
+            if _is.get_secondary_sum() <= 0:
+                if sublimations and 29874 in sublimations:
+                    # inflexibility 2
+                    _is += Stats(
+                        elemental_mastery=int(_is.elemental_mastery * 0.15),
+                        mastery_1_element=int(_is.mastery_1_element * 0.15),
+                        mastery_2_elements=int(_is.mastery_2_elements * 0.15),
+                        mastery_3_elements=int(_is.mastery_2_elements * 0.15),
+                    )
+                if sublimations:
+                    neutrality_c = 0
+                    for sub in sublimations:
+                        if sub == 29001:
+                            neutrality_c += 1
+                        elif sub == 29002:
+                            neutrality_c += 2
+                        elif sub == 29002:
+                            neutrality_c += 3
+
+                    fd_mod = 8 * max(neutrality_c, 4)
+
+            base_score = non_crit_score = score_key(_is)
+
             if UNRAVEL_ACTIVE:
                 base_score += statline.critical_mastery * (1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1)
+
             non_crit_score *= (100 - crit_chance) / 100
-            non_crit_score *= (100 + statline.fd) / 100
+            non_crit_score *= (100 + statline.fd) / 100 + fd_mod
 
             crit_score = base_score + statline.critical_mastery
             crit_score *= (crit_chance) / 100
-            crit_score *= (100 + statline.fd) / 100
+            crit_score *= (100 + statline.fd) / 100 + fd_mod
             crit_score *= 1.25
 
             score = crit_score + non_crit_score

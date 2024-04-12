@@ -5,8 +5,10 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
+
 from __future__ import annotations
 
+import enum
 import traceback
 import zlib
 from collections.abc import Callable
@@ -147,6 +149,13 @@ class SetMaximums(Struct, frozen=True, gc=True):
 
         return RealSetMaxs(**data)
 
+
+class SolveType(enum.IntEnum):
+    OPTIMIZE = 1
+    QUICK = 2
+    FIRST_MATCH = 3
+
+
 class v2Config(Struct):
     allowed_rarities: list[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6, 7])
     target_stats: SetMinimums = field(default_factory=SetMinimums)
@@ -156,6 +165,11 @@ class v2Config(Struct):
     ignore_existing_items: bool = False
     forbidden_sources: list[Literal["arch", "horde", "pvp", "ultimate_boss", "blueprints"]] = field(default_factory=list)
     stats_maxs: SetMaximums = field(default_factory=SetMaximums)
+    enable_testing_features: bool = False
+    solve_type: SolveType = SolveType.OPTIMIZE
+
+
+v3Config = v2Config
 
 
 class v2Result(Struct):
@@ -163,6 +177,14 @@ class v2Result(Struct):
     error_code: str | None = None
     item_ids: list[int] = field(default_factory=list)
     debug_info: str | None = None
+
+
+class v3Result(Struct):
+    build_code: str | None = None
+    error_code: str | None = None
+    item_ids: list[int] = field(default_factory=list)
+    debug_info: str | None = None
+    user_display_message: str | None = None
 
 
 def compressed_encode(obj: object) -> str:
@@ -266,7 +288,13 @@ def partial_solve_v2(
     )
 
     try:
-        result = solve(cfg, progress_callback=progress_callback, point_spread=point_spread, passives=build.get_passives())
+        result = solve(
+            cfg,
+            progress_callback=progress_callback,
+            point_spread=point_spread,
+            passives=build.get_passives(),
+            sublimations=build.get_sublimations(),
+        )
         best = result[0]
     except ImpossibleStatError as exc:
         return v2Result(None, exc.args[0], debug_info=None)
@@ -300,11 +328,7 @@ def partial_solve_v2(
                 build.add_item(item, elements)
         except RuntimeError as exc:
             msg = "".join(traceback.format_exception(exc))
-            err = Wakforge_v2ShortError(
-                version=__version__,
-                solve_params=v2BuildConfig(build, config.objectives),
-                message=msg
-            )
+            err = Wakforge_v2ShortError(version=__version__, solve_params=v2BuildConfig(build, config.objectives), message=msg)
             return v2Result(None, "Unknown error, see debug info", debug_info=compressed_encode(err))
 
     debug_info = compressed_encode({"score": score})

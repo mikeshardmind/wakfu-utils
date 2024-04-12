@@ -5,9 +5,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
+
 from __future__ import annotations
 
 import zlib
+from collections.abc import Sequence
 from functools import partial
 from itertools import compress, count
 from operator import eq
@@ -61,7 +63,7 @@ v1BuildSlotsOrder = [
 ]
 
 
-class Buildv1(Struct, array_like=True):
+class Buildv1(Struct, array_like=True, omit_defaults=True):
     buildcodeversion: SupportedVersions = 1
     classenum: WFClasses = WFClasses.EMPTY
     level: int = 230
@@ -140,12 +142,11 @@ class Buildv1(Struct, array_like=True):
             if not item:
                 s[idx] = Item()
             else:
-                item_id, elements, runes, subs = item
-                if item_id == -1:
-                    s[idx] = Item()
-                    continue
-                runes = [Rune() for r in runes if r]
-                s[idx] = Item(item_id, WFElements(elements), runes, subs)
+                item_id, elements, runes, sub = item
+                if elements == [0, 0, 0]:
+                    elements = WFElements.empty.value
+                runes = [Rune(*r) for r in runes if r]
+                s[idx] = Item(item_id, WFElements(elements), runes, sub)
 
         return cls(*s)
 
@@ -158,6 +159,9 @@ class Buildv1(Struct, array_like=True):
         for idx in range(1, 15):
             setattr(self, f"item_{idx}", empty)
 
+    def _getitems(self) -> Sequence[Item]:
+        return astuple(self)[32:46]
+
     def get_items(self) -> list[Item]:
         """
         Wakforge attaches 2 sublimations to an item matching how
@@ -165,9 +169,9 @@ class Buildv1(Struct, array_like=True):
         converstion to an idealized build requires knowing which sublimations
         are relic and epic sublimations, and isn't important right now.
         """
-        items = astuple(self)[32:46]
+        items = self._getitems()
         # wakforge sends fake items rather than not sending them, a subarray for items would be lovely...
-        return [i for i in items if isinstance(i, Item) and i]
+        return [i for i in items if i]
 
     def add_elements_to_item(self, item_id: int, elements: WFElements) -> None:
         for idx in range(1, 15):
@@ -195,6 +199,13 @@ class Buildv1(Struct, array_like=True):
     def get_passives(self) -> list[int]:
         passives = (self.passive_1, self.passive_2, self.passive_3, self.passive_4, self.passive_5, self.passive_6)
         return [p for p in passives if p > -1]
+
+    def get_sublimations(self) -> list[int]:
+        return [
+            sid
+            for sid in (self.relic_sublimation_id, self.epic_sublimation_id, *(i.sublimation for i in self._getitems()))
+            if sid > 0
+        ]
 
 
 def build_code_from_items(level: int, items: list[EquipableItem]) -> str:

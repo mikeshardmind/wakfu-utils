@@ -9,7 +9,6 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 # This is a pure python re-implementation of https://github.com/ionite34/base2048
 # which is available under the MIT License here: https://github.com/ionite34/base2048/blob/main/LICENSE
 
-
 from __future__ import annotations
 
 from collections import deque

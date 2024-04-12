@@ -128,6 +128,16 @@ class Stats(Struct, frozen=True, gc=False):
     dodge: int = 0
     armor_given: int = 0
 
+    def get_secondary_sum(self) -> int:
+        return (
+            self.critical_mastery
+            + self.distance_mastery
+            + self.melee_mastery
+            + self.healing_mastery
+            + self.berserk_mastery
+            + self.rear_mastery
+        )
+
     def __sub__(self, other: object) -> Stats:
         if not isinstance(other, Stats):
             return NotImplemented

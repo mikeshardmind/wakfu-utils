@@ -78,7 +78,6 @@ class SourceData(Struct, frozen=True, array_like=True):
 
 
 if __name__ == "__main__":
-
     base_path = Path(__file__).parent.with_name("wakautosolver") / "data"
     db_str = str(base_path / "items.db")
     conn = apsw.Connection(db_str)
