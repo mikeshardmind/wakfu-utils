@@ -167,18 +167,18 @@ def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
 
 if __name__ == "__main__":
     try:
-        code = "ಡƸɈИòϤ၅ངÛƅएǈड੮ǑňऋೱřƈഒιഽѪനփŦЀ྾ჱևΎ૦৷ಋȥӉႪ௳ŅԔŅάŜϧ٣Ӎໃ๘ŭปદӯү୶ഷĥѽŊɀɫӯਢČබඔлეൡ႗їඕŬՓ၏θೲ྿ƗΉøØ"
+        code = "ಡƸɉ৯ȳϴá༔ÛƈǆĠʁਏΓʂଅБÂƄĤҜǇƥӺॴႺȌ૪྾ოႱჲΎǾƅΩਤʕψđഴოĔඕອ၃༃"
         cfg = v2Config(
             allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
-            target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=1),
+            target_stats=SetMinimums(ap=13, mp=2, wp=17, ra=3),
             objectives=StatPriority(
-                elements=ElementsEnum.earth | ElementsEnum.air | ElementsEnum.water,
+                elements=ElementsEnum.fire | ElementsEnum.air,
                 distance_mastery=Priority.prioritized,
-                berserk_mastery=Priority.half_negative_only,
+                berserk_mastery=Priority.full_negative_only,
                 rear_mastery=Priority.full_negative_only,
             ),
             dry_run=False,
-            ignore_existing_items=True,
+            ignore_existing_items=False,
             forbidden_sources=[],  # can be any or none of ["arch", "horde", "pvp", "ultimate_boss"]
             forbidden_items=[],  # the item ids
         )

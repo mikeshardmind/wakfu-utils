@@ -62,8 +62,8 @@ _adaptive_tolerance_map: dict[int, int] = {
     170: 30,
     185: 30,
     200: 15,
-    215: 30,
-    230: 30,
+    215: 15,
+    230: 14,
 }
 
 v1Result = tuple[list[int] | None, str | None]
