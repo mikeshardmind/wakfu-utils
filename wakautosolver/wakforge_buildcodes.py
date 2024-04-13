@@ -203,7 +203,7 @@ class Buildv1(Struct, array_like=True, omit_defaults=True):
     def get_sublimations(self) -> list[int]:
         return [
             sid
-            for sid in (self.relic_sublimation_id, self.epic_sublimation_id, *(i.sublimation for i in self._getitems()))
+            for sid in (self.relic_sublimation_id, self.epic_sublimation_id, *(i.sublimation or -1 for i in self._getitems()))
             if sid > 0
         ]
 
