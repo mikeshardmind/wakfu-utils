@@ -130,7 +130,7 @@ def solve(
             score += item.melee_mastery
         if ns.dist:
             score += item.distance_mastery
-        if ns.zerk:
+        if ns.zerk and ns.negzerk not in ("half", "full"):
             score += item.berserk_mastery
         else:
             if item.berserk_mastery < 0:
@@ -141,9 +141,9 @@ def solve(
                 else:
                     mul = 0.0
 
-                score -= item.berserk_mastery * mul
+                score += item.berserk_mastery * mul
 
-        if ns.rear:
+        if ns.rear and ns.negrear not in ("full", "half"):
             score += item.rear_mastery
         else:
             if item.rear_mastery < 0:
@@ -154,7 +154,7 @@ def solve(
                 else:
                     mul = 0.0
 
-                score -= item.rear_mastery * mul
+                score += item.rear_mastery * mul
 
         if ns.heal:
             score += item.healing_mastery
@@ -729,20 +729,18 @@ def solve(
 
     if ns.lwx:
         solve_DAGGERS.append(EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * 1.5)))
-    elif sublimations:
+    if sublimations:
         c = 0
         for sub in sublimations:
-            match sub:
-                case 28908:
-                    c += 1
-                case 28807:
-                    c += 2
-                case 28909:
-                    c += 3
-                case _:
-                    pass
+            if sub == 28908:
+                c += 1
+            elif sub == 28807:
+                c += 2
+            elif sub == 28909:
+                c += 3
         x = 0.25 * min(c, 6)
-        solve_DAGGERS.append(EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * x)))
+        if x > 0:
+            solve_DAGGERS.append(EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * x)))
 
     # Tt be reused below
 

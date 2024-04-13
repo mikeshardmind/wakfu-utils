@@ -233,6 +233,7 @@ def partial_solve_v2(
         return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=compressed_encode(msg))
 
     build = WFBuild.from_code(build_code)
+    sublimations = build.get_sublimations()  # TODO: consider this + below line
     if config.ignore_existing_items:
         build.clear_items()
     point_spread = build.get_allocated_stats()
@@ -293,7 +294,7 @@ def partial_solve_v2(
             progress_callback=progress_callback,
             point_spread=point_spread,
             passives=build.get_passives(),
-            sublimations=build.get_sublimations(),
+            sublimations=sublimations,
         )
         best = result[0]
     except ImpossibleStatError as exc:
