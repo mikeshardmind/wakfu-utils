@@ -19,11 +19,11 @@ Exists just to generate a smaller file intended for use in minimal distributions
 if __name__ == "__main__":
     base_path = Path(__file__).parent
     with (base_path / "json_data" / "items.json").open(mode="rb") as fp:
-        data =json.loads(fp.read())
+        data = json.loads(fp.read())
 
     # Fully math based tools don't need the flavor text
     data = [{k: v for k, v in i.items() if k != "description"} for i in data]
-    packed = json.dumps(data, separators=(',', ':'), indent=None).encode()
+    packed = json.dumps(data, separators=(",", ":"), indent=None).encode()
     compressed_bz2 = bz2.compress(packed)
     # for this data set, bz2 using highest compression level (which is default)
     # outperforms lzma and gzip,

@@ -98,21 +98,22 @@ def unpack_locale_data(packed: bytes) -> LocaleBundle:
     ret: LocaleBundle = []
     offset = 0
     while offset < len(packed):
-        item_id, = struct.unpack_from("!I", packed, offset)
+        (item_id,) = struct.unpack_from("!I", packed, offset)
         offset += struct.calcsize("!I")
 
         strs: list[str] = []
         for _ in range(4):
-            s_len, = struct.unpack_from("!B", packed, offset)
+            (s_len,) = struct.unpack_from("!B", packed, offset)
             offset += struct.calcsize("!B")
             fmt = "!%ds" % s_len
-            s, = struct.unpack_from(fmt, packed, offset)
+            (s,) = struct.unpack_from(fmt, packed, offset)
             offset += struct.calcsize(fmt)
             strs.append(s.decode("utf-8"))
 
         ret.append(LocaleData(item_id, *strs))
 
     return ret
+
 
 def pack_sourcedata(data: SourceData) -> bytes:
     buffer = BytesIO()
@@ -128,7 +129,7 @@ def unpack_sourcedata(packed: bytes) -> SourceData:
     offset = 0
     sets: list[frozenset[int]] = []
     while offset < len(packed):
-        ilen, = struct.unpack_from("!I", packed, offset)
+        (ilen,) = struct.unpack_from("!I", packed, offset)
         offset += struct.calcsize("!I")
         fmt = "!%dI" % ilen
         items = frozenset(struct.unpack_from(fmt, packed, offset))
@@ -137,12 +138,14 @@ def unpack_sourcedata(packed: bytes) -> SourceData:
 
     return SourceData(*sets)
 
+
 def pack_items(items: list[Item]) -> bytes:
     buffer = BytesIO()
     for item in items:
         buffer.write(struct.pack("!IHBH37h", *item))
     buffer.seek(0)
     return buffer.read()
+
 
 def unpack_items(packed: bytes) -> list[Item]:
     return [Item(*data) for data in struct.iter_unpack("!IHBH37h", packed)]

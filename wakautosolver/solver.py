@@ -258,7 +258,6 @@ def solve(
             elif ns.lv >= 75:
                 base_stats += Stats(fd=0.10)
 
-
     if ns.wakfu_class == ClassesEnum.Xelor and passives and 756 in passives:  # Memory
         base_stats += Stats(wp=6, mp=-2)
 

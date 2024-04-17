@@ -53,6 +53,7 @@ class ClassesEnum(enum.IntEnum):
     Hupper = 18
     Huppermage = Hupper
 
+
 class SlotColor(enum.IntEnum):
     R = 1
     G = 2
@@ -151,6 +152,7 @@ class Item(NamedTuple):
     sublimation_id: int
     slots: list[Slot]
 
+
 class Build(NamedTuple):
     version_number: int
     classname: ClassesEnum
@@ -172,22 +174,24 @@ def pack_stats(stats: Stats) -> bytes:
 
     return struct.pack("!23B", *int_stats, packed_bools)
 
+
 def unpack_stats(packed: bytes) -> Stats:
     *int_stats, packed_bools = struct.unpack("!23B", packed)
     unpacked_bools = (bool(packed_bools & (1 << index)) for index in range(7))
     return Stats(*int_stats, *unpacked_bools)
 
+
 def pack_items(items: list[Item]) -> bytes:
     # length: B (1)
     # interior, repeated length times
-        # item_id: i (4)
-        # assigned_mastery + assigned_res: B (1)
-        # sublimation_id i (4)
-        # slots: length B (1)
-            # interior, repeated length times:
-                # slot color: B (1)
-                # stat id: B (1)
-                # level: B (1)
+    # item_id: i (4)
+    # assigned_mastery + assigned_res: B (1)
+    # sublimation_id i (4)
+    # slots: length B (1)
+    # interior, repeated length times:
+    # slot color: B (1)
+    # stat id: B (1)
+    # level: B (1)
 
     item_len = len(items)
 
@@ -203,6 +207,7 @@ def pack_items(items: list[Item]) -> bytes:
             to_pack.extend(slot)
 
     return struct.pack("".join(fmt_components), *to_pack)
+
 
 def unpack_items(packed: bytes) -> list[Item]:
     (_len,) = struct.unpack_from("!B", packed, 0)
@@ -223,6 +228,7 @@ def unpack_items(packed: bytes) -> list[Item]:
 
     return ret
 
+
 def pack_build(build: Build) -> bytes:
     # version: B (1)
     # classname.value: B (1)
@@ -231,7 +237,7 @@ def pack_build(build: Build) -> bytes:
     # relic_sub: i (4)
     # epic sub: 1 (4)
     # deck: length prefixed: B (1)
-        # repeated: active/passive id: i (4)
+    # repeated: active/passive id: i (4)
     # items: variable, see pack_items
 
     packed_items = pack_items(build.items)
@@ -251,6 +257,7 @@ def pack_build(build: Build) -> bytes:
         *build.deck,
         packed_items,
     )
+
 
 def unpack_build(packed: bytes) -> Build:
     base = "!BBH23siiB"
@@ -273,10 +280,12 @@ def unpack_build(packed: bytes) -> Build:
 
     return Build(version, ClassesEnum(classnum), level, stats, relic, epic, items, deck)
 
+
 def build_as_b2048(build: Build) -> str:
     packed = pack_build(build)
     compressor = zlib.compressobj(level=9, wbits=-15)
     return base2048.encode(compressor.compress(packed) + compressor.flush())
+
 
 def build_from_b2048(build_str: str) -> Build:
     as_bytes = zlib.decompress(base2048.decode(build_str), wbits=-15)
