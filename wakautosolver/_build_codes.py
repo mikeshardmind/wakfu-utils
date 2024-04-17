@@ -15,6 +15,8 @@ import zlib
 from typing import NamedTuple
 
 from . import b2048 as base2048
+from .restructured_types import ClassesEnum as ClassName
+from .restructured_types import Stats as _Stats
 
 
 class ClassesEnum(enum.IntEnum):
@@ -102,6 +104,44 @@ class Stats(NamedTuple):
     control: bool = False
     di: bool = False
     major_res: bool = False
+
+    def is_fully_allocated(self, level: int, /) -> bool:
+        points = level - 1
+        for lv in (25, 75, 125, 175):
+            if level >= lv:
+                points += 1
+        return sum(self) == points
+
+    def to_stat_values(self, cl: ClassName | None) -> _Stats:
+        e_mast = self.elemental_mastery * 5
+        e_mast += self.mp * 20
+        e_mast += (self.ra + self.control) * 40
+        wp = 6 + 2 * self.wp
+        crit = self.crit
+        if cl is ClassName.Ecaflip:
+            crit += 20
+        if cl is ClassName.Xelor:
+            wp += 6
+
+        return _Stats(
+            ap=6 + self.ap,
+            mp=3 + self.mp,
+            wp=wp,
+            ra=1 * self.ra,
+            critical_hit=crit,
+            critical_mastery=4 * self.crit_mastery,
+            elemental_mastery=e_mast,
+            distance_mastery=8 * self.distance_mastery,
+            melee_mastery=8 * self.melee_mastery,
+            rear_mastery=6 * self.rear_mastery,
+            berserk_mastery=8 * self.berserk_mastery,
+            healing_mastery=6 * self.healing_mastery,
+            control=2 * self.control,
+            fd=10 * self.di,
+            lock=6 * self.lock + 4 * self.lockdodge,
+            dodge=6 * self.dodge + 4 * self.lockdodge,
+            block=self.block,
+        )
 
 
 class Item(NamedTuple):

@@ -11,10 +11,11 @@ from __future__ import annotations
 import bz2
 import contextvars
 import pathlib
+import struct
 from functools import lru_cache
-from typing import Literal, TypedDict
+from typing import Literal, NamedTuple, TypedDict
 
-from msgspec import Struct, msgpack
+from msgspec import Struct
 
 from .restructured_types import Stats
 
@@ -217,7 +218,7 @@ ITEM_TYPE_MAP: dict[int, PosData] = {
 }
 
 
-class EquipableItem(Struct, frozen=True, array_like=True):
+class EquipableItem(NamedTuple):
     item_id: int
     item_lv: int
     item_rarity: int
@@ -353,14 +354,11 @@ def _item_to_stats(item: EquipableItem) -> Stats:
     )
 
 
-class LocaleData(Struct, frozen=True, array_like=True):
+class LocaleData(NamedTuple):
     en: str = ""
     es: str = ""
     fr: str = ""
     pt: str = ""
-
-    def __getitem__(self, key: str, /) -> str:
-        return getattr(self, key, "")
 
 
 class SourceData(Struct, frozen=True, array_like=True):
@@ -380,25 +378,63 @@ StatOnlyBundle = tuple[EquipableItem, ...]
 def _get_item_name(item: EquipableItem) -> str:
     if item.item_id == -2:
         return "LIGHT WEAPON EXPERT PLACEHOLDER"
-    return load_locale_data().get(item.item_id, LocaleData())[get_locale()]
+    i = load_locale_data().get(item.item_id, LocaleData())
+    return getattr(i, _locale.get())
 
+def unpack_items(packed: bytes) -> list[EquipableItem]:
+    return [EquipableItem(*data) for data in struct.iter_unpack("!IHBH37h", packed)]
 
 @lru_cache
 def get_all_items() -> StatOnlyBundle:
     data_file_path = pathlib.Path(__file__).with_name("data") / "stat_only_bundle.bz2"
     with bz2.open(data_file_path, mode="rb", compresslevel=9) as fp:
-        return msgpack.decode(fp.read(), type=StatOnlyBundle)
+        return tuple(unpack_items(fp.read()))
+
+
+def unpack_locale_data(packed: bytes) -> LocaleBundle:
+    ret: LocaleBundle = {}
+    offset = 0
+    while offset < len(packed):
+        item_id, = struct.unpack_from("!I", packed, offset)
+        offset += struct.calcsize("!I")
+
+        strs: list[str] = []
+        for _ in range(4):
+            s_len, = struct.unpack_from("!B", packed, offset)
+            offset += struct.calcsize("!B")
+            fmt = "!%ds" % s_len
+            s, = struct.unpack_from(fmt, packed, offset)
+            offset += struct.calcsize(fmt)
+            strs.append(s.decode("utf-8"))
+
+        ret[item_id] = LocaleData(*strs)
+
+    return ret
 
 
 @lru_cache
 def load_locale_data() -> LocaleBundle:
     data_file_path = pathlib.Path(__file__).with_name("data") / "locale_bundle.bz2"
     with bz2.open(data_file_path, mode="rb", compresslevel=9) as fp:
-        return msgpack.decode(fp.read(), type=LocaleBundle)
+        return unpack_locale_data(fp.read())
+
+
+def unpack_sourcedata(packed: bytes) -> SourceData:
+    offset = 0
+    sets: list[frozenset[int]] = []
+    while offset < len(packed):
+        ilen, = struct.unpack_from("!I", packed, offset)
+        offset += struct.calcsize("!I")
+        fmt = "!%dI" % ilen
+        items = frozenset(struct.unpack_from(fmt, packed, offset))
+        sets.append(items)
+        offset += struct.calcsize(fmt)
+
+    return SourceData(*sets)
 
 
 @lru_cache
 def load_item_source_data() -> SourceData:
     data_file_path = pathlib.Path(__file__).with_name("data") / "source_info.bz2"
     with bz2.open(data_file_path, mode="rb", compresslevel=9) as fp:
-        return msgpack.decode(fp.read(), type=SourceData)
+        return unpack_sourcedata(fp.read())

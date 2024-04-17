@@ -766,10 +766,10 @@ def solve(
 
     def tuple_expander(seq: Iterable[Iterable[EquipableItem] | EquipableItem]) -> Iterator[EquipableItem]:
         for item in seq:
-            if isinstance(item, Iterable):
-                yield from item
-            else:
+            if isinstance(item, EquipableItem):
                 yield item
+            else:
+                yield from item
 
     weapon_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
     weapon_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]

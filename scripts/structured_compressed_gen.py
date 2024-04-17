@@ -7,13 +7,17 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 import bz2
+from itertools import chain
+import struct
+from io import BytesIO
 from pathlib import Path
+from typing import NamedTuple
 
 import apsw
-from msgspec import Struct, msgpack
 
 
-class Item(Struct, array_like=True):
+class Item(NamedTuple):
+    # !IHBH37h
     item_id: int
     item_lv: int
     item_rarity: int
@@ -57,17 +61,18 @@ class Item(Struct, array_like=True):
     armor_received: int = 0
 
 
-class LocaleData(Struct, frozen=True, array_like=True):
+class LocaleData(NamedTuple):
+    item_id: int
     en: str
     es: str
     fr: str
     pt: str
 
 
-LocaleBundle = dict[int, LocaleData]
+LocaleBundle = list[LocaleData]
 
 
-class SourceData(Struct, frozen=True, array_like=True):
+class SourceData(NamedTuple):
     arch: frozenset[int]
     horde: frozenset[int]
     non_finite_arch_horde: frozenset[int]
@@ -75,6 +80,72 @@ class SourceData(Struct, frozen=True, array_like=True):
     ultimate_boss: frozenset[int]
     legacy_items: frozenset[int]
     blueprints: frozenset[int]
+
+
+def pack_locale_data(locs: LocaleBundle) -> bytes:
+    buffer = BytesIO()
+    for item in locs:
+        item_id, *strs = item
+        bys = [s.encode() for s in strs]
+        fmt = "!IB%dsB%dsB%dsB%ds" % tuple(map(len, bys))
+        buffer.write(struct.pack(fmt, item_id, *chain.from_iterable(zip(map(len, bys), bys))))
+
+    buffer.seek(0)
+    return buffer.read()
+
+
+def unpack_locale_data(packed: bytes) -> LocaleBundle:
+    ret: LocaleBundle = []
+    offset = 0
+    while offset < len(packed):
+        item_id, = struct.unpack_from("!I", packed, offset)
+        offset += struct.calcsize("!I")
+
+        strs: list[str] = []
+        for _ in range(4):
+            s_len, = struct.unpack_from("!B", packed, offset)
+            offset += struct.calcsize("!B")
+            fmt = "!%ds" % s_len
+            s, = struct.unpack_from(fmt, packed, offset)
+            offset += struct.calcsize(fmt)
+            strs.append(s.decode("utf-8"))
+
+        ret.append(LocaleData(item_id, *strs))
+
+    return ret
+
+def pack_sourcedata(data: SourceData) -> bytes:
+    buffer = BytesIO()
+    for item_set in data:
+        ilen = len(item_set)
+        fmt = "!I%dI" % ilen
+        buffer.write(struct.pack(fmt, ilen, *item_set))
+    buffer.seek(0)
+    return buffer.read()
+
+
+def unpack_sourcedata(packed: bytes) -> SourceData:
+    offset = 0
+    sets: list[frozenset[int]] = []
+    while offset < len(packed):
+        ilen, = struct.unpack_from("!I", packed, offset)
+        offset += struct.calcsize("!I")
+        fmt = "!%dI" % ilen
+        items = frozenset(struct.unpack_from(fmt, packed, offset))
+        sets.append(items)
+        offset += struct.calcsize(fmt)
+
+    return SourceData(*sets)
+
+def pack_items(items: list[Item]) -> bytes:
+    buffer = BytesIO()
+    for item in items:
+        buffer.write(struct.pack("!IHBH37h", *item))
+    buffer.seek(0)
+    return buffer.read()
+
+def unpack_items(packed: bytes) -> list[Item]:
+    return [Item(*data) for data in struct.iter_unpack("!IHBH37h", packed)]
 
 
 if __name__ == "__main__":
@@ -90,7 +161,7 @@ if __name__ == "__main__":
         """
     )
     items = [Item(*row) for row in rows]
-    data = msgpack.encode(items)
+    data = pack_items(items)
     bz2_comp = bz2.compress(data, compresslevel=9)
     with (base_path / "stat_only_bundle.bz2").open(mode="wb") as fp:
         fp.write(bz2_comp)
@@ -104,9 +175,9 @@ if __name__ == "__main__":
         ORDER BY item_id ASC
         """
     )
-    loc_items = {item_id: LocaleData(*rest) for item_id, *rest in rows}
+    loc_items = [LocaleData(*row) for row in rows]
 
-    data = msgpack.encode(loc_items)
+    data = pack_locale_data(loc_items)
     bz2_comp = bz2.compress(data, compresslevel=9)
     with (base_path / "locale_bundle.bz2").open(mode="wb") as fp:
         fp.write(bz2_comp)
@@ -128,7 +199,7 @@ if __name__ == "__main__":
     ]
 
     datastruct = SourceData(*data)
-    data = msgpack.encode(datastruct)
+    data = pack_sourcedata(datastruct)
     bz2_comp = bz2.compress(data, compresslevel=9)
     with (base_path / "source_info.bz2").open(mode="wb") as fp:
         fp.write(bz2_comp)

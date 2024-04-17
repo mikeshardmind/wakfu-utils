@@ -12,13 +12,12 @@ from __future__ import annotations
 # pyright: reportConstantRedefinition=false
 import bz2
 import contextvars
+import json
 import logging
 import pathlib
 from collections.abc import Callable
 from functools import cached_property
 from typing import Any, Literal, Self, TypedDict, TypeVar
-
-import msgspec
 
 
 class PosData(TypedDict):
@@ -565,7 +564,7 @@ class EquipableItem:
     def from_bz2_bundled(cls: type[Self]) -> list[Self]:
         data_file_path = pathlib.Path(__file__).with_name("item_data.bz2")
         with bz2.open(str(data_file_path), mode="rb", compresslevel=9) as fp:
-            decompressed = msgspec.msgpack.decode(fp.read())
+            decompressed = json.loads(fp.read())
 
         return [obj for element in decompressed if (obj := cls.from_json_data(element))]
 
