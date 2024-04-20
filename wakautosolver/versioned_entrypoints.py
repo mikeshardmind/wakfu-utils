@@ -10,22 +10,18 @@ from __future__ import annotations
 
 import enum
 import traceback
-import zlib
 from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
 from typing import Literal
 
-from msgspec import Struct, field, msgpack
-from msgspec.structs import asdict
-
 from . import __version__
-from ._short_debug_info import Wakforge_v2ShortError, v2BuildConfig
-from .b2048 import encode as b2048encode
 from .object_parsing import load_item_source_data
 from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassElements, ElementsEnum, Priority, StatPriority
 from .restructured_types import SetMaximums as RealSetMaxs
 from .restructured_types import SetMinimums as RealSetMins
 from .solver import ImpossibleStatError, SolveError, solve, v1Config
 from .wakforge_buildcodes import Buildv1 as WFBuild
+from .wakforge_buildcodes import build_to_code
 
 ClassNames = Literal[
     "Feca",
@@ -70,7 +66,8 @@ v1Result = tuple[list[int] | None, str | None]
 
 
 # Exists because versioning
-class SetMinimums(Struct, frozen=True, gc=True):
+@dataclass(unsafe_hash=True)
+class SetMinimums:
     ap: int = DUMMY_MIN
     mp: int = DUMMY_MIN
     wp: int = DUMMY_MIN
@@ -110,7 +107,8 @@ class SetMinimums(Struct, frozen=True, gc=True):
         return RealSetMins(**data)
 
 
-class SetMaximums(Struct, frozen=True, gc=True):
+@dataclass(unsafe_hash=True)
+class SetMaximums:
     ap: int = DUMMY_MAX
     mp: int = DUMMY_MAX
     wp: int = DUMMY_MAX
@@ -156,7 +154,8 @@ class SolveType(enum.IntEnum):
     FIRST_MATCH = 3
 
 
-class v2Config(Struct):
+@dataclass
+class v2Config:
     allowed_rarities: list[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6, 7])
     target_stats: SetMinimums = field(default_factory=SetMinimums)
     dry_run: bool = False
@@ -172,25 +171,12 @@ class v2Config(Struct):
 v3Config = v2Config
 
 
-class v2Result(Struct):
+@dataclass
+class v2Result:
     build_code: str | None = None
     error_code: str | None = None
     item_ids: list[int] = field(default_factory=list)
     debug_info: str | None = None
-
-
-class v3Result(Struct):
-    build_code: str | None = None
-    error_code: str | None = None
-    item_ids: list[int] = field(default_factory=list)
-    debug_info: str | None = None
-    user_display_message: str | None = None
-
-
-def compressed_encode(obj: object) -> str:
-    compressor = zlib.compressobj(level=9, wbits=-15)
-    packed = msgpack.encode(obj)
-    return b2048encode(compressor.compress(packed) + compressor.flush())
 
 
 def partial_solve_v2(
@@ -203,12 +189,6 @@ def partial_solve_v2(
     config.allowed_rarities = [i for i in config.allowed_rarities if i]
     config.forbidden_items = [i for i in config.forbidden_items if i]
     config.forbidden_sources = [s for s in config.forbidden_sources if s]
-    # This may look redundant, but it's exceptionally cheap validation
-    try:
-        config = msgpack.decode(msgpack.encode(config), type=v2Config)
-    except Exception as exc:  # noqa: BLE001
-        msg = traceback.format_exception(exc)
-        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=compressed_encode(msg))
 
     target_stats = config.target_stats.to_real()
 
@@ -230,7 +210,7 @@ def partial_solve_v2(
 
     if not config.objectives.is_valid:
         msg = ("objectives", config.objectives)
-        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=compressed_encode(msg))
+        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=None)
 
     build = WFBuild.from_code(build_code)
     sublimations = build.get_sublimations()  # TODO: consider this + below line
@@ -302,8 +282,8 @@ def partial_solve_v2(
     except (IndexError, SolveError):
         return v2Result(None, "No possible solution found", debug_info=None)
     except Exception as exc:  # noqa: BLE001
-        msg = traceback.format_exception(exc)
-        return v2Result(None, "Unknown error, see debug info", debug_info=compressed_encode(msg))
+        msg = "\n".join(traceback.format_exception(exc))
+        return v2Result(None, "Unknown error, see debug info", debug_info=msg)
 
     score, found_items = best
 
@@ -328,10 +308,9 @@ def partial_solve_v2(
             else:
                 build.add_item(item, elements)
         except RuntimeError as exc:
-            msg = "".join(traceback.format_exception(exc))
-            err = Wakforge_v2ShortError(version=__version__, solve_params=v2BuildConfig(build, config.objectives), message=msg)
-            return v2Result(None, "Unknown error, see debug info", debug_info=compressed_encode(err))
+            msg = "".join((__version__, "\n\n", *traceback.format_exception(exc)))
+            return v2Result(None, "Unknown error, see debug info", debug_info=msg)
 
-    debug_info = compressed_encode({"score": score})
+    debug_info = repr({"score": score})
 
-    return v2Result(build.to_code(), None, found_item_ids, debug_info=debug_info)
+    return v2Result(build_to_code(build), None, found_item_ids, debug_info=debug_info)

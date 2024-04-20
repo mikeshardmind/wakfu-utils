@@ -237,7 +237,7 @@ def pack_build(build: Build) -> bytes:
     # relic_sub: i (4)
     # epic sub: 1 (4)
     # deck: length prefixed: B (1)
-    # repeated: active/passive id: i (4)
+    #    # repeated: active/passive id: i (4)
     # items: variable, see pack_items
 
     packed_items = pack_items(build.items)

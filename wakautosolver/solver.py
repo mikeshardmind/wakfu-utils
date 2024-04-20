@@ -16,11 +16,10 @@ import os
 import statistics
 import sys
 from collections.abc import Callable, Hashable, Iterable, Iterator
+from dataclasses import astuple
 from functools import lru_cache, partial, reduce
 from operator import add, and_, attrgetter, itemgetter
 from typing import TYPE_CHECKING, Final, Protocol, TypeVar
-
-from msgspec.structs import astuple
 
 from ._build_codes import Stats as StatSpread
 from .item_conditions import get_item_conditions

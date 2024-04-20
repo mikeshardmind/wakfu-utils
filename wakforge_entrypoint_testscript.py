@@ -13,8 +13,7 @@ import time
 import zlib
 from typing import Any
 
-from msgspec import msgpack
-
+from wakautosolver._compat import decode as msgp_decode
 from wakautosolver.b2048 import decode
 from wakautosolver.object_parsing import get_all_items
 from wakautosolver.restructured_types import ElementsEnum
@@ -151,7 +150,7 @@ def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
             err_print(sol.error_code)
         if sol.debug_info:
             try:
-                err: list[str] | dict[str, Any] = msgpack.decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
+                err: list[str] | dict[str, Any] = msgp_decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
             except Exception:  # noqa: S110, BLE001
                 pass
             else:

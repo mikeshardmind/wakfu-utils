@@ -12,10 +12,8 @@ from __future__ import annotations
 
 import enum
 from collections.abc import Callable
-from typing import Literal
-
-from msgspec import Struct, field
-from msgspec.structs import asdict, astuple, replace
+from dataclasses import asdict, astuple, dataclass, field, replace
+from typing import Literal, NamedTuple
 
 
 class ClassesEnum(enum.IntEnum):
@@ -91,7 +89,7 @@ class Priority(enum.IntEnum):
     half_negative_only = 4
 
 
-class StatPriority(Struct, frozen=True, array_like=True):
+class StatPriority(NamedTuple):
     distance_mastery: Priority = Priority.unvalued
     melee_mastery: Priority = Priority.unvalued
     heal_mastery: Priority = Priority.unvalued
@@ -104,7 +102,8 @@ class StatPriority(Struct, frozen=True, array_like=True):
         return all(x < 2 for x in (self.distance_mastery, self.melee_mastery, self.heal_mastery))
 
 
-class Stats(Struct, frozen=True, gc=False):
+@dataclass(unsafe_hash=True)
+class Stats:
     ap: int = 0
     mp: int = 0
     wp: int = 0
@@ -234,7 +233,7 @@ DUMMY_MAX: int = 1_000_000
 SIMMABLE = ["ap", "mp", "wp", "ra", "block", "armor_given"]
 
 
-class SetMinimums(Stats, frozen=True, gc=False):
+class SetMinimums(Stats):
     ap: int = DUMMY_MIN
     mp: int = DUMMY_MIN
     wp: int = DUMMY_MIN
@@ -252,7 +251,7 @@ class SetMinimums(Stats, frozen=True, gc=False):
     melee_mastery: int = DUMMY_MIN
     control: int = DUMMY_MIN
     block: int = DUMMY_MIN
-    fd: int = DUMMY_MIN
+    fd: float = DUMMY_MIN
     heals_performed: int = DUMMY_MIN
     lock: int = DUMMY_MIN
     dodge: int = DUMMY_MIN
@@ -329,7 +328,7 @@ class SetMinimums(Stats, frozen=True, gc=False):
         )
 
 
-class SetMaximums(Stats, frozen=True, gc=False):
+class SetMaximums(Stats):
     ap: int = DUMMY_MAX
     mp: int = DUMMY_MAX
     wp: int = DUMMY_MAX
@@ -347,7 +346,7 @@ class SetMaximums(Stats, frozen=True, gc=False):
     melee_mastery: int = DUMMY_MAX
     control: int = DUMMY_MAX
     block: int = DUMMY_MAX
-    fd: int = DUMMY_MAX
+    fd: float = DUMMY_MAX
     heals_performed: int = DUMMY_MAX
     lock: int = DUMMY_MAX
     dodge: int = DUMMY_MAX
@@ -426,7 +425,8 @@ def apply_elementalism(stats: Stats) -> Stats:
     return stats
 
 
-class v1Config(Struct, kw_only=True):
+@dataclass
+class v1Config:
     lv: int = 230
     ap: int = 5
     mp: int = 2

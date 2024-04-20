@@ -1,12 +1,14 @@
 [tool.pyright]
 include = ["wakautosolver", "scripts"]
 typeCheckingMode = "strict"
-pythonVersion = "3.11"
+pythonVersion = "3.10"
 
 [tool.ruff]
 
 line-length = 130
-target-version = "py311"
+target-version = "py310"
+
+[tool.ruff.lint]
 select = [
     "F", "E", "I", "UP", "YTT", "ANN", "S", "BLE", "B", "A", "COM", "C4", "DTZ",
     "EM", "ISC", "G", "INP", "PIE", "T20", "Q003", "RSE", "RET", "SIM", "TID", "PTH",
@@ -37,7 +39,7 @@ extend-ignore = [
     "Q003",  # reccomended by ruff when using ruff format
 ]
 
-[tool.ruff.extend-per-file-ignores]
+[tool.ruff.lint.extend-per-file-ignores]
 "wakautosolver/b2048/enc_table.py" = ["RUF001"]
 "wakautosolver/b2048/dec_table.py" = ["RUF001"]
 "wakautosolver/__init__.py" = ["F401"]  # unused import in __init__
@@ -51,8 +53,9 @@ authors = [{ name = "Michael Hall", email = "michael@michaelhall.tech" }]
 readme = "readme.md"
 dynamic = ["version"]
 dependencies = [
-    "msgspec>=0.18.4",
+    "msgspec>=0.18.4; implementation_name != 'pypy'",
     "tqdm>=4.66.1",
+    "msgpack>=1.0.8; implementation_name == 'pypy'",
 ]
 
 [project.urls]

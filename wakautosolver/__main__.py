@@ -6,23 +6,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
-import pathlib
 import sys
 
-import msgspec
-
-from .solver import entrypoint, v1Config
+from .solver import entrypoint
 
 if __name__ == "__main__":
-    ns = None
-    if len(sys.argv) > 1 and (n := sys.argv[1]):
-        try:
-            path = pathlib.Path(n).resolve()
-        except Exception:  # noqa: S110, BLE001
-            pass
-        else:
-            if path.exists():
-                with path.open(mode="rb") as fp:
-                    ns = msgspec.toml.decode(fp.read(), type=v1Config)
-
-    entrypoint(sys.stdout, ns)
+    entrypoint(sys.stdout, None)

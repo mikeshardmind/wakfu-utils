@@ -15,8 +15,6 @@ import struct
 from functools import lru_cache
 from typing import Literal, NamedTuple, TypedDict
 
-from msgspec import Struct
-
 from .restructured_types import Stats
 
 _locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar("_locale", default="en")
@@ -361,7 +359,7 @@ class LocaleData(NamedTuple):
     pt: str = ""
 
 
-class SourceData(Struct, frozen=True, array_like=True):
+class SourceData(NamedTuple):
     arch: frozenset[int]
     horde: frozenset[int]
     non_finite_arch_horde: frozenset[int]

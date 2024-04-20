@@ -10,32 +10,30 @@ from __future__ import annotations
 
 import zlib
 from collections.abc import Sequence
+from dataclasses import astuple, dataclass, field
 from functools import partial
 from itertools import compress, count
 from operator import eq
-from typing import Literal
-
-from msgspec import Struct, field, msgpack
-from msgspec.structs import astuple
+from typing import Literal, NamedTuple
 
 from . import b2048
 from ._build_codes import Stats as AllocatedStats
-from ._typing_memes import STAT_MAX, UP_TO_5, UP_TO_10, UP_TO_20, UP_TO_40, ZERO_OR_ONE
+from ._compat import decode, encode
 from .object_parsing import EquipableItem
 from .restructured_types import ClassesEnum as WFClasses
 from .restructured_types import ElementsEnum as WFElements
 
 
-class Rune(Struct, array_like=True):
+class Rune(NamedTuple):
     effect_id: int = -1
     color: int = -1
     level: int = -1
 
 
-class Item(Struct, array_like=True):
+class Item(NamedTuple):
     item_id: int = -1
     assignable_elements: WFElements = WFElements.empty
-    rune_info: list[Rune] = field(default_factory=lambda: [Rune() for _ in range(4)])
+    rune_info: list[Rune] | None = None
     sublimation: int = -1
 
     def __bool__(self):
@@ -63,40 +61,41 @@ v1BuildSlotsOrder = [
 ]
 
 
-class Buildv1(Struct, array_like=True, omit_defaults=True):
+@dataclass
+class Buildv1:
     buildcodeversion: SupportedVersions = 1
     classenum: WFClasses = WFClasses.EMPTY
     level: int = 230
     # allocated stats
-    s_int_percent_hp: STAT_MAX = 0
-    s_int_elemental_res: UP_TO_10 = 0
-    s_int_barrier: UP_TO_10 = 0
-    s_int_heals_recv: UP_TO_5 = 0
-    s_int_percent_armor: UP_TO_10 = 0
-    s_str_elemental_mastery: STAT_MAX = 0
-    s_str_melee_mastery: UP_TO_40 = 0
-    s_str_distance_mastery: UP_TO_40 = 0
-    s_str_hp: STAT_MAX = 0
-    s_agi_lock: STAT_MAX = 0
-    s_agi_dodge: STAT_MAX = 0
-    s_agi_initiative: UP_TO_20 = 0
-    s_agi_lockdodge: STAT_MAX = 0
-    s_agi_fow: UP_TO_20 = 0
-    s_fortune_percent_crit: UP_TO_20 = 0
-    s_fortune_percent_block: UP_TO_20 = 0
-    s_fortune_crit_mastery: STAT_MAX = 0
-    s_fortune_rear_mastery: STAT_MAX = 0
-    s_fortune_berserk_mastery: STAT_MAX = 0
-    s_fortune_healing_mastery: STAT_MAX = 0
-    s_fortune_rear_res: UP_TO_20 = 0
-    s_fortune_crit_res: UP_TO_20 = 0
-    s_major_ap: ZERO_OR_ONE = 0
-    s_major_mp: ZERO_OR_ONE = 0
-    s_major_ra: ZERO_OR_ONE = 0
-    s_major_wp: ZERO_OR_ONE = 0
-    s_major_control: ZERO_OR_ONE = 0
-    s_major_damage: ZERO_OR_ONE = 0
-    s_major_res: ZERO_OR_ONE = 0
+    s_int_percent_hp: int = 0
+    s_int_elemental_res: int = 0
+    s_int_barrier: int = 0
+    s_int_heals_recv: int = 0
+    s_int_percent_armor: int = 0
+    s_str_elemental_mastery: int = 0
+    s_str_melee_mastery: int = 0
+    s_str_distance_mastery: int = 0
+    s_str_hp: int = 0
+    s_agi_lock: int = 0
+    s_agi_dodge: int = 0
+    s_agi_initiative: int = 0
+    s_agi_lockdodge: int = 0
+    s_agi_fow: int = 0
+    s_fortune_percent_crit: int = 0
+    s_fortune_percent_block: int = 0
+    s_fortune_crit_mastery: int = 0
+    s_fortune_rear_mastery: int = 0
+    s_fortune_berserk_mastery: int = 0
+    s_fortune_healing_mastery: int = 0
+    s_fortune_rear_res: int = 0
+    s_fortune_crit_res: int = 0
+    s_major_ap: int = 0
+    s_major_mp: int = 0
+    s_major_ra: int = 0
+    s_major_wp: int = 0
+    s_major_control: int = 0
+    s_major_damage: int = 0
+    s_major_res: int = 0
     item_1: Item | list[object] = field(default_factory=list)
     item_2: Item | list[object] = field(default_factory=list)
     item_3: Item | list[object] = field(default_factory=list)
@@ -135,7 +134,7 @@ class Buildv1(Struct, array_like=True, omit_defaults=True):
     @classmethod
     def from_code(cls, code: str) -> Buildv1:
         # wakforge sending empty arrays...
-        s = msgpack.decode(zlib.decompress(b2048.decode(code), wbits=-15))
+        s = decode(zlib.decompress(b2048.decode(code), wbits=-15))
         s[1] = WFClasses(s[1])
         items = s[32:46]
         for idx, item in enumerate(items, 32):
@@ -177,7 +176,7 @@ class Buildv1(Struct, array_like=True, omit_defaults=True):
         for idx in range(1, 15):
             item: Item | None = getattr(self, f"item_{idx}", None)
             if item and item.item_id == item_id:
-                item.assignable_elements = elements
+                item = Item(item.item_id, elements, item.rune_info, item.sublimation)
                 setattr(self, f"item_{idx}", item)
                 break
 
@@ -190,11 +189,6 @@ class Buildv1(Struct, array_like=True, omit_defaults=True):
         else:
             msg = f"Can't find a valid slot for this thing. {item}"
             raise RuntimeError(msg)
-
-    def to_code(self) -> str:
-        packed = msgpack.encode(self)
-        compressor = zlib.compressobj(level=9, wbits=-15)
-        return b2048.encode(compressor.compress(packed) + compressor.flush())
 
     def get_passives(self) -> list[int]:
         passives = (self.passive_1, self.passive_2, self.passive_3, self.passive_4, self.passive_5, self.passive_6)
@@ -213,10 +207,26 @@ def build_code_from_items(level: int, items: list[EquipableItem]) -> str:
     build = Buildv1(level=level)
     for item in items:
         build.add_item(item)
-    packed = msgpack.encode(build)
-    compressor = zlib.compressobj(level=9, wbits=-15)
-    return b2048.encode(compressor.compress(packed) + compressor.flush())
+
+    return build_to_code(build)
 
 
 def build_from_code(code: str) -> Buildv1:
     return Buildv1.from_code(code)
+
+
+def build_to_code(build: Buildv1) -> str:
+    b = list(astuple(build))
+    b[1] = int(b[1])
+    items = b[32:46]
+    for idx, item in enumerate(items, 32):
+        if not item:
+            b[idx] = []
+        else:
+            item_id, elements, runes, sub = item
+            runes = [tuple(r) for r in runes] if runes else []
+            b[idx] = [item_id, int(elements), runes, sub]
+
+    packed = encode(b)
+    compressor = zlib.compressobj(level=9, wbits=-15)
+    return b2048.encode(compressor.compress(packed) + compressor.flush())
