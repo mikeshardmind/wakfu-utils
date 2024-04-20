@@ -1140,7 +1140,7 @@ def solve(
                             neutrality_c += 1
                         elif sub == 29002:
                             neutrality_c += 2
-                        elif sub == 29002:
+                        elif sub == 29003:
                             neutrality_c += 3
 
                     fd_mod = 8 * min(neutrality_c, 4)
