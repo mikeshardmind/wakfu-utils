@@ -291,11 +291,13 @@ def solve(
         return ns.lv >= item.item_lv >= LOW_BOUND
 
     def relic_epic_level_filter(item: EquipableItem) -> bool:
-        """The unreasonable effectiveness of these two rings extends them a bit"""
+        """Special allowances for 3 epic rings to be used slightly longer"""
         if item.item_id == 9723:  # gelano
             return 140 >= ns.lv >= 65
         if item.item_id == 27281:  # bagus shushu
             return 185 >= ns.lv >= 125
+        if item.item_id == 27814:
+            return 230 >= ns.lv >= 215  # Mopy King Gloves
         return ns.lv >= item.item_lv >= LOW_BOUND
 
     def minus_relicepic(item: EquipableItem) -> bool:
