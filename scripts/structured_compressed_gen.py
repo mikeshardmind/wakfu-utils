@@ -7,9 +7,9 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 import bz2
-from itertools import chain
 import struct
 from io import BytesIO
+from itertools import chain
 from pathlib import Path
 from typing import NamedTuple
 
@@ -115,6 +115,84 @@ def unpack_locale_data(packed: bytes) -> LocaleBundle:
     return ret
 
 
+bit_len_map = {
+    0: 15,
+    1: 8,
+    2: 3,
+    3: 10,
+    4: 11,
+    5: 2,
+    6: 2,
+    7: 3,
+    8: 3,
+    9: 2,
+    10: 5,
+    11: 6,
+    12: 10,
+    13: 9,
+    14: 5,
+    15: 11,
+    16: 9,
+    17: 10,
+    18: 10,
+    19: 10,
+    20: 10,
+    21: 7,
+    22: 7,
+    23: 7,
+    24: 7,
+    25: 10,
+    26: 10,
+    27: 10,
+    28: 10,
+    29: 9,
+    30: 8,
+    31: 7,
+    32: 8,
+    33: 8,
+    34: 8,
+    35: 8,
+    36: 7,
+    37: 7,
+    38: 7,
+    39: 6,
+    40: 7,
+}
+
+has_negs = {4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17, 18, 19, 20, 21, 28, 29, 32, 33, 34, 36, 37, 38, 40}
+
+
+def pack_item(i: Item) -> bytes:
+    val = 0
+    offset = 0
+    for index, stat in enumerate(i):
+        bl = bit_len_map[index]
+        v = 1 << bl - 1 | 0 - stat if index in has_negs and stat < 0 else stat
+        val |= v << offset
+        offset += bit_len_map[index]
+
+    return val.to_bytes(39, byteorder="big")
+
+
+def unpack_item(b: bytes) -> "Item":
+    val = int.from_bytes(b, byteorder="big")
+    collected: list[int] = []
+    offset = 0
+    for index in range(41):
+        bl = bit_len_map[index]
+        if index in has_negs:
+            mask = int("1" * (bl - 1), 2)
+            absolute = (val >> (offset)) & mask
+            sign = (val >> (offset + bl - 1)) & 1
+            v = 0 - absolute if sign else absolute
+        else:
+            mask = int("1" * (bl), 2)
+            v = (val >> (offset)) & mask
+        collected.append(v)
+        offset += bl
+    return Item(*collected)
+
+
 def pack_sourcedata(data: SourceData) -> bytes:
     buffer = BytesIO()
     for item_set in data:
@@ -142,13 +220,13 @@ def unpack_sourcedata(packed: bytes) -> SourceData:
 def pack_items(items: list[Item]) -> bytes:
     buffer = BytesIO()
     for item in items:
-        buffer.write(struct.pack("!IHBH37h", *item))
+        buffer.write(pack_item(item))
     buffer.seek(0)
     return buffer.read()
 
 
 def unpack_items(packed: bytes) -> list[Item]:
-    return [Item(*data) for data in struct.iter_unpack("!IHBH37h", packed)]
+    return [unpack_item(b) for (b,) in struct.iter_unpack("!39s", packed)]
 
 
 if __name__ == "__main__":

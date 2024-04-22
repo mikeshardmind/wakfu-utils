@@ -380,8 +380,75 @@ def _get_item_name(item: EquipableItem) -> str:
     return getattr(i, _locale.get())
 
 
+# *May* need to be regenerated along with next one in future.
+bit_len_map = {
+    0: 15,
+    1: 8,
+    2: 3,
+    3: 10,
+    4: 11,
+    5: 2,
+    6: 2,
+    7: 3,
+    8: 3,
+    9: 2,
+    10: 5,
+    11: 6,
+    12: 10,
+    13: 9,
+    14: 5,
+    15: 11,
+    16: 9,
+    17: 10,
+    18: 10,
+    19: 10,
+    20: 10,
+    21: 7,
+    22: 7,
+    23: 7,
+    24: 7,
+    25: 10,
+    26: 10,
+    27: 10,
+    28: 10,
+    29: 9,
+    30: 8,
+    31: 7,
+    32: 8,
+    33: 8,
+    34: 8,
+    35: 8,
+    36: 7,
+    37: 7,
+    38: 7,
+    39: 6,
+    40: 7,
+}
+
+has_negs = {4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17, 18, 19, 20, 21, 28, 29, 32, 33, 34, 36, 37, 38, 40}
+
+
+def unpack_item(b: bytes) -> EquipableItem:
+    val = int.from_bytes(b, byteorder="big")
+    collected: list[int] = []
+    offset = 0
+    for index in range(41):
+        bl = bit_len_map[index]
+        if index in has_negs:
+            mask = int("1" * (bl - 1), 2)
+            absolute = (val >> (offset)) & mask
+            sign = (val >> (offset + bl - 1)) & 1
+            v = 0 - absolute if sign else absolute
+        else:
+            mask = int("1" * (bl), 2)
+            v = (val >> (offset)) & mask
+        collected.append(v)
+        offset += bl
+    return EquipableItem(*collected)
+
+
 def unpack_items(packed: bytes) -> list[EquipableItem]:
-    return [EquipableItem(*data) for data in struct.iter_unpack("!IHBH37h", packed)]
+    return [unpack_item(b) for (b,) in struct.iter_unpack("!39s", packed)]
 
 
 @lru_cache
