@@ -1,15 +1,6 @@
 # WIP utils, published for others.
 
 
-### scripts (for devs)
-
-downloader.py: **run this first** downloads the latest supported item data from ankama's cdn
-
-compressed_data_gen.py: generates a small bz2 compressed file for minimal redistribution if you only care about stats
-
-sqlify.py: generates an sqlite db from downloaded item data for use in either application or manual querying.
-
-
 ### How to use the autosolver provided
 
 I'm working with [wakforge.org](https://github.com/Tmktahu/wakforge)
@@ -17,11 +8,6 @@ to incorporate the autosolver's logic into their builder.
 
 Note: Not all of the features of the autobuilder are currently available
 in wakforge, and there may also be a standalone GUI app in the future.
-
-If you'd like to make use of more of the advanced features prior to them
-being included in wakforge, you'll need a little bit of knowledge on using
-CLI applications, and you'll want to run solver.py after running both
-downloader.py and compressed_data_gen.py
 
 ### Known limitations
 
@@ -39,7 +25,7 @@ downloader.py and compressed_data_gen.py
 - Better support for stat minimums (ie. optimizing fire res specifically for ALS Gerbean s8)
 - ~~a nice GUI (there are too many cli flags...).~~ [wakforge.org](https://github.com/Tmktahu/wakforge)
 - Floating stat points that can be allocated by the solver.
-- Weighting res based on enchanemtent system (l.ong term goal)
+- Weighting res based on enchanemtent system (long term goal)
 
 
 ### Quick notes on current optimization strategy
