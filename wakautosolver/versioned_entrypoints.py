@@ -190,6 +190,8 @@ def partial_solve_v2(
     config.forbidden_items = [i for i in config.forbidden_items if i]
     config.forbidden_sources = [s for s in config.forbidden_sources if s]
 
+    # and enums...
+    config.objectives._pyodide_norm()  # pyright: ignore[reportPrivateUsage]
     target_stats = config.target_stats.to_real()
 
     item_sources = load_item_source_data()

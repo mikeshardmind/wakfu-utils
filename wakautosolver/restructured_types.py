@@ -13,7 +13,7 @@ from __future__ import annotations
 import enum
 from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass, field, replace
-from typing import Literal, NamedTuple
+from typing import Literal
 
 
 class ClassesEnum(enum.IntEnum):
@@ -89,13 +89,22 @@ class Priority(enum.IntEnum):
     half_negative_only = 4
 
 
-class StatPriority(NamedTuple):
+@dataclass
+class StatPriority:
     distance_mastery: Priority = Priority.unvalued
     melee_mastery: Priority = Priority.unvalued
     heal_mastery: Priority = Priority.unvalued
     rear_mastery: Priority = Priority.unvalued
     berserk_mastery: Priority = Priority.unvalued
     elements: ElementsEnum = ElementsEnum.empty
+
+    def _pyodide_norm(self) -> None:
+        self.distance_mastery = Priority(self.distance_mastery)
+        self.melee_mastery_mastery = Priority(self.melee_mastery)
+        self.heal_mastery = Priority(self.heal_mastery)
+        self.rear_mastery = Priority(self.rear_mastery)
+        self.berserk_mastery = Priority(self.berserk_mastery)
+        self.elements = ElementsEnum(self.elements)
 
     @property
     def is_valid(self) -> bool:
