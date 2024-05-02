@@ -1147,18 +1147,21 @@ def solve(
 
                     fd_mod = 8 * min(neutrality_c, 4)
 
-            base_score = non_crit_score = score_key(_is)
+            base_score = score_key(_is)
 
             if UNRAVEL_ACTIVE:
                 base_score += statline.critical_mastery * (1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1)
+                non_crit_score = base_score * (100 - crit_chance) / 100
+                crit_score = base_score * (crit_chance) / 100
+                crit_score *= 1.25
+            else:
+                non_crit_score = base_score * (100 - crit_chance) / 100
+                non_crit_score *= (100 + statline.fd) / 100 + fd_mod
 
-            non_crit_score *= (100 - crit_chance) / 100
-            non_crit_score *= (100 + statline.fd) / 100 + fd_mod
-
-            crit_score = base_score + statline.critical_mastery
-            crit_score *= (crit_chance) / 100
-            crit_score *= (100 + statline.fd) / 100 + fd_mod
-            crit_score *= 1.25
+                crit_score = base_score + statline.critical_mastery
+                crit_score *= (crit_chance) / 100
+                crit_score *= (100 + statline.fd) / 100 + fd_mod
+                crit_score *= 1.25
 
             score = crit_score + non_crit_score
 
