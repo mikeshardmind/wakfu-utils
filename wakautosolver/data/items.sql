@@ -8343,7 +8343,7 @@ INSERT INTO item_names VALUES(31462,'The Day''s Edge','Lame de la fin du jour','
 INSERT INTO item_names VALUES(31463,'Zwombbit Torso','Towse de Zwombbit','Towso de Zwombbit','Pechewa de zombbit');
 INSERT INTO item_names VALUES(31464,'Genetically Modified Belt','Ceintuwe Génétiquement Modifiée','Cintuwão Geneticamente Modificado','Cinturón genéticamente modificado');
 INSERT INTO item_names VALUES(31465,'Wa Wabbit''s Cwown','Couwonne du Wa Wabbit','Cowoa do Wei Wabbit','Cowona del Wey Wabbit');
-INSERT INTO item_names VALUES(31466,'Well-Guawded Cape','Cape de Gawde','Capa de Guawda','Capa bien consewvada');
+INSERT INTO item_names VALUES(31466,'Gauwd Cloak','Cape de Gawde','Capa de Guawda','Capa de guawdia');
 
 DROP TABLE IF EXISTS item_type_names;
 CREATE TABLE item_type_names (
