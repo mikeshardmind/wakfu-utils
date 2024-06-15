@@ -887,6 +887,8 @@ def solve(
                 k = 2
             elif slot == "PET":
                 k = 4
+            elif slot == "CHEST":
+                k = 5
             items.clear()
             items.extend(bck[: k + ns.search_depth])
 
