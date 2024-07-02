@@ -119,16 +119,20 @@ class Stats(NamedTuple):
         e_mast += (self.ra + self.control) * 40
         wp = 6 + 2 * self.wp
         crit = self.crit
+        ra = self.ra
         if cl is ClassName.Ecaflip:
             crit += 20
         if cl is ClassName.Xelor:
             wp += 6
+        if cl is ClassName.Cra:
+            ra += 1
+
 
         return _Stats(
             ap=6 + self.ap,
             mp=3 + self.mp,
             wp=wp,
-            ra=1 * self.ra,
+            ra=ra,
             critical_hit=crit,
             critical_mastery=4 * self.crit_mastery,
             elemental_mastery=e_mast,
