@@ -15,6 +15,10 @@ from pathlib import Path
 import apsw
 import object_parsing
 
+import logging
+
+log = logging.getLogger(__name__)
+
 ITEM_TYPE_MAP = object_parsing.ITEM_TYPE_MAP
 
 SCHEMA = """
@@ -234,8 +238,8 @@ if __name__ == "__main__":
                     blueprints.add(actual_id)
                 except KeyError as e:
                     (k,) = e.args
-                    if k not in (7165, 7166, 7167):  # known failures
-                        raise
+                    if k not in (7165, 7166, 7167, 9575):  # known failures
+                        log.warning("new blueprint failure with id %d", k)
 
         conn.executemany(
             """INSERT INTO blueprints (item_id) VALUES(?)""",

@@ -3,7 +3,7 @@ name: Update item data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 1 * *"
+    - cron: "0 0 * * *"
   push:
     paths:
       # if we change any of the tools that generate data, check
