@@ -413,10 +413,7 @@ def solve(
         if common_ap_mp_sum_gt_0.get(item.item_slot, 999) <= ns.lv:
             req += 1
 
-        if (item.ap + item.mp) < req:
-            return True
-
-        return False
+        return item.ap + item.mp < req
 
     _af_items = ordered_keep_by_key([*forced_epics, *forced_relics, *forced_items], attrgetter("item_id"), 1)
     _af_stats: Stats = reduce(add, (i.as_stats() for i in _af_items), Stats())
@@ -1083,9 +1080,13 @@ def solve(
                 continue
 
             generated_conditions = [get_item_conditions(item) for item in (*items, relic, epic) if item]
-            mns, mxs = zip(*generated_conditions)
-            mns = reduce(l_and, filter(None, mns), stat_mins)
-            mxs = reduce(l_and, filter(None, mxs), stat_maxs)
+            # Imagine a language where type checking inference of the builtins worked properly
+            # Anyhow, here's two explicit statements that do nothing but handle that.
+            mns_iter: Iterable[SetMinimums]
+            mxs_iter: Iterable[SetMaximums]
+            mns_iter, mxs_iter = zip(*generated_conditions)
+            mns = reduce(l_and, filter(None, mns_iter), stat_mins)
+            mxs = reduce(l_and, filter(None, mxs_iter), stat_maxs)
 
             if not mns <= statline <= mxs:
                 continue
@@ -1190,7 +1191,7 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
         output.write(f"{sep.join(map(str, args))}{end}")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--lv", dest="lv", type=int, choices=list(range(20, 231, 15)), required=True)
+    parser.add_argument("--lv", dest="lv", type=int, choices=list(range(20, 246, 15)), required=True)
     parser.add_argument("--ap", dest="ap", type=int, default=5)
     parser.add_argument("--mp", dest="mp", type=int, default=2)
     parser.add_argument("--wp", dest="wp", type=int, default=0)
