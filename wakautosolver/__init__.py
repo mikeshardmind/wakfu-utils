@@ -7,7 +7,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 # Note: This is Year, month, monotonic not year, month, day
-__version__ = "2024.07.2"
+__version__ = "2024.10.1"
 
 from . import object_parsing, solver
 from .b2048 import decode as b2048_decode
