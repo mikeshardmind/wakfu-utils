@@ -166,10 +166,10 @@ def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
 
 if __name__ == "__main__":
     try:
-        code = "ಡƸɉ৯௫ѹ੮ཪÕƠഌðႬৰİԡĄΐÁটұƇਨ९ǟສɓ྾྾ଢƟၿკႮǨʤЂɟඨഏÈʘएØ"
+        code = "ಡƸɉ৪জҜȀºЕਜΑĔඳ૧Ӂঅწ྾ඵӈནఆॿဒૐԢಒǂॺóØ།"
         cfg = v2Config(
             allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
-            target_stats=SetMinimums(ap=14, mp=4, wp=6, ra=0),
+            target_stats=SetMinimums(ap=7, mp=3, wp=6, ra=0),
             objectives=StatPriority(
                 elements=ElementsEnum.fire | ElementsEnum.earth,
                 melee_mastery=Priority.prioritized,
