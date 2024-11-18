@@ -62,14 +62,7 @@ v1BuildSlotsOrder = [
 
 
 # TEMP: see https://github.com/mikeshardmind/wakfu-utils/pull/15/files#diff-da894f04a59170295976347712c42a92da67fee89429432307a2e6cbee557c96
-ITEM_REPLACEMENT_MAP = {
-    24038: 10272,
-    24049: 15478,
-    24082: 17657,
-    24058: 20563,
-    24037: 20666,
-    24039: 20667
-}
+ITEM_REPLACEMENT_MAP = {24038: 10272, 24049: 15478, 24082: 17657, 24058: 20563, 24037: 20666, 24039: 20667}
 
 
 @dataclass

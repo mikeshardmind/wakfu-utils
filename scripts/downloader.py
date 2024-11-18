@@ -29,7 +29,7 @@ _FTYPES = (
 
 
 #: Available for checking if version is known to work with object_parsing code
-VERSIONS_TESTED = ("1.81.1.13", "1.81.1.15", "1.83.1.21", "1.83.1.23")
+VERSIONS_TESTED = ("1.81.1.13", "1.81.1.15", "1.83.1.21", "1.83.1.23", "1.85.1.29")
 
 
 async def _grab_file(

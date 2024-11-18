@@ -17,7 +17,9 @@ import logging
 import pathlib
 from collections.abc import Callable
 from functools import cached_property
-from typing import Any, Literal, Self, TypedDict, TypeVar
+from typing import Any, Literal, TypedDict, TypeVar
+
+from typing_extensions import Self
 
 
 class PosData(TypedDict):
@@ -611,10 +613,7 @@ class EquipableItem:
         if self.item_slot in ("NECK", "FIRST_WEAPON", "CHEST", "CAPE", "LEGS", "BACK"):
             req += 1
 
-        if req > self._ap + self._mp:
-            return True
-
-        return False
+        return req > self._ap + self._mp
 
     @cached_property
     def item_slot(self) -> str:

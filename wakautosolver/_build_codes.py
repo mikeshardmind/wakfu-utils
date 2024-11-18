@@ -127,7 +127,6 @@ class Stats(NamedTuple):
         if cl is ClassName.Cra:
             ra += 1
 
-
         return _Stats(
             ap=6 + self.ap,
             mp=3 + self.mp,

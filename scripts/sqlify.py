@@ -9,13 +9,13 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 # pyright: reportPrivateUsage=none
 
 import json
+import logging
 import re
 from pathlib import Path
 
 import apsw
-import object_parsing
 
-import logging
+from . import object_parsing
 
 log = logging.getLogger(__name__)
 

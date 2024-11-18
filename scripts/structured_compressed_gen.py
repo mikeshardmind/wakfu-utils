@@ -7,6 +7,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 import bz2
+import json
 import struct
 from io import BytesIO
 from itertools import chain
@@ -206,3 +207,19 @@ if __name__ == "__main__":
     bz2_comp = bz2.compress(data, compresslevel=9)
     with (base_path / "source_info.bz2").open(mode="wb") as fp:
         fp.write(bz2_comp)
+
+    export_path = base_path = Path(__file__).parent.with_name("exported_data")
+    wakforge_exports = export_path / "wakforge"
+    wakforge_exports.mkdir(parents=True, exist_ok=True)
+
+    with (wakforge_exports / "item_sources.json").open(mode="w") as fp:
+        data = {
+            "arch": sorted(datastruct.arch),
+            "horde": sorted(datastruct.horde),
+            "non_finite_arch_horde": sorted(datastruct.non_finite_arch_horde),
+            "pvp": sorted(datastruct.pvp),
+            "ultimate_boss": sorted(datastruct.ultimate_boss),
+            "legacy_items": sorted(datastruct.legacy_items),
+            "blueprints": sorted(datastruct.blueprints),
+        }
+        json.dump(data, fp)

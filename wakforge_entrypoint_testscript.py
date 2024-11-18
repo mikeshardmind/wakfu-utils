@@ -177,7 +177,7 @@ if __name__ == "__main__":
                 berserk_mastery=Priority.full_negative_only,
                 rear_mastery=Priority.full_negative_only,
             ),
-            #dry_run=True,
+            # dry_run=True,
             ignore_existing_items=False,
             forbidden_sources=[],  # can be any or none of ["arch", "horde", "pvp", "ultimate_boss"]
             forbidden_items=[],  # the item ids
