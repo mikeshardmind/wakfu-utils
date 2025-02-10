@@ -265,7 +265,7 @@ def partial_solve_v2(
         negrear=lookup.get(config.objectives.rear_mastery, "none"),
         negzerk=lookup.get(config.objectives.berserk_mastery, "none"),
         dry_run=config.dry_run,
-        hard_cap_depth=50,
+        hard_cap_depth=25,
         tolerance=_adaptive_tolerance_map.get(build.level, 14),
         search_depth=1,
         elements=config.objectives.elements,
