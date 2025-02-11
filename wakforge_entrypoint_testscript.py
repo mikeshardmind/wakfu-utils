@@ -8,7 +8,6 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 
 # This is a way to test things the way wakforge uses them
 import builtins
-import os
 import time
 import zlib
 from typing import Any
@@ -125,16 +124,9 @@ all_configs = [cfg1, cfg2, cfg3, cfg4, cfg5, cfg6, cfg7, cfg8]
 
 
 def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
-    if loud:
-        os.environ["USE_TQDM"] = "1"
 
     err_print = builtins.print
-    if not loud:
-
-        def aprint(*values: object, sep: str | None = " ") -> None:
-            pass
-    else:
-        aprint = builtins.print
+    aprint = builtins.print
 
     cc_iter = enumerate(codes_and_configs if codes_and_configs else zip(all_codes, all_configs), 1)
 
@@ -183,6 +175,6 @@ if __name__ == "__main__":
             forbidden_items=[],  # the item ids
         )
 
-        runner((code, cfg), loud=True)
+        runner(*((co, cf) for co, cf in zip(all_codes, all_configs)) , loud=True)
     except KeyboardInterrupt:
         pass

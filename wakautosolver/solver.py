@@ -12,36 +12,23 @@ import argparse
 import collections
 import itertools
 import logging
-import os
 import statistics
 import sys
-from collections.abc import Callable, Hashable, Iterable, Iterator
+from collections.abc import Callable, Hashable, Iterable
 from dataclasses import astuple
-from functools import lru_cache, partial, reduce
+from functools import lru_cache, reduce
 from operator import add, and_, attrgetter, itemgetter
-from typing import TYPE_CHECKING, Final, Protocol, TypeVar
+from typing import Final, Protocol, TypeVar
 
 from ._build_codes import Stats as StatSpread
 from .item_conditions import get_item_conditions
 from .object_parsing import EquipableItem, get_all_items, load_item_source_data, set_locale
 from .restructured_types import ClassesEnum, ElementsEnum, SetMaximums, SetMinimums, Stats, apply_w2h, v1Config
-from .utils import only_once
 from .wakforge_buildcodes import build_code_from_items
 
-# TODO: possibly enable this for pyodide use? want to look into the overhead more
-if "pyodide" not in sys.modules:
-    import tqdm
-    from tqdm.contrib.itertools import product as _tqdm_product  # type: ignore
-
-    tqdm_product = partial(_tqdm_product, desc="Trying items with that pair", leave=False)
-    if TYPE_CHECKING:
-        tqdm_product = itertools.product
-
-else:
-    tqdm = None
-    tqdm_product = None
 
 T = TypeVar("T")
+
 
 log = logging.getLogger("solver")
 
@@ -53,10 +40,10 @@ class SupportsWrite(Protocol[T_contra]):
     def write(self, s: T_contra, /) -> object: ...
 
 
-ALWAYS_SIMMED = "ap", "mp", "ra", "wp", "critical_hit", "critical_mastery"
+ALWAYS_SIMMED = "ap", "mp", "ra", "wp" , #"critical_hit", "critical_mastery"
+AS_ATTR_GETTER = attrgetter(*ALWAYS_SIMMED)
 
 
-@only_once
 def setup_logging(output: SupportsWrite[str]) -> None:
     handler = logging.StreamHandler(output)
     formatter = logging.Formatter("%(message)s", datefmt="%Y-%m-%d %H:%M:%S", style="%")
@@ -93,15 +80,12 @@ class ImpossibleStatError(SolveError):
 
 def solve(
     ns: v1Config,
-    use_tqdm: bool = False,
     progress_callback: Callable[[int, int], None] | None = None,
     point_spread: StatSpread | None = None,
     passives: list[int] | None = None,
     sublimations: list[int] | None = None,
 ) -> list[tuple[float, list[EquipableItem]]]:
     """Still has some debug stuff in here, will be refactoring this all later."""
-
-    use_tqdm = use_tqdm or bool(os.getenv("USE_TQDM", None))
 
     set_locale(ns.locale)
 
@@ -180,15 +164,16 @@ def solve(
 
         return score
 
-    score_key = lru_cache(_score_key)
+    score_key = lru_cache(512)(_score_key)
 
-    @lru_cache
+    @lru_cache(512)
     def crit_score_key(item: EquipableItem | None) -> float:
         if item is None:
             return 0
         base_score = score_key(item)
         return base_score + ((item.critical_hit + base_stats.critical_hit) / 80) * base_score
 
+    @lru_cache(None)
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
         return any(i.unhandled() for i in get_item_conditions(item) if i)
 
@@ -638,11 +623,18 @@ def solve(
         k: [item for item in v if item.item_id not in _soft_unobtainable] for k, v in AOBJS.items()
     }
 
-    def needs_full_sim_key(item: EquipableItem) -> Hashable:
-        keys = {"disables_second_weapon", *ALWAYS_SIMMED}
-        if passives and 5100 in passives:
-            keys.add("block")
-        return attrgetter(*keys)(item)
+
+    sim_keys = {"disables_second_weapon", *ALWAYS_SIMMED}
+    if passives and 5100 in passives:
+        sim_keys.add("block")
+    if ns.unraveling or ns.wakfu_class is ClassesEnum.Eca:
+        sim_keys.add("critical_hit")
+    if ns.unraveling:
+        sim_keys.add("critical_mastery")
+
+    @lru_cache(128)
+    def needs_full_sim_key(item: EquipableItem, _getter = attrgetter(*sim_keys)) -> Hashable:  # pyright: ignore[reportMissingParameterType]
+        return _getter(item)
 
     if original_forced_counts:
         for slot, count in original_forced_counts.items():
@@ -761,20 +753,17 @@ def solve(
             *itertools.product(solve_ONEH, (solve_DAGGERS + solve_SHIELDS)),
         )
 
-    def tuple_expander(seq: Iterable[Iterable[EquipableItem] | EquipableItem]) -> Iterator[EquipableItem]:
-        for item in seq:
-            if isinstance(item, EquipableItem):
-                yield item
-            else:
-                yield from item
-
     weapon_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
-    weapon_score_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], float]
+
     weapon_key_func = lambda w: (
         isinstance(w, tuple),
-        *(sum(a) for a in zip(*(needs_full_sim_key(i) for i in tuple_expander(w)))),
+        *(sum(a) for a in zip(*(needs_full_sim_key(i) for i in w))),
     )
-    weapon_score_func = lambda w: sum(map(score_key, tuple_expander(w)))
+
+    @lru_cache(128)
+    def weapon_score_func(w: Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]) -> float:
+        return sum(map(score_key, w))
+
     srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
     canidate_weapons = ordered_keep_by_key(srt_w, weapon_key_func)
 
@@ -800,7 +789,10 @@ def solve(
     inplace_ordered_keep_by_key(epics, kf)
     inplace_ordered_keep_by_key(relics, kf)
 
-    def re_key_func(pair: tuple[EquipableItem | None, EquipableItem | None]) -> Hashable:
+    def re_key_func(
+        pair: tuple[EquipableItem | None, EquipableItem | None],
+        _as_attrgetter=AS_ATTR_GETTER, # pyright: ignore[reportMissingParameterType]
+    ) -> Hashable:
         if not any(pair):
             return 0
         disables_second = any(i.disables_second_weapon for i in pair if i)
@@ -810,7 +802,7 @@ def solve(
         sc = re_s[0]
         if len(re_s) > 1:
             sc = sc + re_s[1]
-        ks = attrgetter(*ALWAYS_SIMMED)(sc)
+        ks = _as_attrgetter(sc)
         return (pos_key, disables_second, *ks)
 
     distribs = {
@@ -945,17 +937,11 @@ def solve(
                 ret.extend(v)
 
         for weps in canidate_weapons:
-            ret.extend(tuple_expander(weps))
+            ret.extend(weps)
         return [(0, ordered_keep_by_key(ret, attrgetter("item_id")))]
 
     # everything below this line is performance sensitive, and runtime is based on how much the above
     # managed to reduce the permuations of possible gear.
-
-    maybe_progress_bar: Iterable[tuple[EquipableItem | None, EquipableItem | None]]
-    if use_tqdm and tqdm:
-        maybe_progress_bar = tqdm.tqdm(canidate_re_pairs, desc="Considering relic epic pairs", unit=" Relic-epic pair")
-    else:
-        maybe_progress_bar = canidate_re_pairs
 
     solve_CANIDATES.pop("WEAPONS", None)
     re_len = len(canidate_re_pairs)
@@ -970,10 +956,11 @@ def solve(
     #   - Restructure data to allow this to be a vectorizable problem
     #      - Challenges exist here around class specific behavior
 
-    l_add = lru_cache(add)
+    l_add = lru_cache(1024)(add)
     l_and = lru_cache(and_)
 
-    for idx, (relic, epic) in enumerate(maybe_progress_bar, 1):
+
+    for idx, (relic, epic) in enumerate(canidate_re_pairs, 1):
         if progress_callback:
             progress_callback(idx, re_len)
 
@@ -1066,12 +1053,24 @@ def solve(
             continue
 
         filtered = filter(None, cans)
-        gen = tqdm_product(*filtered) if use_tqdm and tqdm_product else itertools.product(*filtered)
 
-        for raw_items in gen:
-            items = [*tuple_expander(raw_items), *forced_items]
+        re_st = base_stats
+        if relic:
+            re_st += relic.as_stats()
+        if epic:
+            re_st += epic.as_stats()
 
-            statline: Stats = reduce(l_add, (i.as_stats() for i in (relic, epic, *items) if i), base_stats)
+        for raw_items in itertools.product(*filtered):
+
+            items = forced_items.copy()
+            statline: Stats = re_st
+            for ri in raw_items:
+                if type(ri) is EquipableItem:
+                    items.append(ri)
+                else:
+                    items.extend(ri)
+
+            statline: Stats = reduce(l_add, [i.as_stats() for i in items], re_st)
             if ns.twoh and any(i.disables_second_weapon for i in items):
                 statline = apply_w2h(statline)
 
@@ -1079,14 +1078,15 @@ def solve(
             if statline.critical_hit < -10:
                 continue
 
-            generated_conditions = [get_item_conditions(item) for item in (*items, relic, epic) if item]
-            # Imagine a language where type checking inference of the builtins worked properly
-            # Anyhow, here's two explicit statements that do nothing but handle that.
-            mns_iter: Iterable[SetMinimums]
-            mxs_iter: Iterable[SetMaximums]
-            mns_iter, mxs_iter = zip(*generated_conditions)
-            mns = reduce(l_and, filter(None, mns_iter), stat_mins)
-            mxs = reduce(l_and, filter(None, mxs_iter), stat_maxs)
+            mns = stat_mins
+            mxs = stat_maxs
+
+            for gmi, gmx in map(get_item_conditions, filter(None, (*items, relic, epic))):
+                if gmi:
+                    mns = l_and(mns, gmi)
+                if gmx:
+                    mxs = l_and(mxs, gmx)
+
 
             if not mns <= statline <= mxs:
                 continue
@@ -1235,7 +1235,7 @@ def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
         ns = parser.parse_args(namespace=v1Config())
 
     try:
-        result = solve(ns, use_tqdm=True)
+        result = solve(ns)
     except SolveError as exc:
         msg = exc.args[0]
         write(msg)

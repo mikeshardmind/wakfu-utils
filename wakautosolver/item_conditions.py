@@ -104,7 +104,7 @@ for item_id in (26994, 26995, 26996, 26300, 26319):
     conditions[item_id] = wp_gt_eq_8
 
 
-@lru_cache
+@lru_cache(1024)
 def get_item_conditions(item: EquipableItem) -> tuple[rst.SetMinimums | None, rst.SetMaximums | None]:
     item_conds = conditions.get(item.item_id, [])
     set_mins: list[rst.SetMinimums] = []

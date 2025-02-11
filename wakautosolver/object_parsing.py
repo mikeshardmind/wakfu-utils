@@ -13,7 +13,7 @@ import contextvars
 import pathlib
 import struct
 from functools import lru_cache
-from typing import Literal, NamedTuple, TypedDict
+from typing import Literal, NamedTuple, TypedDict, final
 
 from .restructured_types import Stats
 
@@ -216,6 +216,7 @@ ITEM_TYPE_MAP: dict[int, PosData] = {
 }
 
 
+@final
 class EquipableItem(NamedTuple):
     item_id: int
     item_lv: int
@@ -325,7 +326,7 @@ class EquipableItem(NamedTuple):
         return f"Item id: {self.item_id:>5} [{rarity:>10}] {typ:>20} Lv: {self.item_lv:>3} {self.name}"
 
 
-@lru_cache
+@lru_cache(None)
 def _item_to_stats(item: EquipableItem) -> Stats:
     return Stats(
         ap=item.ap,
