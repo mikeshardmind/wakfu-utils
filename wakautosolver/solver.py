@@ -944,7 +944,7 @@ def solve(
     # managed to reduce the permuations of possible gear.
 
     solve_CANIDATES.pop("WEAPONS", None)
-    re_len = len(canidate_re_pairs)
+
 
     # Everything in this section can be improved.
     # Major things to consider:
@@ -956,13 +956,9 @@ def solve(
     #   - Restructure data to allow this to be a vectorizable problem
     #      - Challenges exist here around class specific behavior
 
-    l_add = lru_cache(1024)(add)
-    l_and = lru_cache(and_)
+    filtered_re_pairs: list[tuple[EquipableItem | None, EquipableItem | None]] = []
 
-
-    for idx, (relic, epic) in enumerate(canidate_re_pairs, 1):
-        if progress_callback:
-            progress_callback(idx, re_len)
+    for (relic, epic) in canidate_re_pairs:
 
         if relic and epic:
             if relic.item_slot == epic.item_slot != "LEFT_HAND":
@@ -974,214 +970,347 @@ def solve(
             if epic.disables_second_weapon and relic.item_slot == "SECOND_WEAPON":
                 continue
 
-        REM_SLOTS = [
-            "LEGS",
-            "BACK",
-            "HEAD",
-            "CHEST",
-            "SHOULDERS",
-            "BELT",
-            "LEFT_HAND",
-            "LEFT_HAND",
-            "NECK",
-            "ACCESSORY",
-            "MOUNT",
-            "PET",
-        ]
+        filtered_re_pairs.append((relic, epic))
 
-        # This is a slot we allow building without, sets without will be worse ofc...
-        if "ACCESSORY" not in solve_CANIDATES:  # noqa: SIM102
-            if not ((relic and relic.item_slot == "ACCESSORY") or (epic and epic.item_slot == "ACCESSORY")):
-                try:
-                    REM_SLOTS.remove("ACCESSORY")
-                except ValueError:
-                    pass
+    re_len = len(filtered_re_pairs)
 
-        for slot, count in forced_slots.items():
-            for _ in range(count):
-                try:
-                    REM_SLOTS.remove(slot)
-                except ValueError:
-                    pass
+    if "pyodide" in sys.modules:
+        for idx, (relic, epic) in enumerate(filtered_re_pairs, 1):
 
-        if relic and relic.item_slot not in REM_SLOTS and "WEAPON" not in relic.item_slot:
-            continue
-        if epic and epic.item_slot not in REM_SLOTS and "WEAPON" not in epic.item_slot:
-            continue
+            if progress_callback:
+                progress_callback(idx, re_len)
 
-        main_hand_disabled = False
-        off_hand_disabled = False
+            solve_BEST_LIST.extend(
+                inner_solve(relic, epic, solve_CANIDATES, forced_slots, forced_items, solve_DAGGERS, solve_SHIELDS, solve_ONEH, canidate_weapons, ns, base_stats, stat_mins, stat_maxs, passives, sublimations)
+            )
 
-        for item in (*forced_items, relic, epic):
-            if item is None:
-                continue
-            if item.item_slot == "FIRST_WEAPON":
-                main_hand_disabled = True
-                if item.disables_second_weapon:
-                    off_hand_disabled = True
-            elif item.item_slot == "SECOND_WEAPON":
-                off_hand_disabled = True
-            elif item.is_epic or item.is_relic:
-                try:
-                    REM_SLOTS.remove(item.item_slot)
-                except ValueError:
-                    continue
+    else:
 
-        weapons: list[tuple[EquipableItem] | tuple[EquipableItem, EquipableItem]] = []
-        if not (main_hand_disabled and off_hand_disabled):
-            REM_SLOTS.append("WEAPONS")
 
-            if main_hand_disabled:
-                s = [*solve_DAGGERS, *solve_SHIELDS]
-                s.sort(key=score_key, reverse=True)
-                weapons = [(i,) for i in ordered_keep_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))]
-            elif off_hand_disabled:
-                weapons = [(i,) for i in ordered_keep_by_key(solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp))]
-            else:
-                weapons = canidate_weapons
+        import multiprocessing as mp
+        pool = mp.Pool()
 
-            weapons.sort(key=weapon_score_func, reverse=True)
 
-        try:
-            k = REM_SLOTS.count("LEFT_HAND")
-            ring_pairs = list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k > 0 else ()
-            cans = [ring_pairs, *(solve_CANIDATES[k] for k in REM_SLOTS if k not in ("LEFT_HAND", "WEAPONS"))]
-            if "WEAPONS" in REM_SLOTS:
-                cans.append(weapons)
-        except KeyError as exc:
-            log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
-            continue
 
-        filtered = filter(None, cans)
+        args = [(relic, epic, solve_CANIDATES, forced_slots, forced_items, solve_DAGGERS, solve_SHIELDS, solve_ONEH, canidate_weapons, ns, base_stats, stat_mins, stat_maxs, passives, sublimations) for relic, epic in filtered_re_pairs]
 
-        re_st = base_stats
-        if relic:
-            re_st += relic.as_stats()
-        if epic:
-            re_st += epic.as_stats()
+        results = pool.starmap(inner_solve, args)
 
-        for raw_items in itertools.product(*filtered):
+        for res in results:
+            solve_BEST_LIST.extend(res)
 
-            items = forced_items.copy()
-            statline: Stats = re_st
-            for ri in raw_items:
-                if type(ri) is EquipableItem:
-                    items.append(ri)
+    solve_BEST_LIST.sort(reverse=True)
+    solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
+    solve_BEST_LIST = solve_BEST_LIST[:5]
+
+    return solve_BEST_LIST
+
+
+from typing import Mapping, Sequence
+
+def inner_solve(
+    relic: EquipableItem | None,
+    epic: EquipableItem | None,
+    solve_CANIDATES: Mapping[str, list[EquipableItem]],
+    forced_slots: Mapping[str, int],
+    forced_items: Sequence[EquipableItem],
+    solve_DAGGERS: Sequence[EquipableItem],
+    solve_SHIELDS: Sequence[EquipableItem],
+    solve_ONEH: Sequence[EquipableItem],
+    canidate_weapons: Sequence[tuple[EquipableItem] | tuple[EquipableItem, EquipableItem]],
+    ns: v1Config,
+    base_stats: Stats,
+    stat_mins: SetMinimums,
+    stat_maxs: SetMaximums,
+    passives: Sequence[int] | None,
+    sublimations: Sequence[int] | None,
+) -> list[tuple[float, list[EquipableItem]]]:
+
+
+
+    def _score_key(item: EquipableItem | Stats | None) -> float:
+        score = 0.0
+        if not item:
+            return score
+
+        elemental_modifier = 1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1
+
+        score += item.elemental_mastery * elemental_modifier
+        if ns.melee:
+            score += item.melee_mastery
+        if ns.dist:
+            score += item.distance_mastery
+        if ns.zerk and ns.negzerk not in ("half", "full"):
+            score += item.berserk_mastery
+        else:
+            if item.berserk_mastery < 0:
+                if ns.negzerk == "full":
+                    mul = 1.0
+                elif ns.negzerk == "half":
+                    mul = 0.5
                 else:
-                    items.extend(ri)
+                    mul = 0.0
 
-            statline: Stats = reduce(l_add, [i.as_stats() for i in items], re_st)
-            if ns.twoh and any(i.disables_second_weapon for i in items):
-                statline = apply_w2h(statline)
+                score += item.berserk_mastery * mul
 
-            # GLOBAL GAME CONDITION
-            if statline.critical_hit < -10:
+        if ns.rear and ns.negrear not in ("full", "half"):
+            score += item.rear_mastery
+        else:
+            if item.rear_mastery < 0:
+                if ns.negrear == "full":
+                    mul = 1.0
+                elif ns.negrear == "half":
+                    mul = 0.5
+                else:
+                    mul = 0.0
+
+                score += item.rear_mastery * mul
+
+        if ns.heal:
+            score += item.healing_mastery
+
+        if ns.num_mastery == 1:
+            score += item.mastery_1_element * elemental_modifier
+        if ns.num_mastery <= 2:
+            score += item.mastery_2_elements * elemental_modifier
+        if ns.num_mastery <= 3:
+            score += item.mastery_3_elements * elemental_modifier
+
+        # This isn't perfect, Doziak epps are weird.
+        if (n := ns.elements.bit_count()) and not isinstance(item, Stats):
+            element_vals = 0
+            if ElementsEnum.air in ns.elements:
+                element_vals += item.air_mastery
+            if ElementsEnum.earth in ns.elements:
+                element_vals += item.earth_mastery
+            if ElementsEnum.water in ns.elements:
+                element_vals += item.water_mastery
+            if ElementsEnum.fire in ns.elements:
+                element_vals += item.fire_mastery
+            score += element_vals / n * elemental_modifier
+
+        return score
+
+    score_key = lru_cache(512)(_score_key)
+
+    solve_BEST_LIST: list[tuple[float, list[EquipableItem]]] = []
+
+    score_key = lru_cache()(_score_key)
+
+    @lru_cache(128)
+    def weapon_score_func(w: Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]) -> float:
+        return sum(map(score_key, w))
+
+    l_add = lru_cache(1024)(add)
+    l_and = lru_cache(and_)
+
+    REM_SLOTS = [
+        "LEGS",
+        "BACK",
+        "HEAD",
+        "CHEST",
+        "SHOULDERS",
+        "BELT",
+        "LEFT_HAND",
+        "LEFT_HAND",
+        "NECK",
+        "ACCESSORY",
+        "MOUNT",
+        "PET",
+    ]
+
+    # This is a slot we allow building without, sets without will be worse ofc...
+    if "ACCESSORY" not in solve_CANIDATES:  # noqa: SIM102
+        if not ((relic and relic.item_slot == "ACCESSORY") or (epic and epic.item_slot == "ACCESSORY")):
+            try:
+                REM_SLOTS.remove("ACCESSORY")
+            except ValueError:
+                pass
+
+    for slot, count in forced_slots.items():
+        for _ in range(count):
+            try:
+                REM_SLOTS.remove(slot)
+            except ValueError:
+                pass
+
+    if relic and relic.item_slot not in REM_SLOTS and "WEAPON" not in relic.item_slot:
+        return [(0, [])]
+    if epic and epic.item_slot not in REM_SLOTS and "WEAPON" not in epic.item_slot:
+        return [(0, [])]
+
+    main_hand_disabled = False
+    off_hand_disabled = False
+
+    for item in (*forced_items, relic, epic):
+        if item is None:
+            continue
+        if item.item_slot == "FIRST_WEAPON":
+            main_hand_disabled = True
+            if item.disables_second_weapon:
+                off_hand_disabled = True
+        elif item.item_slot == "SECOND_WEAPON":
+            off_hand_disabled = True
+        elif item.is_epic or item.is_relic:
+            try:
+                REM_SLOTS.remove(item.item_slot)
+            except ValueError:
                 continue
 
-            mns = stat_mins
-            mxs = stat_maxs
+    weapons: list[tuple[EquipableItem] | tuple[EquipableItem, EquipableItem]] = []
+    if not (main_hand_disabled and off_hand_disabled):
+        REM_SLOTS.append("WEAPONS")
 
-            for gmi, gmx in map(get_item_conditions, filter(None, (*items, relic, epic))):
-                if gmi:
-                    mns = l_and(mns, gmi)
-                if gmx:
-                    mxs = l_and(mxs, gmx)
+        if main_hand_disabled:
+            s = [*solve_DAGGERS, *solve_SHIELDS]
+            s.sort(key=score_key, reverse=True)
+            weapons = [(i,) for i in ordered_keep_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))]
+        elif off_hand_disabled:
+            weapons = [(i,) for i in ordered_keep_by_key(solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp))]
+        else:
+            weapons = list(canidate_weapons)
 
+        weapons.sort(key=weapon_score_func, reverse=True)
 
-            if not mns <= statline <= mxs:
-                continue
+    try:
+        k = REM_SLOTS.count("LEFT_HAND")
+        ring_pairs = list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k > 0 else ()
+        cans = [ring_pairs, *(solve_CANIDATES[k] for k in REM_SLOTS if k not in ("LEFT_HAND", "WEAPONS"))]
+        if "WEAPONS" in REM_SLOTS:
+            cans.append(weapons)
+    except KeyError as exc:
+        log.debug("Constraints may have removed too many items slot: %s", exc.args[0])
+        return [(0, [])]
 
-            critical_hit = statline.critical_hit + 3
+    filtered = filter(None, cans)
 
-            # Note: keep the class here even if it isn't needed for ease of reference
+    re_st = base_stats
+    if relic:
+        re_st += relic.as_stats()
+    if epic:
+        re_st += epic.as_stats()
 
-            # innate passive
-            if ns.wakfu_class == ClassesEnum.Ecaflip and critical_hit > 100:
-                statline += Stats(fd=0.5 * (critical_hit - 100))
+    for raw_items in itertools.product(*filtered):
 
-            # Bravery
-            if ns.wakfu_class == ClassesEnum.Iop and passives and 5100 in passives and ns.lv >= 90:
-                block_mod = min(max(0, statline.block // 2), 20)
-                if block_mod:
-                    statline += Stats(critical_hit=block_mod)
-
-            # Sram to the bone
-            if ns.wakfu_class == ClassesEnum.Sram and passives and 4610 in passives and ns.lv >= 100:
-                # TODO: (?) We assume shards will make up any missing lock/dodge right now
-                statline += Stats(critical_hit=20 if ns.lv < 200 else 30)
-
-            if ns.wakfu_class == ClassesEnum.Masq and passives:
-                # TODO: (?) We assume shards will make up any missing lock/dodge right now
-                if 7096 in passives and ns.lv >= 20:  # artful locker
-                    melee_mod = min(max(0, ns.lv * 2), ns.lv * 2)
-                    statline += Stats(melee_mastery=melee_mod)
-                if 7109 in passives and ns.lv >= 85:  # artful dodge
-                    distance_mod = min(max(0, ns.lv * 2), ns.lv * 2)
-                    statline += Stats(distance_mastery=distance_mod)
-
-            UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
-
-            crit_chance = max(min(critical_hit, 100), 0)  # engine crit rate vs stat
-
-            _is = base_stats
-            for item in (*items, relic, epic):
-                if item is not None:
-                    _is += item.as_stats()
-
-            fd_mod = 0
-            if _is.get_secondary_sum() <= 0:
-                if sublimations and 29874 in sublimations:
-                    # inflexibility 2
-                    _is += Stats(
-                        elemental_mastery=int(_is.elemental_mastery * 0.15),
-                        mastery_1_element=int(_is.mastery_1_element * 0.15),
-                        mastery_2_elements=int(_is.mastery_2_elements * 0.15),
-                        mastery_3_elements=int(_is.mastery_2_elements * 0.15),
-                    )
-                if sublimations:
-                    neutrality_c = 0
-                    for sub in sublimations:
-                        if sub == 29001:
-                            neutrality_c += 1
-                        elif sub == 29002:
-                            neutrality_c += 2
-                        elif sub == 29003:
-                            neutrality_c += 3
-
-                    fd_mod = 8 * min(neutrality_c, 4)
-
-            base_score = score_key(_is)
-
-            if UNRAVEL_ACTIVE:
-                base_score += statline.critical_mastery * (1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1)
-                non_crit_score = base_score * (100 - crit_chance) / 100
-                crit_score = base_score * (crit_chance) / 100
-                crit_score *= 1.25
+        items = list(forced_items)
+        statline: Stats = re_st
+        for ri in raw_items:
+            if type(ri) is EquipableItem:
+                items.append(ri)
             else:
-                non_crit_score = base_score * (100 - crit_chance) / 100
-                non_crit_score *= (100 + statline.fd) / 100 + fd_mod
+                items.extend(ri)
 
-                crit_score = base_score + statline.critical_mastery
-                crit_score *= (crit_chance) / 100
-                crit_score *= (100 + statline.fd) / 100 + fd_mod
-                crit_score *= 1.25
+        statline: Stats = reduce(l_add, [i.as_stats() for i in items], re_st)
+        if ns.twoh and any(i.disables_second_weapon for i in items):
+            statline = apply_w2h(statline)
 
-            score = crit_score + non_crit_score
+        # GLOBAL GAME CONDITION
+        if statline.critical_hit < -10:
+            continue
 
-            worst_kept = min(i[0] for i in solve_BEST_LIST) if 0 < len(solve_BEST_LIST) < 3 else 0
+        mns = stat_mins
+        mxs = stat_maxs
 
-            if score > worst_kept:
-                filtered = [i for i in (*items, relic, epic) if i]
-                filtered.sort(key=lambda i: i.item_id)
+        for gmi, gmx in map(get_item_conditions, filter(None, (*items, relic, epic))):
+            if gmi:
+                mns = l_and(mns, gmi)
+            if gmx:
+                mxs = l_and(mxs, gmx)
 
-                tup = (score, filtered)
-                solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
-                solve_BEST_LIST = solve_BEST_LIST[:5]
-                solve_BEST_LIST.append(tup)
-                solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
 
-        if not ns.exhaustive and idx > max(re_len / 4, 10) and solve_BEST_LIST:
-            break
+        if not mns <= statline <= mxs:
+            continue
+
+        critical_hit = statline.critical_hit + 3
+
+        # Note: keep the class here even if it isn't needed for ease of reference
+
+        # innate passive
+        if ns.wakfu_class == ClassesEnum.Ecaflip and critical_hit > 100:
+            statline += Stats(fd=0.5 * (critical_hit - 100))
+
+        # Bravery
+        if ns.wakfu_class == ClassesEnum.Iop and passives and 5100 in passives and ns.lv >= 90:
+            block_mod = min(max(0, statline.block // 2), 20)
+            if block_mod:
+                statline += Stats(critical_hit=block_mod)
+
+        # Sram to the bone
+        if ns.wakfu_class == ClassesEnum.Sram and passives and 4610 in passives and ns.lv >= 100:
+            # TODO: (?) We assume shards will make up any missing lock/dodge right now
+            statline += Stats(critical_hit=20 if ns.lv < 200 else 30)
+
+        if ns.wakfu_class == ClassesEnum.Masq and passives:
+            # TODO: (?) We assume shards will make up any missing lock/dodge right now
+            if 7096 in passives and ns.lv >= 20:  # artful locker
+                melee_mod = min(max(0, ns.lv * 2), ns.lv * 2)
+                statline += Stats(melee_mastery=melee_mod)
+            if 7109 in passives and ns.lv >= 85:  # artful dodge
+                distance_mod = min(max(0, ns.lv * 2), ns.lv * 2)
+                statline += Stats(distance_mastery=distance_mod)
+
+        UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
+
+        crit_chance = max(min(critical_hit, 100), 0)  # engine crit rate vs stat
+
+        _is = base_stats
+        for item in (*items, relic, epic):
+            if item is not None:
+                _is += item.as_stats()
+
+        fd_mod = 0
+        if _is.get_secondary_sum() <= 0:
+            if sublimations and 29874 in sublimations:
+                # inflexibility 2
+                _is += Stats(
+                    elemental_mastery=int(_is.elemental_mastery * 0.15),
+                    mastery_1_element=int(_is.mastery_1_element * 0.15),
+                    mastery_2_elements=int(_is.mastery_2_elements * 0.15),
+                    mastery_3_elements=int(_is.mastery_2_elements * 0.15),
+                )
+            if sublimations:
+                neutrality_c = 0
+                for sub in sublimations:
+                    if sub == 29001:
+                        neutrality_c += 1
+                    elif sub == 29002:
+                        neutrality_c += 2
+                    elif sub == 29003:
+                        neutrality_c += 3
+
+                fd_mod = 8 * min(neutrality_c, 4)
+
+        base_score = score_key(_is)
+
+        if UNRAVEL_ACTIVE:
+            base_score += statline.critical_mastery * (1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1)
+            non_crit_score = base_score * (100 - crit_chance) / 100
+            crit_score = base_score * (crit_chance) / 100
+            crit_score *= 1.25
+        else:
+            non_crit_score = base_score * (100 - crit_chance) / 100
+            non_crit_score *= (100 + statline.fd) / 100 + fd_mod
+
+            crit_score = base_score + statline.critical_mastery
+            crit_score *= (crit_chance) / 100
+            crit_score *= (100 + statline.fd) / 100 + fd_mod
+            crit_score *= 1.25
+
+        score = crit_score + non_crit_score
+
+        worst_kept = min(i[0] for i in solve_BEST_LIST) if 0 < len(solve_BEST_LIST) < 3 else 0
+
+        if score > worst_kept:
+            filtered = [i for i in (*items, relic, epic) if i]
+            filtered.sort(key=lambda i: i.item_id)
+
+            tup = (score, filtered)
+            solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
+            solve_BEST_LIST = solve_BEST_LIST[:5]
+            solve_BEST_LIST.append(tup)
+            solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
+
+
 
     return solve_BEST_LIST
 
