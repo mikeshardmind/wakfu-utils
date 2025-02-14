@@ -8,7 +8,6 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 
 from __future__ import annotations
 
-import argparse
 import collections
 import itertools
 import logging
@@ -24,7 +23,6 @@ from ._build_codes import Stats as StatSpread
 from .item_conditions import get_item_conditions
 from .object_parsing import EquipableItem, get_all_items, load_item_source_data, set_locale
 from .restructured_types import ClassesEnum, ElementsEnum, SetMaximums, SetMinimums, Stats, apply_w2h, v1Config
-from .wakforge_buildcodes import build_code_from_items
 
 
 T = TypeVar("T")
@@ -986,12 +984,8 @@ def solve(
 
     else:
 
-
         import multiprocessing as mp
         pool = mp.Pool()
-
-
-
         args = [(relic, epic, solve_CANIDATES, forced_slots, forced_items, solve_DAGGERS, solve_SHIELDS, solve_ONEH, canidate_weapons, ns, base_stats, stat_mins, stat_maxs, passives, sublimations) for relic, epic in filtered_re_pairs]
 
         results = pool.starmap(inner_solve, args)
@@ -1310,84 +1304,4 @@ def inner_solve(
             solve_BEST_LIST.append(tup)
             solve_BEST_LIST.sort(key=itemgetter(0), reverse=True)
 
-
-
     return solve_BEST_LIST
-
-
-def entrypoint(output: SupportsWrite[str], ns: v1Config | None = None) -> None:
-    def write(*args: object, sep: str = " ", end: str = "\n") -> None:
-        output.write(f"{sep.join(map(str, args))}{end}")
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--lv", dest="lv", type=int, choices=list(range(20, 246, 15)), required=True)
-    parser.add_argument("--ap", dest="ap", type=int, default=5)
-    parser.add_argument("--mp", dest="mp", type=int, default=2)
-    parser.add_argument("--wp", dest="wp", type=int, default=0)
-    parser.add_argument("--ra", dest="ra", type=int, default=0)
-    parser.add_argument("--base-ap", dest="baseap", type=int, default=7)
-    parser.add_argument("--base-mp", dest="basemp", type=int, default=4)
-    parser.add_argument("--base-range", dest="basera", type=int, default=0)
-    parser.add_argument("--num-mastery", type=int, choices=[1, 2, 3, 4], default=3)
-    parser.add_argument("--distance", dest="dist", action="store_true", default=False)
-    parser.add_argument("--melee", dest="melee", action="store_true", default=False)
-    parser.add_argument("--beserk", dest="zerk", action="store_true", default=False)
-    parser.add_argument("--rear", dest="rear", action="store_true", default=False)
-    parser.add_argument("--heal", dest="heal", action="store_true", default=False)
-    parser.add_argument("--unraveling", dest="unraveling", action="store_true", default=False)
-    parser.add_argument("--no-skip-shields", dest="skipshields", action="store_false", default=True)
-    parser.add_argument("--try-light-weapon-expert", dest="lwx", action="store_true", default=False)
-    parser.add_argument("--my-base-crit", dest="bcrit", type=int, default=0)
-    parser.add_argument("--my-base-mastery", dest="bmast", type=int, default=0)
-    parser.add_argument("--my-base-crit-mastery", dest="bcmast", type=int, default=0)
-    parser.add_argument("--forbid", dest="forbid", type=str, action="store", nargs="+")
-    parser.add_argument("--id-forbid", dest="idforbid", type=int, action="store", nargs="+")
-    parser.add_argument("--id-force", dest="idforce", type=int, action="store", nargs="+")
-    parser.add_argument("--name-force", dest="nameforce", type=str, action="store", nargs="+")
-    parser.add_argument("--locale", dest="locale", type=str, choices=("en", "pt", "fr", "es"), default="en")
-    parser.add_argument("--dry-run", dest="dry_run", action="store_true", default=False)
-    parser.add_argument("--hard-cap-depth", dest="hard_cap_depth", type=int, default=100)
-    parser.add_argument("--search-depth", dest="search_depth", type=int, default=2)
-    parser.add_argument("--count-negative-zerk", dest="negzerk", type=str, choices=("full", "half", "none"), default="half")
-    parser.add_argument("--count-negative-rear", dest="negrear", type=str, choices=("full", "half", "none"), default="none")
-    parser.add_argument("--forbid-rarity", dest="forbid_rarity", type=int, choices=list(range(1, 8)), action="store", nargs="+")
-    parser.add_argument(
-        "--allowed-rarity", dest="allowed_rarities", type=int, choices=list(range(1, 8)), action="store", nargs="+"
-    )
-    two_h = parser.add_mutually_exclusive_group()
-    two_h.add_argument("--use-wield-type-2h", dest="twoh", action="store_true", default=False)
-    two_h.add_argument("--skip-two-handed-weapons", dest="skiptwo_hand", action="store_true", default=False)
-    parser.add_argument("--exhaustive", dest="exhaustive", default=False, action="store_true")
-    parser.add_argument("--tolerance", dest="tolerance", type=int, default=30)
-
-    if ns is None:
-        ns = parser.parse_args(namespace=v1Config())
-
-    try:
-        result = solve(ns)
-    except SolveError as exc:
-        msg = exc.args[0]
-        write(msg)
-        sys.exit(1)
-
-    try:
-        score, items = result[0]
-    except IndexError:
-        write("No sets matching this were found!")
-        return
-
-    items.sort(key=lambda i: (not i.is_relic, not i.is_epic, i.item_slot, i.name))
-    if ns.dry_run:
-        write("Item pool:")
-        write(*items, sep="\n")
-    else:
-        write(f"Best set under constraints has effective mastery {score}:")
-        write(*items, sep="\n")
-
-        build = build_code_from_items(ns.lv, items)
-        write("Wakforge compatible build code (items and level only):", build, sep="\n")
-
-
-if __name__ == "__main__":
-    setup_logging(sys.stdout)
-    entrypoint(sys.stdout)
