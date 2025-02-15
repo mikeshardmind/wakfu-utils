@@ -34,7 +34,10 @@ for item_id in (27445, 27446, 26302, 26322, 27695):
     conditions[item_id] = crit_between_40_50
 
 # Horned Headgear, Hagen Daz's Helmet (Souvenir)
-distance_between_400_500 = [rst.SetMinimums(distance_mastery=400), rst.SetMaximums(distance_mastery=500)]
+distance_between_400_500 = [
+    rst.SetMinimums(distance_mastery=400),
+    rst.SetMaximums(distance_mastery=500),
+]
 for item_id in (26292, 26313, 27747):
     conditions[item_id] = distance_between_400_500
 
@@ -105,7 +108,9 @@ for item_id in (26994, 26995, 26996, 26300, 26319):
 
 
 @lru_cache(1024)
-def get_item_conditions(item: EquipableItem) -> tuple[rst.SetMinimums | None, rst.SetMaximums | None]:
+def get_item_conditions(
+    item: EquipableItem,
+) -> tuple[rst.SetMinimums | None, rst.SetMaximums | None]:
     item_conds = conditions.get(item.item_id, [])
     set_mins: list[rst.SetMinimums] = []
     set_maxs: list[rst.SetMaximums] = []

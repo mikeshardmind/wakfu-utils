@@ -16,7 +16,14 @@ from typing import Literal
 
 from . import __version__
 from .object_parsing import load_item_source_data
-from .restructured_types import DUMMY_MAX, DUMMY_MIN, ClassElements, ElementsEnum, Priority, StatPriority
+from .restructured_types import (
+    DUMMY_MAX,
+    DUMMY_MIN,
+    ClassElements,
+    ElementsEnum,
+    Priority,
+    StatPriority,
+)
 from .restructured_types import SetMaximums as RealSetMaxs
 from .restructured_types import SetMinimums as RealSetMins
 from .solver import ImpossibleStatError, SolveError, solve, v1Config
@@ -163,7 +170,9 @@ class v2Config:
     objectives: StatPriority = field(default_factory=StatPriority)
     forbidden_items: list[int] = field(default_factory=list)
     ignore_existing_items: bool = False
-    forbidden_sources: list[Literal["arch", "horde", "pvp", "ultimate_boss", "blueprints"]] = field(default_factory=list)
+    forbidden_sources: list[
+        Literal["arch", "horde", "pvp", "ultimate_boss", "blueprints"]
+    ] = field(default_factory=list)
     stats_maxs: SetMaximums = field(default_factory=SetMaximums)
     enable_testing_features: bool = False
     solve_type: SolveType = SolveType.OPTIMIZE
@@ -185,6 +194,8 @@ def partial_solve_v2(
     build_code: str,
     config: v2Config,
     progress_callback: Callable[[int, int], None] | None = None,
+    lwx: bool = False,
+    unravel: bool = False,
 ) -> v2Result:
     # pyodide proxies aren't actually lists...
     config.allowed_rarities = [i for i in config.allowed_rarities if i]
@@ -201,7 +212,9 @@ def partial_solve_v2(
         forbidden_ids |= getattr(item_sources, source)
 
     allowed_sources = [
-        s for s in ("arch", "horde", "pvp", "ultimate_boss") if s not in config.forbidden_sources
+        s
+        for s in ("arch", "horde", "pvp", "ultimate_boss")
+        if s not in config.forbidden_sources
     ]  # The only blueprint that overlaps another category is tal-kasha's broadsowrd.
     # This is not to be unexcluded right now, as the recipe also is ub dependent.
 
@@ -213,7 +226,9 @@ def partial_solve_v2(
 
     if not config.objectives.is_valid:
         msg = ("objectives", config.objectives)
-        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=None)
+        return v2Result(
+            None, "Invalid config (get debug info if opening an issue)", debug_info=None
+        )
 
     build = WFBuild.from_code(build_code)
     sublimations = build.get_sublimations()  # TODO: consider this + below line

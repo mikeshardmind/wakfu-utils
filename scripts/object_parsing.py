@@ -17,9 +17,7 @@ import logging
 import pathlib
 from collections.abc import Callable
 from functools import cached_property
-from typing import Any, Literal, TypedDict, TypeVar
-
-from typing_extensions import Self
+from typing import Any, Literal, Self, TypedDict
 
 
 class PosData(TypedDict):
@@ -242,10 +240,10 @@ ITEM_TYPE_MAP: dict[int, PosData] = {
 }
 
 
-_locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar("_locale", default="en")
+_locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar(
+    "_locale", default="en"
+)
 
-
-_T = TypeVar("_T")
 
 _T39_EFFECT_LOOKUP: dict[int, str] = {
     121: "_armor_received",
@@ -271,7 +269,6 @@ def type39(d: list[int]) -> list[tuple[str, int]]:
     for the 215 tier content.
     I suspect more "special" item stats would appear here in the future.
     """
-
     key = d[4]
     val = d[0]
 
@@ -288,7 +285,6 @@ def type40(d: list[int]) -> list[tuple[str, int]]:
     for the 215 tier content.
     I suspect more "special" item stats would appear here in the future.
     """
-
     key = d[4]
     val = d[0]
 
@@ -448,7 +444,7 @@ class RawEffectType(TypedDict):
 
 
 class Effect:
-    def __init__(self):
+    def __init__(self) -> None:
         self._transforms: list[tuple[str, int]] = []
         self._id: int
 
@@ -457,7 +453,7 @@ class Effect:
             item.update(prop, val)
 
     @classmethod
-    def from_raw(cls, raw: RawEffectType, is_pet: bool = False) -> Effect:
+    def from_raw(cls, raw: RawEffectType, *, is_pet: bool = False) -> Effect:
         ret = cls()
 
         try:
@@ -489,7 +485,7 @@ class EquipableItem:
     Yeeeeep.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._item_id: int = 0
         self._item_lv: int = 0
         self._item_rarity: int = 0
@@ -571,12 +567,12 @@ class EquipableItem:
         return [obj for element in decompressed if (obj := cls.from_json_data(element))]
 
     @classmethod
-    def from_json_data(cls: type[Self], data: Any) -> Self | None:  # noqa: ANN401
+    def from_json_data(cls: type[Self], data: Any) -> Self | None:
         base_details = data["definition"]["item"]
         base_params = base_details["baseParameters"]
         item_type_id = base_params["itemTypeId"]
 
-        if item_type_id in (811, 812, 511):  # stats, sublimations, a scroll.
+        if item_type_id in {811, 812, 511}:  # stats, sublimations, a scroll.
             return None
 
         if item_type_id not in ITEM_TYPE_MAP:
@@ -587,17 +583,17 @@ class EquipableItem:
         ret._title_strings = data.get("title", {}).copy()
         ret._item_id = base_details["id"]
         ret._item_lv = base_details["level"]
-        if item_type_id in (582, 611):
+        if item_type_id in {582, 611}:
             ret._item_lv = 50
         ret._item_rarity = base_params["rarity"]
         ret._item_type = item_type_id
         ret._is_shop_item = 7 in base_details.get("properties", [])
 
         for effect_dict in data["definition"]["equipEffects"]:
-            Effect.from_raw(effect_dict, is_pet=item_type_id in (582, 611)).apply_to(ret)
+            Effect.from_raw(effect_dict, is_pet=item_type_id in {582, 611}).apply_to(ret)
 
         if ret.name is None:
-            if ret._item_id not in (27700, 27701, 27702, 27703):
+            if ret._item_id not in {27700, 27701, 27702, 27703}:
                 # Unknown items above, known issues though.
                 logging.warning("Skipping item with id %d for lack of name", ret._item_id)
             return None
@@ -610,22 +606,22 @@ class EquipableItem:
         if self.is_epic or self.is_relic:
             req += 1
 
-        if self.item_slot in ("NECK", "FIRST_WEAPON", "CHEST", "CAPE", "LEGS", "BACK"):
+        if self.item_slot in {"NECK", "FIRST_WEAPON", "CHEST", "CAPE", "LEGS", "BACK"}:
             req += 1
 
         return req > self._ap + self._mp
 
     @cached_property
     def item_slot(self) -> str:
-        return ITEM_TYPE_MAP[self._item_type]["position"][0]  # type: ignore
+        return ITEM_TYPE_MAP[self._item_type]["position"][0]
 
     @cached_property
     def disables_second_weapon(self) -> bool:
-        return self._item_type in (101, 111, 114, 117, 223, 253, 519)
+        return self._item_type in {101, 111, 114, 117, 223, 253, 519}
 
     @property
     def item_type_name(self) -> str:
-        return ITEM_TYPE_MAP[self._item_type]["title"][_locale.get()]  # type: ignore
+        return ITEM_TYPE_MAP[self._item_type]["title"][_locale.get()]
 
     @cached_property
     def is_relic(self) -> bool:
@@ -638,11 +634,11 @@ class EquipableItem:
     @cached_property
     def is_legendary_or_souvenir(self) -> bool:
         """Here for quick selection of "best" versions"""
-        return self._item_rarity in (4, 6)
+        return self._item_rarity in {4, 6}
 
     @cached_property
     def is_souvenir(self) -> bool:
-        """meh"""
+        """Meh"""
         return self._item_rarity == 6
 
     @cached_property

@@ -36,7 +36,7 @@ class Item(NamedTuple):
     rune_info: list[Rune] | None = None
     sublimation: int = -1
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.item_id > 0
 
 
@@ -62,7 +62,14 @@ v1BuildSlotsOrder = [
 
 
 # TEMP: see https://github.com/mikeshardmind/wakfu-utils/pull/15/files#diff-da894f04a59170295976347712c42a92da67fee89429432307a2e6cbee557c96
-ITEM_REPLACEMENT_MAP = {24038: 10272, 24049: 15478, 24082: 17657, 24058: 20563, 24037: 20666, 24039: 20667}
+ITEM_REPLACEMENT_MAP = {
+    24038: 10272,
+    24049: 15478,
+    24082: 17657,
+    24058: 20563,
+    24037: 20666,
+    24039: 20667,
+}
 
 
 @dataclass
@@ -186,24 +193,41 @@ class Buildv1:
                 setattr(self, f"item_{idx}", item)
                 break
 
-    def add_item(self, item: EquipableItem, elements: WFElements = WFElements.empty, /) -> None:
+    def add_item(
+        self, item: EquipableItem, elements: WFElements = WFElements.empty, /
+    ) -> None:
         indices = compress(count(1), map(partial(eq, item.item_slot), v1BuildSlotsOrder))
         for index in indices:
             if not getattr(self, f"item_{index}", None):
-                setattr(self, f"item_{index}", Item(item_id=item.item_id, assignable_elements=elements))
+                setattr(
+                    self,
+                    f"item_{index}",
+                    Item(item_id=item.item_id, assignable_elements=elements),
+                )
                 break
         else:
             msg = f"Can't find a valid slot for this thing. {item}"
             raise RuntimeError(msg)
 
     def get_passives(self) -> list[int]:
-        passives = (self.passive_1, self.passive_2, self.passive_3, self.passive_4, self.passive_5, self.passive_6)
+        passives = (
+            self.passive_1,
+            self.passive_2,
+            self.passive_3,
+            self.passive_4,
+            self.passive_5,
+            self.passive_6,
+        )
         return [p for p in passives if p > -1]
 
     def get_sublimations(self) -> list[int]:
         return [
             sid
-            for sid in (self.relic_sublimation_id, self.epic_sublimation_id, *(i.sublimation or -1 for i in self._getitems()))
+            for sid in (
+                self.relic_sublimation_id,
+                self.epic_sublimation_id,
+                *(i.sublimation or -1 for i in self._getitems()),
+            )
             if sid > 0
         ]
 

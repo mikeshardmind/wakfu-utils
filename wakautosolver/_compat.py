@@ -10,38 +10,12 @@ from __future__ import annotations
 
 from typing import Any
 
-try:
-    import msgpack  # type: ignore
-except ModuleNotFoundError:
-    _msg_avail = False
-else:
-    _msg_avail = True
+from ._mp_fb import pack, unpack
 
 
-try:
-    import msgspec
-except ModuleNotFoundError:
-    _spec_avail = False
-else:
-    _spec_avail = True
+def decode(raw: bytes) -> Any:
+    return unpack(raw)
 
 
-def decode(raw: bytes) -> Any:  # noqa: ANN401
-    if _spec_avail:
-        return msgspec.msgpack.decode(raw)  # pyright: ignore[reportPossiblyUnboundVariable]
-    if _msg_avail:
-        return msgpack.unpackb(raw)  # type: ignore
-
-    msg = "Must have either msgspec or msgpack available"
-    raise RuntimeError(msg)
-
-
-def encode(obj: Any) -> bytes:  # noqa: ANN401
-    if _spec_avail:
-        return msgspec.msgpack.encode(obj)  # pyright: ignore[reportPossiblyUnboundVariable]
-
-    if _msg_avail:
-        return msgpack.packb(obj)  # type: ignore
-
-    msg = "Must have either msgspec or msgpack available"
-    raise RuntimeError(msg)
+def encode(obj: Any) -> bytes:
+    return pack(obj)

@@ -8,4 +8,4 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 
 from .encoder import DecodeError, decode, encode
 
-__all__ = ["DecodeError", "encode", "decode"]
+__all__ = ["DecodeError", "decode", "encode"]

@@ -9,7 +9,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 import asyncio
 import os
 import pathlib
-from typing import Any, Optional
+from typing import Any
 
 import aiohttp
 
@@ -44,14 +44,20 @@ async def _grab_file(
         result_map[file_type] = data
 
 
-async def networking(specific_files: Optional[list[str]] = None) -> None:
-    file_types = _FTYPES if not specific_files else tuple(f for f in _FTYPES if f in specific_files)
+async def networking(specific_files: list[str] | None = None) -> None:
+    file_types = (
+        _FTYPES
+        if not specific_files
+        else tuple(f for f in _FTYPES if f in specific_files)
+    )
 
     async with aiohttp.ClientSession() as session:
         ver = os.environ.get("WAKFU_VERSION") or None
 
         if not ver:
-            async with session.get("https://wakfu.cdn.ankama.com/gamedata/config.json") as r:
+            async with session.get(
+                "https://wakfu.cdn.ankama.com/gamedata/config.json"
+            ) as r:
                 data = await r.json()
                 ver = data["version"]
 
@@ -68,7 +74,7 @@ async def networking(specific_files: Optional[list[str]] = None) -> None:
             fp.write(data)
 
 
-def main():
+def main() -> None:
     asyncio.run(networking())
 
 

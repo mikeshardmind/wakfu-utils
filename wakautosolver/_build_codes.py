@@ -204,7 +204,12 @@ def pack_items(items: list[Item]) -> bytes:
     for item in items:
         fmt_components.append("iBiB")
         packed_resmastery = item.assigned_mastery | (item.assigned_res << 4)
-        to_pack.extend((item.item_id, packed_resmastery, item.sublimation_id, len(item.slots)))
+        to_pack.extend((
+            item.item_id,
+            packed_resmastery,
+            item.sublimation_id,
+            len(item.slots),
+        ))
         for slot in item.slots:
             fmt_components.append("BBB")
             to_pack.extend(slot)
@@ -213,11 +218,13 @@ def pack_items(items: list[Item]) -> bytes:
 
 
 def unpack_items(packed: bytes) -> list[Item]:
-    (_len,) = struct.unpack_from("!B", packed, 0)
+    (s_len,) = struct.unpack_from("!B", packed, 0)
     offset = 1
     ret: list[Item] = []
-    for _ in range(_len):
-        item_id, packed_resmastery, sublimation_id, slot_len = struct.unpack_from("!iBiB", packed, offset)
+    for _ in range(s_len):
+        item_id, packed_resmastery, sublimation_id, slot_len = struct.unpack_from(
+            "!iBiB", packed, offset
+        )
         offset += struct.calcsize("!iBiB")
         assigned_mastery = Elements(packed_resmastery & 15)
         assigned_res = Elements(packed_resmastery >> 4)
@@ -264,7 +271,9 @@ def pack_build(build: Build) -> bytes:
 
 def unpack_build(packed: bytes) -> Build:
     base = "!BBH23siiB"
-    version, classnum, level, packed_stats, relic, epic, deck_len = struct.unpack_from(base, packed, 0)
+    version, classnum, level, packed_stats, relic, epic, deck_len = struct.unpack_from(
+        base, packed, 0
+    )
     if version != 1:
         msg = "Unknown version Number"
         raise RuntimeError(msg)

@@ -190,7 +190,7 @@ QUERY = "INSERT INTO ITEMS({}) VALUES({})".format(
 
 if __name__ == "__main__":
     items = object_parsing.EquipableItem.from_bz2_bundled()
-    all_item_ids = {i._item_id for i in items}  # pyright: ignore[reportPrivateUsage]
+    all_item_ids = {i._item_id for i in items}
 
     base_path = Path(__file__).parent.with_name("wakautosolver") / "data"
     base_path.mkdir(parents=True, exist_ok=True)
@@ -210,10 +210,7 @@ if __name__ == "__main__":
 
         conn.executemany(QUERY, data)
 
-        titles = [
-            {"item_id": item._item_id, **item._title_strings}
-            for item in items  # pyright: ignore[reportPrivateUsage]
-        ]
+        titles = [{"item_id": item._item_id, **item._title_strings} for item in items]
 
         conn.executemany(
             """
@@ -225,8 +222,13 @@ if __name__ == "__main__":
         with (json_data_path / "blueprints.json").open(mode="rb") as bp:
             bpdata = json.load(bp)
 
-        with (json_data_path / "recipeResults.json").open(mode="rb") as results_are_why_ankama:
-            recresults = {i["recipeId"]: i["productedItemId"] for i in json.load(results_are_why_ankama)}
+        with (json_data_path / "recipeResults.json").open(
+            mode="rb"
+        ) as results_are_why_ankama:
+            recresults = {
+                i["recipeId"]: i["productedItemId"]
+                for i in json.load(results_are_why_ankama)
+            }
 
         blueprints: set[int] = set()
         for blueprint in bpdata:
@@ -238,7 +240,7 @@ if __name__ == "__main__":
                     blueprints.add(actual_id)
                 except KeyError as e:
                     (k,) = e.args
-                    if k not in (7165, 7166, 7167, 9575):  # known failures
+                    if k not in {7165, 7166, 7167, 9575}:  # known failures
                         log.warning("new blueprint failure with id %d", k)
 
         conn.executemany(
@@ -261,10 +263,12 @@ if __name__ == "__main__":
         ):
             item_ids: list[int] = []
             with (com_path / path).open(encoding="utf-8") as ub_data:
-                lines = [stripped for line in ub_data.readlines() if (stripped := line.strip())]
-                for line in lines:
-                    if m := item_id_regex.match(line):
-                        item_ids.append(int(m.group(1)))
+                lines = [
+                    stripped for line in ub_data.readlines() if (stripped := line.strip())
+                ]
+                item_ids.extend(
+                    int(m.group(1)) for line in lines if (m := item_id_regex.match(line))
+                )
 
             conn.executemany(
                 f"""INSERT INTO [{table_name}] (item_id) VALUES(?)""",
@@ -290,15 +294,15 @@ if __name__ == "__main__":
         )
 
         item_type_data: list[tuple[int, str, bool]] = []
-        item_type_name_data: list[dict[str, str]] = []
+        item_type_name_data: list[dict[str, str] | dict[str, str | int]] = []
 
         for type_id, type_data in ITEM_TYPE_MAP.items():
-            position: str = type_data["position"][0]  # type: ignore
+            position: str = type_data["position"][0]
             disables: bool = bool(type_data["disables"])
             item_type_data.append((type_id, position, disables))
 
-            loc = {"item_type": type_id, **(type_data["title"])}  # type: ignore
-            item_type_name_data.append(loc)  # type: ignore
+            loc = {"item_type": type_id, **(type_data["title"])}
+            item_type_name_data.append(loc)
 
         conn.executemany(
             """

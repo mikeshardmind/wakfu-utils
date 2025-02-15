@@ -10,7 +10,7 @@ import bz2
 import json
 import struct
 from io import BytesIO
-from itertools import chain
+from itertools import chain, starmap
 from pathlib import Path
 from typing import NamedTuple
 
@@ -89,7 +89,11 @@ def pack_locale_data(locs: LocaleBundle) -> bytes:
         item_id, *strs = item
         bys = [s.encode() for s in strs]
         fmt = "!IB%dsB%dsB%dsB%ds" % tuple(map(len, bys))
-        buffer.write(struct.pack(fmt, item_id, *chain.from_iterable(zip(map(len, bys), bys))))
+        buffer.write(
+            struct.pack(
+                fmt, item_id, *chain.from_iterable(zip(map(len, bys), bys, strict=False))
+            )
+        )
 
     buffer.seek(0)
     return buffer.read()
@@ -149,7 +153,7 @@ def pack_items(items: list[Item]) -> bytes:
 
 
 def unpack_items(packed: bytes) -> list[Item]:
-    return [Item(*data) for data in struct.iter_unpack("!IHBH37h", packed)]
+    return list(starmap(Item, struct.iter_unpack("!IHBH37h", packed)))
 
 
 if __name__ == "__main__":
@@ -164,7 +168,7 @@ if __name__ == "__main__":
         ORDER BY item_id ASC
         """
     )
-    items = [Item(*row) for row in rows]
+    items = list(starmap(Item, rows))
     data = pack_items(items)
     bz2_comp = bz2.compress(data, compresslevel=9)
     with (base_path / "stat_only_bundle.bz2").open(mode="wb") as fp:
@@ -179,7 +183,7 @@ if __name__ == "__main__":
         ORDER BY item_id ASC
         """
     )
-    loc_items = [LocaleData(*row) for row in rows]
+    loc_items = list(starmap(LocaleData, rows))
 
     data = pack_locale_data(loc_items)
     bz2_comp = bz2.compress(data, compresslevel=9)

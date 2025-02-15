@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Iterable
 from io import StringIO
-from typing import Generic, TypeVar
+from typing import Generic, Self, TypeVar
 
 from .dec_table import dec as DEC_TABLE
 from .enc_table import enc as ENC_TABLE
@@ -23,11 +23,11 @@ T = TypeVar("T")
 
 
 class Peekable(Generic[T]):
-    def __init__(self, iterable: Iterable[T]):
+    def __init__(self, iterable: Iterable[T]) -> None:
         self._it = iter(iterable)
         self._cache: deque[T] = deque()
 
-    def __iter__(self):
+    def __iter__(self) -> Self:
         return self
 
     def has_more(self) -> bool:
@@ -42,7 +42,7 @@ class Peekable(Generic[T]):
             self._cache.append(next(self._it))
         return self._cache[0]
 
-    def __next__(self):
+    def __next__(self) -> T:
         if self._cache:
             return self._cache.popleft()
         return next(self._it)

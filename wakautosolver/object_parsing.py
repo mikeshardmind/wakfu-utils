@@ -13,11 +13,14 @@ import contextvars
 import pathlib
 import struct
 from functools import lru_cache
+from itertools import starmap
 from typing import Literal, NamedTuple, TypedDict, final
 
 from .restructured_types import Stats
 
-_locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar("_locale", default="en")
+_locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar(
+    "_locale", default="en"
+)
 
 
 def get_locale() -> Literal["en", "es", "pt", "fr"]:
@@ -305,7 +308,7 @@ class EquipableItem(NamedTuple):
 
     @property
     def disables_second_weapon(self) -> bool:
-        return self.item_type in (101, 111, 114, 117, 223, 253, 519)
+        return self.item_type in {101, 111, 114, 117, 223, 253, 519}
 
     @property
     def name(self) -> str:
@@ -382,7 +385,7 @@ def _get_item_name(item: EquipableItem) -> str:
 
 
 def unpack_items(packed: bytes) -> list[EquipableItem]:
-    return [EquipableItem(*data) for data in struct.iter_unpack("!IHBH37h", packed)]
+    return list(starmap(EquipableItem, struct.iter_unpack("!IHBH37h", packed)))
 
 
 @lru_cache

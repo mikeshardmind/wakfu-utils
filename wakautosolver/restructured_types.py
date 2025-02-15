@@ -78,7 +78,10 @@ ClassElements: dict[ClassesEnum, ElementsEnum] = {
     ClassesEnum.Ougi: ElementsEnum.water | ElementsEnum.earth | ElementsEnum.air,
     ClassesEnum.Fog: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.water,
     ClassesEnum.Elio: ElementsEnum.water | ElementsEnum.earth | ElementsEnum.air,
-    ClassesEnum.Hupper: ElementsEnum.water | ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.air,
+    ClassesEnum.Hupper: ElementsEnum.water
+    | ElementsEnum.fire
+    | ElementsEnum.earth
+    | ElementsEnum.air,
 }
 
 
@@ -100,7 +103,7 @@ class StatPriority:
 
     def _pyodide_norm(self) -> None:
         self.distance_mastery = Priority(self.distance_mastery)
-        self.melee_mastery_mastery = Priority(self.melee_mastery)
+        self.melee_mastery = Priority(self.melee_mastery)
         self.heal_mastery = Priority(self.heal_mastery)
         self.rear_mastery = Priority(self.rear_mastery)
         self.berserk_mastery = Priority(self.berserk_mastery)
@@ -108,7 +111,9 @@ class StatPriority:
 
     @property
     def is_valid(self) -> bool:
-        return all(x < 2 for x in (self.distance_mastery, self.melee_mastery, self.heal_mastery))
+        return all(
+            x < 2 for x in (self.distance_mastery, self.melee_mastery, self.heal_mastery)
+        )
 
 
 @dataclass(unsafe_hash=True)
@@ -208,32 +213,30 @@ class Stats:
         if not isinstance(other, Stats):
             return NotImplemented
 
-        return all(
-            (
-                self.ap <= other.ap,
-                self.mp <= other.mp,
-                self.wp <= other.wp,
-                self.ra <= other.ra,
-                self.critical_hit <= other.critical_hit,
-                self.critical_mastery <= other.critical_mastery,
-                self.elemental_mastery <= other.elemental_mastery,
-                self.mastery_3_elements <= other.mastery_3_elements,
-                self.mastery_2_elements <= other.mastery_2_elements,
-                self.mastery_1_element <= other.mastery_1_element,
-                self.distance_mastery <= other.distance_mastery,
-                self.rear_mastery <= other.rear_mastery,
-                self.healing_mastery <= other.healing_mastery,
-                self.berserk_mastery <= other.berserk_mastery,
-                self.melee_mastery <= other.melee_mastery,
-                self.control <= other.control,
-                self.block <= other.block,
-                self.fd <= other.fd,
-                self.heals_performed <= other.heals_performed,
-                self.lock <= other.lock,
-                self.dodge <= other.dodge,
-                self.armor_given <= other.armor_given,
-            )
-        )
+        return all((
+            self.ap <= other.ap,
+            self.mp <= other.mp,
+            self.wp <= other.wp,
+            self.ra <= other.ra,
+            self.critical_hit <= other.critical_hit,
+            self.critical_mastery <= other.critical_mastery,
+            self.elemental_mastery <= other.elemental_mastery,
+            self.mastery_3_elements <= other.mastery_3_elements,
+            self.mastery_2_elements <= other.mastery_2_elements,
+            self.mastery_1_element <= other.mastery_1_element,
+            self.distance_mastery <= other.distance_mastery,
+            self.rear_mastery <= other.rear_mastery,
+            self.healing_mastery <= other.healing_mastery,
+            self.berserk_mastery <= other.berserk_mastery,
+            self.melee_mastery <= other.melee_mastery,
+            self.control <= other.control,
+            self.block <= other.block,
+            self.fd <= other.fd,
+            self.heals_performed <= other.heals_performed,
+            self.lock <= other.lock,
+            self.dodge <= other.dodge,
+            self.armor_given <= other.armor_given,
+        ))
 
 
 DUMMY_MIN: int = -1_000_000
@@ -305,36 +308,34 @@ class SetMinimums(Stats):
             max(self.armor_given, other.armor_given),
         )
 
-    def __le__(self, other: object):
+    def __le__(self, other: object) -> bool:
         if not isinstance(other, Stats):
             return NotImplemented
 
-        return all(
-            (
-                self.ap <= other.ap,
-                self.mp <= other.mp,
-                self.wp <= other.wp,
-                self.ra <= other.ra,
-                self.critical_hit <= other.critical_hit,
-                self.critical_mastery <= other.critical_mastery,
-                self.elemental_mastery <= other.elemental_mastery,
-                self.mastery_3_elements <= other.mastery_3_elements,
-                self.mastery_2_elements <= other.mastery_2_elements,
-                self.mastery_1_element <= other.mastery_1_element,
-                self.distance_mastery <= other.distance_mastery,
-                self.rear_mastery <= other.rear_mastery,
-                self.healing_mastery <= other.healing_mastery,
-                self.berserk_mastery <= other.berserk_mastery,
-                self.melee_mastery <= other.melee_mastery,
-                self.control <= other.control,
-                self.block <= other.block,
-                self.fd <= other.fd,
-                self.heals_performed <= other.heals_performed,
-                self.lock <= other.lock,
-                self.dodge <= other.dodge,
-                self.armor_given <= other.armor_given,
-            )
-        )
+        return all((
+            self.ap <= other.ap,
+            self.mp <= other.mp,
+            self.wp <= other.wp,
+            self.ra <= other.ra,
+            self.critical_hit <= other.critical_hit,
+            self.critical_mastery <= other.critical_mastery,
+            self.elemental_mastery <= other.elemental_mastery,
+            self.mastery_3_elements <= other.mastery_3_elements,
+            self.mastery_2_elements <= other.mastery_2_elements,
+            self.mastery_1_element <= other.mastery_1_element,
+            self.distance_mastery <= other.distance_mastery,
+            self.rear_mastery <= other.rear_mastery,
+            self.healing_mastery <= other.healing_mastery,
+            self.berserk_mastery <= other.berserk_mastery,
+            self.melee_mastery <= other.melee_mastery,
+            self.control <= other.control,
+            self.block <= other.block,
+            self.fd <= other.fd,
+            self.heals_performed <= other.heals_performed,
+            self.lock <= other.lock,
+            self.dodge <= other.dodge,
+            self.armor_given <= other.armor_given,
+        ))
 
 
 class SetMaximums(Stats):
@@ -404,7 +405,9 @@ def effective_mastery(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> 
 
     rel_mastery = rel_mastery_key(stats)
 
-    return (rel_mastery * (100 - crit_rate) / 100) * fd + ((rel_mastery + stats.critical_mastery) * crit_rate * (fd + 0.25))
+    return (rel_mastery * (100 - crit_rate) / 100) * fd + (
+        (rel_mastery + stats.critical_mastery) * crit_rate * (fd + 0.25)
+    )
 
 
 def effective_healing(stats: Stats, rel_mastery_key: Callable[[Stats], int]) -> float:
@@ -424,13 +427,21 @@ def apply_w2h(stats: Stats) -> Stats:
 
 def apply_unravel(stats: Stats) -> Stats:
     if stats.critical_hit >= 40:
-        return replace(stats, elemental_mastery=stats.elemental_mastery + stats.critical_mastery, crit_mastery=0)
+        return replace(
+            stats,
+            elemental_mastery=stats.elemental_mastery + stats.critical_mastery,
+            crit_mastery=0,
+        )
     return stats
 
 
 def apply_elementalism(stats: Stats) -> Stats:
-    if (stats.mastery_1_element == stats.mastery_2_elements == 0) and stats.mastery_3_elements != 0:
-        return replace(stats, fd=stats.fd + 30, heals_performed=stats.heals_performed + 30)
+    if (
+        stats.mastery_1_element == stats.mastery_2_elements == 0
+    ) and stats.mastery_3_elements != 0:
+        return replace(
+            stats, fd=stats.fd + 30, heals_performed=stats.heals_performed + 30
+        )
     return stats
 
 

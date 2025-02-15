@@ -16,7 +16,13 @@ from wakautosolver._compat import decode as msgp_decode
 from wakautosolver.b2048 import decode
 from wakautosolver.object_parsing import get_all_items
 from wakautosolver.restructured_types import ElementsEnum
-from wakautosolver.versioned_entrypoints import Priority, SetMaximums, SetMinimums, StatPriority, v2Config
+from wakautosolver.versioned_entrypoints import (
+    Priority,
+    SetMaximums,
+    SetMinimums,
+    StatPriority,
+    v2Config,
+)
 from wakautosolver.versioned_entrypoints import partial_solve_v2 as solve2
 
 code1 = "ಡƸɀИযΟԛཉÛƄΕɌॷതǐĨсఖ৶ΛѵƣਨਪɆສɓ྾྾ଢƂՀદӾಏॐӧѩôԉӚਊ৮ǧ႕ȖՔఆкഖണшĤȆఝΦҡүŻҹঌఱබဇмʒโང؏ĐƅઢხॳØ"
@@ -24,7 +30,9 @@ code1 = "ಡƸɀИযΟԛཉÛƄΕɌॷതǐĨсఖ৶ΛѵƣਨਪɆສɓ྾྾�
 cfg1 = v2Config(
     allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
     target_stats=SetMinimums(ap=12, mp=6, wp=8, ra=0),
-    objectives=StatPriority(elements=ElementsEnum.fire, rear_mastery=Priority.full_negative_only),
+    objectives=StatPriority(
+        elements=ElementsEnum.fire, rear_mastery=Priority.full_negative_only
+    ),
     dry_run=False,
     ignore_existing_items=True,
 )
@@ -35,7 +43,8 @@ cfg2 = v2Config(
     allowed_rarities=[4, 5, 6, 7],
     target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=2),
     objectives=StatPriority(
-        elements=ElementsEnum.water | ElementsEnum.air | ElementsEnum.earth, distance_mastery=Priority.prioritized
+        elements=ElementsEnum.water | ElementsEnum.air | ElementsEnum.earth,
+        distance_mastery=Priority.prioritized,
     ),
     dry_run=False,
     ignore_existing_items=False,
@@ -112,7 +121,8 @@ cfg8 = v2Config(
     target_stats=SetMinimums(ap=13, mp=5, wp=4, ra=2),
     stats_maxs=SetMaximums(wp=4),
     objectives=StatPriority(
-        distance_mastery=Priority.prioritized, elements=ElementsEnum.earth | ElementsEnum.water | ElementsEnum.air
+        distance_mastery=Priority.prioritized,
+        elements=ElementsEnum.earth | ElementsEnum.water | ElementsEnum.air,
     ),
     dry_run=False,
     ignore_existing_items=False,
@@ -124,11 +134,10 @@ all_configs = [cfg1, cfg2, cfg3, cfg4, cfg5, cfg6, cfg7, cfg8]
 
 
 def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
-
     err_print = builtins.print
     aprint = builtins.print
 
-    cc_iter = enumerate(codes_and_configs if codes_and_configs else zip(all_codes, all_configs), 1)
+    cc_iter = enumerate(codes_and_configs or zip(all_codes, all_configs, strict=False), 1)
 
     for idx, (code, config) in cc_iter:
         err_print("Trying situation", idx)
@@ -142,7 +151,9 @@ def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
             err_print(sol.error_code)
         if sol.debug_info:
             try:
-                err: list[str] | dict[str, Any] = msgp_decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
+                err: list[str] | dict[str, Any] = msgp_decode(
+                    zlib.decompress(decode(sol.debug_info), wbits=-15)
+                )
             except Exception:  # noqa: S110, BLE001
                 pass
             else:
@@ -169,12 +180,14 @@ if __name__ == "__main__":
                 berserk_mastery=Priority.full_negative_only,
                 rear_mastery=Priority.full_negative_only,
             ),
-            # dry_run=True,
+            dry_run=False,
             ignore_existing_items=False,
             forbidden_sources=[],  # can be any or none of ["arch", "horde", "pvp", "ultimate_boss"]
             forbidden_items=[],  # the item ids
         )
 
-        runner(*((co, cf) for co, cf in zip(all_codes, all_configs)) , loud=True)
+        runner(
+            *((co, cf) for co, cf in zip(all_codes, all_configs, strict=False)), loud=True
+        )
     except KeyboardInterrupt:
         pass
