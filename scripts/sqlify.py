@@ -14,8 +14,7 @@ import re
 from pathlib import Path
 
 import apsw
-
-from . import object_parsing
+import object_parsing
 
 log = logging.getLogger(__name__)
 

@@ -132,7 +132,7 @@ build-backend = "hatchling.build"
 path = "wakautosolver/__init__.py"
 
 [tool.hatch.build]
-artifacts = ["*.bz2"]
+artifacts = ["*.bz2", "*.xz"]
 
 [tool.hatch.build.targets.wheel]
 include = [

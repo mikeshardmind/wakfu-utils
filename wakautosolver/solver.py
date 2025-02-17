@@ -1405,9 +1405,18 @@ def inner_solve(
                 iter_stats += item.as_stats()
 
         fd_mod = 0
-        if iter_stats.get_secondary_sum() <= 0:
+
+        if (
+            iter_stats.critical_mastery
+            + iter_stats.distance_mastery
+            + iter_stats.melee_mastery
+            + iter_stats.healing_mastery
+            + iter_stats.berserk_mastery
+            + iter_stats.rear_mastery
+        ) <= 0:
             if sublimations and 29874 in sublimations:
                 # inflexibility 2
+
                 iter_stats += Stats(
                     elemental_mastery=int(iter_stats.elemental_mastery * 0.15),
                     mastery_1_element=int(iter_stats.mastery_1_element * 0.15),

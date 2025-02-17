@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import bz2
 import contextvars
+import lzma
 import pathlib
 import struct
 from functools import lru_cache
@@ -390,8 +391,8 @@ def unpack_items(packed: bytes) -> list[EquipableItem]:
 
 @lru_cache
 def get_all_items() -> StatOnlyBundle:
-    data_file_path = pathlib.Path(__file__).with_name("data") / "stat_only_bundle.bz2"
-    with bz2.open(data_file_path, mode="rb", compresslevel=9) as fp:
+    data_file_path = pathlib.Path(__file__).with_name("data") / "stat_only_bundle.xz"
+    with lzma.open(data_file_path, format=lzma.FORMAT_XZ) as fp:
         return tuple(unpack_items(fp.read()))
 
 
@@ -439,6 +440,7 @@ def unpack_sourcedata(packed: bytes) -> SourceData:
 
 @lru_cache
 def load_item_source_data() -> SourceData:
-    data_file_path = pathlib.Path(__file__).with_name("data") / "source_info.bz2"
-    with bz2.open(data_file_path, mode="rb", compresslevel=9) as fp:
+    data_file_path = pathlib.Path(__file__).with_name("data") / "source_info.xz"
+
+    with lzma.open(data_file_path, format=lzma.FORMAT_XZ) as fp:
         return unpack_sourcedata(fp.read())

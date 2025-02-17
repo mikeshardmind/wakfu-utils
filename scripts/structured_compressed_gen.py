@@ -8,6 +8,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 
 import bz2
 import json
+import lzma
 import struct
 from io import BytesIO
 from itertools import chain, starmap
@@ -170,9 +171,11 @@ if __name__ == "__main__":
     )
     items = list(starmap(Item, rows))
     data = pack_items(items)
-    bz2_comp = bz2.compress(data, compresslevel=9)
-    with (base_path / "stat_only_bundle.bz2").open(mode="wb") as fp:
-        fp.write(bz2_comp)
+    compressed = lzma.compress(
+        data, preset=lzma.PRESET_EXTREME, format=lzma.FORMAT_XZ, check=lzma.CHECK_NONE
+    )
+    with (base_path / "stat_only_bundle.xz").open(mode="wb") as fp:
+        fp.write(compressed)
 
     rows = cursor.execute(
         """
@@ -208,9 +211,11 @@ if __name__ == "__main__":
 
     datastruct = SourceData(*data)
     data = pack_sourcedata(datastruct)
-    bz2_comp = bz2.compress(data, compresslevel=9)
-    with (base_path / "source_info.bz2").open(mode="wb") as fp:
-        fp.write(bz2_comp)
+    compressed = lzma.compress(
+        data, preset=lzma.PRESET_EXTREME, format=lzma.FORMAT_XZ, check=lzma.CHECK_NONE
+    )
+    with (base_path / "source_info.xz").open(mode="wb") as fp:
+        fp.write(compressed)
 
     export_path = base_path = Path(__file__).parent.with_name("exported_data")
     wakforge_exports = export_path / "wakforge"
