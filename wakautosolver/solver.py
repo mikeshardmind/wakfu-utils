@@ -376,7 +376,7 @@ def solve(
                 if forced_sword in forced_relics:
                     pass
                 elif forced_relics:
-                    msg = "Can't force a nation ring with a non-nation sowrd relic"
+                    msg = "Can't force a nation ring with a non-nation sword relic"
                     raise SolveError(msg)
                 else:
                     forced_relics.append(forced_sword)

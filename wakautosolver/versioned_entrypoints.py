@@ -284,6 +284,8 @@ def partial_solve_v2(
         tolerance=_adaptive_tolerance_map.get(build.level, 14),
         search_depth=1,
         elements=config.objectives.elements,
+        lwx=lwx,
+        unraveling=unravel,
     )
 
     try:
