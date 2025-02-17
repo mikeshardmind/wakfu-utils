@@ -12,10 +12,10 @@ from __future__ import annotations
 
 import struct
 from io import BytesIO
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 
-def _pack(buffer: BytesIO, obj: object) -> None:
+def _pack(buffer: BytesIO, obj: Any) -> None:
     buffer.seek(0, 2)
 
     if obj is None:
@@ -45,8 +45,16 @@ def _pack(buffer: BytesIO, obj: object) -> None:
             buffer.write(struct.pack("!BQ", 0xCF, obj))
         elif -0x8000000000000000 <= obj < -0x80000000:
             buffer.write(struct.pack("!Bq", 0xD3, obj))
+        else:
+            msg = "int outside of msgpack represntation support"
+            raise ValueError(msg)
+
     elif isinstance(obj, (list, tuple)):
-        n = len(obj)  # pyright: ignore[reportUnknownArgumentType]
+        if TYPE_CHECKING:
+            obj = cast("list[object] | tuple[object, ...]", obj)
+
+        n = len(obj)
+
         if n <= 0x0F:
             buffer.write(struct.pack("!B", 0x90 + n))
         elif n <= 0xFFFF:
@@ -56,8 +64,11 @@ def _pack(buffer: BytesIO, obj: object) -> None:
         else:
             raise ValueError
 
-        for val in obj:  # pyright: ignore[reportUnknownVariableType]
-            _pack(buffer, val)  # pyright: ignore[reportUnknownArgumentType]
+        for val in obj:
+            _pack(buffer, val)
+    else:
+        msg = f"Unhandleable type {type(obj):!r}"
+        raise TypeError(msg)
 
 
 def pack(obj: object) -> bytes:
@@ -93,10 +104,7 @@ def _unpack(buffer: BytesIO) -> Any:
     if 0x90 <= s <= 0x9F:
         return [_unpack(buffer) for _ in range(s - 0x90)]
 
-    array_lookup = {
-        0xDC: "!H",
-        0xDD: "!I",
-    }
+    array_lookup = {0xDC: "!H", 0xDD: "!I"}
 
     if fmt := array_lookup.get(s):
         raw = buffer.read(struct.calcsize(fmt))
