@@ -14,8 +14,7 @@ from typing import Any
 
 from wakautosolver._compat import decode as msgp_decode
 from wakautosolver.b2048 import decode
-from wakautosolver.object_parsing import get_all_items
-from wakautosolver.restructured_types import ElementsEnum
+from wakautosolver.restructured_types import ElementsEnum, get_all_items
 from wakautosolver.versioned_entrypoints import (
     Priority,
     SetMaximums,
@@ -186,8 +185,8 @@ if __name__ == "__main__":
             forbidden_items=[],  # the item ids
         )
 
-        runner(
-            *((co, cf) for co, cf in zip(all_codes, all_configs, strict=False)), loud=True
-        )
+        runner((code1, cfg1), loud=True)
+        # )
+    #   *((co, cf) for co, cf in zip(all_codes, all_configs, strict=False)), loud=True
     except KeyboardInterrupt:
         pass

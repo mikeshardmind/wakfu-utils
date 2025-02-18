@@ -21,19 +21,17 @@ from typing import Final, Protocol, TypeVar
 
 from ._build_codes import Stats as StatSpread
 from .item_conditions import get_item_conditions
-from .object_parsing import (
-    EquipableItem,
-    get_all_items,
-    load_item_source_data,
-    set_locale,
-)
 from .restructured_types import (
     ClassesEnum,
     ElementsEnum,
+    EquipableItem,
     SetMaximums,
     SetMinimums,
     Stats,
     apply_w2h,
+    get_all_items,
+    load_item_source_data,
+    set_locale,
     v1Config,
 )
 
@@ -424,7 +422,7 @@ def solve(
     afitems_ = ordered_keep_by_key(
         [*forced_epics, *forced_relics, *forced_items], attrgetter("item_id"), 1
     )
-    afstats_: Stats = reduce(add, (i.as_stats() for i in afitems_), Stats())
+    afstats_: Stats = reduce(add, afitems_, Stats())
     afslots_ = [i.item_slot for i in afitems_]
     FINDABLE_AP_MP_NEEDED = sum(attrgetter("ap", "mp")(stat_mins - base_stats - afstats_))
     findableAP_MP = sum(
@@ -880,8 +878,8 @@ def solve(
         disables_second = any(i.disables_second_weapon for i in pair if i)
         positions = [i.item_slot for i in pair if i]
         pos_key = "-".join(sorted(positions))
-        re_s = [i.as_stats() for i in pair if i]
-        sc = re_s[0]
+        re_s = [i for i in pair if i]
+        sc = re_s[0].as_stats()
         if len(re_s) > 1:
             sc += re_s[1]
         ks = _as_attrgetter(sc)
@@ -1212,20 +1210,15 @@ def inner_solve(
 
         return score
 
-    score_key = lru_cache(512)(_score_key)
+    score_key = _score_key
 
     solve_BEST_LIST: list[tuple[float, list[EquipableItem]]] = []
 
-    score_key = lru_cache()(_score_key)
-
-    @lru_cache(128)
-    def weapon_score_func(
-        w: Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem],
-    ) -> float:
+    def weapon_score_func(w: Iterable[EquipableItem]) -> float:
         return sum(map(score_key, w))
 
-    l_add = lru_cache(1024)(add)
-    l_and = lru_cache(and_)
+    l_add = add
+    l_and = and_
 
     REM_SLOTS = [
         "LEGS",
@@ -1324,9 +1317,9 @@ def inner_solve(
 
     re_st = base_stats
     if relic:
-        re_st += relic.as_stats()
+        re_st += relic
     if epic:
-        re_st += epic.as_stats()
+        re_st += epic
 
     for raw_items in itertools.product(*filtered):
         items = list(forced_items)
@@ -1337,7 +1330,7 @@ def inner_solve(
             else:
                 items.extend(ri)
 
-        statline: Stats = reduce(l_add, [i.as_stats() for i in items], re_st)
+        statline: Stats = reduce(l_add, items, re_st)
         if ns.twoh and any(i.disables_second_weapon for i in items):
             statline = apply_w2h(statline)
 
@@ -1402,7 +1395,7 @@ def inner_solve(
         iter_stats = base_stats
         for item in (*items, relic, epic):
             if item is not None:
-                iter_stats += item.as_stats()
+                iter_stats += item
 
         fd_mod = 0
 

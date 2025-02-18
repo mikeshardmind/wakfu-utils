@@ -13,7 +13,6 @@ from functools import lru_cache, reduce
 from operator import and_
 
 from . import restructured_types as rst
-from .object_parsing import EquipableItem
 
 # Manually maintained because this isn't in ankama's data.
 # If ankama added items frequently, I'd make this parse a file with something like "locale,item name,lv,stat<x"
@@ -109,7 +108,7 @@ for item_id in (26994, 26995, 26996, 26300, 26319):
 
 @lru_cache(1024)
 def get_item_conditions(
-    item: EquipableItem,
+    item: rst.EquipableItem,
 ) -> tuple[rst.SetMinimums | None, rst.SetMaximums | None]:
     item_conds = conditions.get(item.item_id, [])
     set_mins: list[rst.SetMinimums] = []

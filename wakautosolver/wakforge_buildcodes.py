@@ -19,9 +19,9 @@ from typing import Literal, NamedTuple
 from . import b2048
 from ._build_codes import Stats as AllocatedStats
 from ._compat import decode, encode
-from .object_parsing import EquipableItem
 from .restructured_types import ClassesEnum as WFClasses
 from .restructured_types import ElementsEnum as WFElements
+from .restructured_types import EquipableItem
 
 
 class Rune(NamedTuple):

@@ -15,7 +15,6 @@ from dataclasses import asdict, dataclass, field
 from typing import Literal
 
 from . import __version__
-from .object_parsing import load_item_source_data
 from .restructured_types import (
     DUMMY_MAX,
     DUMMY_MIN,
@@ -23,6 +22,7 @@ from .restructured_types import (
     ElementsEnum,
     Priority,
     StatPriority,
+    load_item_source_data,
 )
 from .restructured_types import SetMaximums as RealSetMaxs
 from .restructured_types import SetMinimums as RealSetMins
