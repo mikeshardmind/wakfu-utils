@@ -13,14 +13,22 @@ from __future__ import annotations
 import bz2
 import contextvars
 import enum
-import lzma
 import pathlib
 import struct
+import sys
 from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass, field, replace
 from functools import lru_cache
 from itertools import starmap
 from typing import Literal, NamedTuple, TypedDict, final
+
+if "pyodide" in sys.modules:
+    import asyncio
+
+    import micropip  # type: ignore
+
+    tsk = asyncio.create_task(micropip.install("lzma"))  # type: ignore
+
 
 _locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar(
     "_locale", default="en"
@@ -851,6 +859,8 @@ def unpack_items(packed: bytes) -> list[EquipableItem]:
 
 @lru_cache
 def get_all_items() -> StatOnlyBundle:
+    import lzma
+
     data_file_path = pathlib.Path(__file__).with_name("data") / "stat_only_bundle.xz"
     with lzma.open(data_file_path, format=lzma.FORMAT_XZ) as fp:
         return tuple(unpack_items(fp.read()))
@@ -901,6 +911,7 @@ def unpack_sourcedata(packed: bytes) -> SourceData:
 @lru_cache
 def load_item_source_data() -> SourceData:
     data_file_path = pathlib.Path(__file__).with_name("data") / "source_info.xz"
+    import lzma
 
     with lzma.open(data_file_path, format=lzma.FORMAT_XZ) as fp:
         return unpack_sourcedata(fp.read())
