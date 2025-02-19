@@ -166,6 +166,14 @@ class Buildv1:
         tup = astuple(self)
         return AllocatedStats(*tup[3:32])
 
+    @classmethod
+    def from_allocated_stats(
+        cls: type[Buildv1],
+        stats: AllocatedStats,
+        wcls: WFClasses = WFClasses.EMPTY
+    ) -> Buildv1:
+        return Buildv1(1, wcls, *stats)
+
     def clear_items(self) -> None:
         empty = Item()
         for idx in range(1, 15):

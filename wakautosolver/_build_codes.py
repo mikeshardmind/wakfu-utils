@@ -10,6 +10,7 @@ from __future__ import annotations
 
 # This is an idealized handling that varies a bit from wakforge's. Keeping it for now
 import enum
+import re
 import struct
 import zlib
 from typing import NamedTuple
@@ -73,6 +74,60 @@ class Elements(enum.IntFlag):
     EARTH = 2
     FIRE = 4
     WATER = 8
+
+
+re_c = re.compile(r"^(:?\d{1,2}:\d{1,2})(:?\-(\d{1,2}:\d{1,2})){0,60}$")
+
+
+statc_map = {
+    1: "percent_hp",
+    16: "res",
+    17: "barrier",
+    27: "heals_rec",
+    36: "armor",
+    23: "elemental_mastery",
+    26: "melee_mastery",
+    30: "distance_mastery",
+    31: "hp",
+    18: "lock",
+    19: "dodge",
+    20: "initiative",
+    21: "lockdodge",
+    37: "fow",
+    9: "crit",
+    10: "block",
+    11: "critical_mastery",
+    12: "rear_mastery",
+    13: "berserk_mastery",
+    14: "healing_mastery",
+    15: "rear_resistence",
+    34: "critical_resistence",
+    2: "bool_ap",
+    3: "bool_mp",
+    4: "bool_ra",
+    5: "bool_wp",
+    6: "bool_control",
+    8: "bool_di",
+    35: "bool_major_res",
+}
+
+
+def stats_from_code(s: str) -> Stats | None:
+    if not re_c.match(s):
+        return None
+    components = s.split("-")
+    kwargs = {}
+    for stat in components:
+        k, v = stat.split(":")
+        key = statc_map.get(int(k), None)
+        if key is None:
+            return None
+        if key.startswith("bool_"):
+            key = key.removeprefix("bool_")
+            kwargs[key] = True
+        else:
+            kwargs[key] = int(v)
+    return Stats(**kwargs)
 
 
 class Stats(NamedTuple):

@@ -173,13 +173,13 @@ if __name__ == "__main__":
             allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
             target_stats=SetMinimums(ap=7, mp=3, wp=6, ra=0),
             objectives=StatPriority(
-                elements=ElementsEnum.fire | ElementsEnum.earth,
+                elements=ElementsEnum.fire | ElementsEnum.air | ElementsEnum.water,
                 melee_mastery=Priority.prioritized,
                 distance_mastery=Priority.unvalued,
                 berserk_mastery=Priority.full_negative_only,
                 rear_mastery=Priority.full_negative_only,
             ),
-            dry_run=False,
+            dry_run=True,
             ignore_existing_items=False,
             forbidden_sources=[],  # can be any or none of ["arch", "horde", "pvp", "ultimate_boss"]
             forbidden_items=[],  # the item ids
