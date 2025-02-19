@@ -662,10 +662,11 @@ def solve(
     sim_keys = {"disables_second_weapon", *ALWAYS_SIMMED}
     if passives and 5100 in passives:
         sim_keys.add("block")
-    if ns.unraveling or ns.wakfu_class is ClassesEnum.Eca:
-        sim_keys.add("critical_hit")
-    if ns.unraveling:
-        sim_keys.add("critical_mastery")
+    # These are *too* expensive to enable currently, work on perf first.
+    # if ns.unraveling or ns.wakfu_class is ClassesEnum.Eca:
+    #    sim_keys.add("critical_hit")
+    # if ns.unraveling:
+    #    sim_keys.add("critical_mastery")
 
     @lru_cache(128)
     def needs_full_sim_key(
@@ -785,7 +786,7 @@ def solve(
         solve_DAGGERS.append(
             EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * 1.5))
         )
-    if sublimations:
+    elif sublimations:
         c = 0
         for sub in sublimations:
             if sub == 28908:
