@@ -453,7 +453,7 @@ class Effect:
             item.update(prop, val)
 
     @classmethod
-    def from_raw(cls, raw: RawEffectType, *, is_pet: bool = False) -> Effect:
+    def from_raw(cls, raw: RawEffectType, *, is_pet: bool = False, id_: int = 0) -> Effect:
         ret = cls()
 
         try:
@@ -464,7 +464,9 @@ class Effect:
             t = transformers(params)
             if t and params and is_pet:
                 k, v = t[0]
-                v = int(v + 50 * params[1])
+                # dot and the gemlin line max out at lv 25
+                mx_lv = 25 if id_ in {12237, 26673, 26674, 26675, 26676, 26677} else 50
+                v = int(v + mx_lv * params[1])
                 t = [(k, v)]
             ret._transforms = t
         except KeyError as exc:
@@ -590,7 +592,9 @@ class EquipableItem:
         ret._is_shop_item = 7 in base_details.get("properties", [])
 
         for effect_dict in data["definition"]["equipEffects"]:
-            Effect.from_raw(effect_dict, is_pet=item_type_id in {582, 611}).apply_to(ret)
+            Effect.from_raw(
+                effect_dict, is_pet=item_type_id in {582, 611}, id_=ret._item_id
+            ).apply_to(ret)
 
         if ret.name is None:
             if ret._item_id not in {27700, 27701, 27702, 27703}:
