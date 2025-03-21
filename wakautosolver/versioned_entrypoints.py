@@ -67,7 +67,7 @@ _adaptive_tolerance_map: dict[int, int] = {
     200: 14,
     215: 15,  # outlier, 200 gear is exceptional
     230: 14,
-    245: 14,  # damage outlier for 230, but durability is a concern.
+    245: 15,  # outlier, may remove with future 245 gear
 }
 
 v1Result = tuple[list[int] | None, str | None]
