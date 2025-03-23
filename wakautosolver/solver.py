@@ -1355,10 +1355,6 @@ def inner_solve(
 
         # Note: keep the class here even if it isn't needed for ease of reference
 
-        # innate passive
-        if ns.wakfu_class == ClassesEnum.Ecaflip and critical_hit > 100:
-            statline += Stats(fd=0.5 * (critical_hit - 100))
-
         # Bravery
         if (
             ns.wakfu_class == ClassesEnum.Iop
@@ -1389,9 +1385,17 @@ def inner_solve(
                 distance_mod = min(max(0, ns.lv * 2), ns.lv * 2)
                 statline += Stats(distance_mastery=distance_mod)
 
-        UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
+        if ns.wakfu_class == ClassesEnum.Ecaflip:
+            # innate passive + reliable active amount.
+            critical_hit += 20  # seperate for unravel, out of combat
+            crit_chance = critical_hit + (55 if ns.lv >= 90 else 20)
+            if crit_chance > 100:
+                statline += Stats(fd=0.5 * (crit_chance - 100))
+        else:
+            crit_chance = critical_hit
 
-        crit_chance = max(min(critical_hit, 100), 0)  # engine crit rate vs stat
+        crit_chance = max(min(crit_chance, 100), 0)
+        UNRAVEL_ACTIVE = ns.unraveling and critical_hit >= 40
 
         iter_stats = base_stats
         for item in (*items, relic, epic):

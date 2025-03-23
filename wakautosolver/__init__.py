@@ -7,4 +7,4 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 # Note: This is Year, month, monotonic not year, month, day
-__version__ = "2025.3.3"
+__version__ = "2025.3.4"
