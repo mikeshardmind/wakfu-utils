@@ -1218,8 +1218,8 @@ def inner_solve(
     def weapon_score_func(w: Iterable[EquipableItem]) -> float:
         return sum(map(score_key, w))
 
-    l_add = add
-    l_and = and_
+    l_add = lru_cache()(add)
+    l_and = lru_cache()(and_)
 
     REM_SLOTS = [
         "LEGS",
@@ -1403,35 +1403,6 @@ def inner_solve(
                 iter_stats += item
 
         fd_mod = 0
-
-        if (
-            iter_stats.critical_mastery
-            + iter_stats.distance_mastery
-            + iter_stats.melee_mastery
-            + iter_stats.healing_mastery
-            + iter_stats.berserk_mastery
-            + iter_stats.rear_mastery
-        ) <= 0:
-            if sublimations and 29874 in sublimations:
-                # inflexibility 2
-
-                iter_stats += Stats(
-                    elemental_mastery=int(iter_stats.elemental_mastery * 0.15),
-                    mastery_1_element=int(iter_stats.mastery_1_element * 0.15),
-                    mastery_2_elements=int(iter_stats.mastery_2_elements * 0.15),
-                    mastery_3_elements=int(iter_stats.mastery_2_elements * 0.15),
-                )
-            if sublimations:
-                neutrality_c = 0
-                for sub in sublimations:
-                    if sub == 29001:
-                        neutrality_c += 1
-                    elif sub == 29002:
-                        neutrality_c += 2
-                    elif sub == 29003:
-                        neutrality_c += 3
-
-                fd_mod = 8 * min(neutrality_c, 4)
 
         base_score = score_key(iter_stats)
 
