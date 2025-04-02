@@ -1,0 +1,10 @@
+@echo off
+cd scripts
+python downloader.py
+python compressed_data_gen.py
+python sqlify.py
+python structured_compressed_gen.py
+cd ..
+cd wakautosolver\data\
+python ..\..\scripts\dump_db.py
+cd ..\..\
