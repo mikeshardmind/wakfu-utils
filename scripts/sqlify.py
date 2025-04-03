@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 
 import apsw
-import object_parsing
+from . import object_parsing
 
 log = logging.getLogger(__name__)
 
@@ -187,7 +187,7 @@ QUERY = "INSERT INTO ITEMS({}) VALUES({})".format(
 )
 
 
-if __name__ == "__main__":
+def main() -> None:
     items = object_parsing.EquipableItem.from_bz2_bundled()
     all_item_ids = {i._item_id for i in items}
 
@@ -231,7 +231,6 @@ if __name__ == "__main__":
 
         blueprints: set[int] = set()
         for blueprint in bpdata:
-            blueprint_id = blueprint["blueprintId"]
             recipe_ids = blueprint["recipeId"]
             for rid in recipe_ids:
                 try:
@@ -317,3 +316,7 @@ if __name__ == "__main__":
             """,
             item_type_name_data,
         )
+
+
+if __name__ == "__main__":
+    main()

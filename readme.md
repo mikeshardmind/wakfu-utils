@@ -100,17 +100,7 @@ To install and run:
 ```bash
 pip install -r dev-requirements.txt
 ```
-- Run `./update.bat` (windows) or `./update.sh` (linux) to download and create the item database
-
-#Windows:
-```bash
-./update.bat
-```
-
-#Linux:
-```bash
-./update.sh
-```
+- Run `python update.py` to update the item database
 
 - Check the `wakautosolver/data` folder for the generated database file
 

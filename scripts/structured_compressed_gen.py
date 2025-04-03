@@ -157,7 +157,7 @@ def unpack_items(packed: bytes) -> list[Item]:
     return list(starmap(Item, struct.iter_unpack("!IHBH37h", packed)))
 
 
-if __name__ == "__main__":
+def main() -> None:
     base_path = Path(__file__).parent.with_name("wakautosolver") / "data"
     db_str = str(base_path / "items.db")
     conn = apsw.Connection(db_str)
@@ -232,3 +232,7 @@ if __name__ == "__main__":
             "blueprints": sorted(datastruct.blueprints),
         }
         json.dump(data, fp)
+
+
+if __name__ == "__main__":
+    main()
