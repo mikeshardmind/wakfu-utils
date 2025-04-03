@@ -31,7 +31,7 @@ jobs:
 
       - name: Run update script
         run: |
-          ${PWD}/update.sh
+          python update.py
 
       - name: Check if item data has been updated
         id: diff-check

@@ -91,6 +91,20 @@ See misc/better_than_heuristic_counterexample.py for an implementation
 and then note that it takes longer to run that, which only generates per slot stat possibilities
 than it does to run the current solver with a heuristic model
 
+
+### Install and Run
+
+To install and run:
+
+- Run `pip install -r dev-requirements.txt` to install the dev dependencies
+```bash
+pip install -r dev-requirements.txt
+```
+- Run `python update.py` to update the item database
+
+- Check the `wakautosolver/data` folder for the generated database file
+
+
 ### Versioning
 
 Entrypoints intended for use by other code will be kept in a fashion considered non-breaking based on known use

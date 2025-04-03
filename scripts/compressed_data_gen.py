@@ -16,7 +16,8 @@ from pathlib import Path
 Exists just to generate a smaller file intended for use in minimal distributions
 """
 
-if __name__ == "__main__":
+
+def main() -> None:
     base_path = Path(__file__).parent
     with (base_path / "json_data" / "items.json").open(mode="rb") as fp:
         data = json.loads(fp.read())
@@ -30,3 +31,7 @@ if __name__ == "__main__":
     # both with defaults and with attempts at adaptive tuning.
     with (base_path / "item_data.bz2").open(mode="wb") as fp:
         fp.write(compressed_bz2)
+
+
+if __name__ == "__main__":
+    main()

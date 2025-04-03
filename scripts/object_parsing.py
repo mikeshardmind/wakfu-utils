@@ -453,7 +453,9 @@ class Effect:
             item.update(prop, val)
 
     @classmethod
-    def from_raw(cls, raw: RawEffectType, *, is_pet: bool = False, id_: int = 0) -> Effect:
+    def from_raw(
+        cls, raw: RawEffectType, *, is_pet: bool = False, id_: int = 0
+    ) -> Effect:
         ret = cls()
 
         try:

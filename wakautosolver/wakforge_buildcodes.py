@@ -168,9 +168,7 @@ class Buildv1:
 
     @classmethod
     def from_allocated_stats(
-        cls: type[Buildv1],
-        stats: AllocatedStats,
-        wcls: WFClasses = WFClasses.EMPTY
+        cls: type[Buildv1], stats: AllocatedStats, wcls: WFClasses = WFClasses.EMPTY
     ) -> Buildv1:
         return Buildv1(1, wcls, *stats)
 
