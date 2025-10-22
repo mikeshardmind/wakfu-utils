@@ -17,7 +17,7 @@ from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 from dataclasses import astuple
 from functools import lru_cache, reduce
 from operator import add, and_, attrgetter, itemgetter
-from typing import Final, Protocol, TypeVar
+from typing import Final, Protocol, TypeAlias, TypeVar
 
 from ._build_codes import Stats as StatSpread
 from .item_conditions import get_item_conditions
@@ -90,6 +90,92 @@ class ImpossibleStatError(SolveError):
     pass
 
 
+SCORE_FUNC_TYPE: TypeAlias = Callable[[EquipableItem | Stats | None], float]
+CRIT_SCORE_FUNC_TYPE: TypeAlias = Callable[[EquipableItem | None], float]
+
+
+def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC_TYPE]:
+
+    ops: list[Callable[[float, EquipableItem | Stats], float]] = []
+
+    is_hupper = ns.wakfu_class == ClassesEnum.Huppermage
+
+    if is_hupper:
+        ops.append(lambda s, i: s * 1.2)
+    if ns.melee:
+        ops.append(lambda s, i: s + i.melee_mastery)
+    if ns.dist:
+        ops.append(lambda s, i: s + i.distance_mastery)
+    if ns.zerk:
+        ops.append(lambda s, i: s + i.berserk_mastery)
+    if ns.negzerk == "full":
+        ops.append(lambda s, i: s + min(0, i.berserk_mastery))
+    if ns.negzerk == "half":
+        ops.append(lambda s, i: s + min(0, i.berserk_mastery) / 2)
+    if ns.heal:
+        ops.append(lambda s, i: s + i.healing_mastery)
+    if ns.rear:
+        ops.append(lambda s, i: s + i.rear_mastery)
+    if ns.negrear == "full":
+        ops.append(lambda s, i: s + min(0, i.rear_mastery))
+    if ns.negrear == "half":
+        ops.append(lambda s, i: s + min(0, i.rear_mastery) / 2)
+
+    elemental_lookup: dict[tuple[int, bool], Callable[[float, EquipableItem | Stats], float]] = {
+        (1, True): lambda s, i: s + i.mastery_1_element * 1.2,
+        (1, False): lambda s, i: s + i.mastery_1_element,
+        (2, True): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements) * 1.2,
+        (2, False): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements),
+        (3, True): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements + i.mastery_3_elements) * 1.2,
+        (3, False): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements + i.mastery_3_elements),
+    }
+
+    if num := max(3, ns.num_mastery):
+        ops.append(elemental_lookup[num, is_hupper])
+
+    if n := ns.elements.bit_count():
+        names = [
+            name for ev, name in (
+                (ElementsEnum.air, "air_mastery"),
+                (ElementsEnum.earth, "earth_mastery"),
+                (ElementsEnum.fire, "fire_mastery"),
+                (ElementsEnum.water, "water_mastery"),
+            )
+            if ev in ns.elements
+        ]
+        getter = attrgetter(*names)
+        if n == 1:
+            if is_hupper:
+                ops.append(lambda s, i: s + getter(i) * 1.2 if isinstance(i, EquipableItem) else s)  # pyright: ignore[reportOperatorIssue, reportUnknownLambdaType]
+            else:
+                ops.append(lambda s, i: s + getter(i) if isinstance(i, EquipableItem) else s)  # pyright: ignore[reportOperatorIssue, reportUnknownLambdaType]
+        elif is_hupper:
+            ops.append(lambda s, i: s + sum(getter(i)) / n * 1.2 if isinstance(i, EquipableItem) else s)
+        else:
+            ops.append(lambda s, i: s + sum(getter(i)) / n if isinstance(i, EquipableItem) else s)
+
+    def _base_sc(item: EquipableItem | Stats | None) -> float:
+        if item is None:
+            return 0.0
+        return reduce(lambda x, f: f(x, item), ops, item.elemental_mastery)
+
+    base_sc: SCORE_FUNC_TYPE = lru_cache(512)(_base_sc)
+
+    if ns.base_stats and (ch := ns.base_stats.critical_hit):
+
+        def _crit_sc(item: EquipableItem | None, *, _v: int = ch) -> float:
+            if item is None:
+                return 0
+            base_score = base_sc(item)
+            return (
+                base_score + ((item.critical_hit + _v) / 80) * base_score
+            )
+
+        return base_sc, lru_cache(512)(_crit_sc)
+
+    return base_sc, base_sc
+
+
 def solve(
     ns: v1Config,
     progress_callback: Callable[[int, int], None] | None = None,
@@ -112,77 +198,19 @@ def solve(
 
     LOW_BOUND = max(ns.lv - ns.tolerance, 1)
 
-    def _score_key(item: EquipableItem | Stats | None) -> float:
-        score = 0.0
-        if not item:
-            return score
+    stat_mins = ns.stat_minimums or SetMinimums(ap=ns.ap, mp=ns.mp, wp=ns.wp, ra=ns.ra)
+    stat_maxs = ns.stat_maximums or SetMaximums()
+    base_stats = ns.base_stats or Stats(
+        ns.baseap,
+        mp=ns.basemp,
+        ra=ns.basera,
+        wp=ns.bawewp,
+        critical_hit=ns.bcrit,
+        critical_mastery=ns.bcmast,
+        elemental_mastery=ns.bmast,
+    )
 
-        elemental_modifier = 1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1
-
-        score += item.elemental_mastery * elemental_modifier
-        if ns.melee:
-            score += item.melee_mastery
-        if ns.dist:
-            score += item.distance_mastery
-        if ns.zerk and ns.negzerk not in {"half", "full"}:
-            score += item.berserk_mastery
-        elif item.berserk_mastery < 0:
-            if ns.negzerk == "full":
-                mul = 1.0
-            elif ns.negzerk == "half":
-                mul = 0.5
-            else:
-                mul = 0.0
-
-            score += item.berserk_mastery * mul
-
-        if ns.rear and ns.negrear not in {"full", "half"}:
-            score += item.rear_mastery
-        elif item.rear_mastery < 0:
-            if ns.negrear == "full":
-                mul = 1.0
-            elif ns.negrear == "half":
-                mul = 0.5
-            else:
-                mul = 0.0
-
-            score += item.rear_mastery * mul
-
-        if ns.heal:
-            score += item.healing_mastery
-
-        if ns.num_mastery == 1:
-            score += item.mastery_1_element * elemental_modifier
-        if ns.num_mastery <= 2:
-            score += item.mastery_2_elements * elemental_modifier
-        if ns.num_mastery <= 3:
-            score += item.mastery_3_elements * elemental_modifier
-
-        # This isn't perfect, Doziak epps are weird.
-        if (n := ns.elements.bit_count()) and not isinstance(item, Stats):
-            element_vals = 0
-            if ElementsEnum.air in ns.elements:
-                element_vals += item.air_mastery
-            if ElementsEnum.earth in ns.elements:
-                element_vals += item.earth_mastery
-            if ElementsEnum.water in ns.elements:
-                element_vals += item.water_mastery
-            if ElementsEnum.fire in ns.elements:
-                element_vals += item.fire_mastery
-            score += element_vals / n * elemental_modifier
-
-        return score
-
-    score_key = lru_cache(512)(_score_key)
-
-    @lru_cache(512)
-    def crit_score_key(item: EquipableItem | None) -> float:
-        if item is None:
-            return 0
-        base_score = score_key(item)
-        return (
-            base_score + ((item.critical_hit + base_stats.critical_hit) / 80) * base_score
-        )
+    score_key, crit_score_key = make_score_key_funcs(ns)
 
     @lru_cache(None)
     def has_currently_unhandled_item_condition(item: EquipableItem) -> bool:
@@ -208,18 +236,6 @@ def solve(
 
     # locale based, only works if user is naming it in locale used and case sensitive currently.
     FORBIDDEN_NAMES: list[str] = ns.forbid if (ns and ns.forbid) else []
-
-    stat_mins = ns.stat_minimums or SetMinimums(ap=ns.ap, mp=ns.mp, wp=ns.wp, ra=ns.ra)
-    stat_maxs = ns.stat_maximums or SetMaximums()
-    base_stats = ns.base_stats or Stats(
-        ns.baseap,
-        mp=ns.basemp,
-        ra=ns.basera,
-        wp=ns.bawewp,
-        critical_hit=ns.bcrit,
-        critical_mastery=ns.bcmast,
-        elemental_mastery=ns.bmast,
-    )
 
     influence_level = 0
     if sublimations:
@@ -838,7 +854,7 @@ def solve(
     def weapon_score_func(
         w: Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem],
     ) -> float:
-        return sum(map(score_key, w))
+        return sum(map(score_key, w))  # pyright: ignore[reportArgumentType]
 
     srt_w = sorted(canidate_weapons, key=weapon_score_func, reverse=True)
     canidate_weapons = ordered_keep_by_key(srt_w, weapon_key_func)
@@ -924,7 +940,7 @@ def solve(
                 elif re.item_slot == "SECOND_WEAPON":
                     dist = OFF_HAND_distrib
                 else:
-                    dist = distribs.get(re.item_slot, None)
+                    dist = distribs.get(re.item_slot)
 
                 if dist:
                     try:
