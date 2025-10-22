@@ -348,6 +348,9 @@ class EquipableItem(NamedTuple):
         typ = ITEM_TYPE_MAP[self.item_type]["title"][_locale.get()]
         return f"Item id: {self.item_id:>5} [{rarity:>10}] {typ:>20} Lv: {self.item_lv:>3} {self.name}"
 
+    def __hash__(self) -> int:
+        return self.item_id
+
 
 @lru_cache(None)
 def _item_to_stats(item: EquipableItem) -> Stats:
