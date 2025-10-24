@@ -1166,68 +1166,8 @@ def inner_solve(
     passives: Sequence[int] | None,
     sublimations: Sequence[int] | None,
 ) -> list[tuple[float, list[EquipableItem]]]:
-    def _score_key(item: EquipableItem | Stats | None) -> float:
-        score = 0.0
-        if not item:
-            return score
 
-        elemental_modifier = 1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1
-
-        score += item.elemental_mastery * elemental_modifier
-        if ns.melee:
-            score += item.melee_mastery
-        if ns.dist:
-            score += item.distance_mastery
-        if ns.zerk and ns.negzerk not in {"half", "full"}:
-            score += item.berserk_mastery
-        elif item.berserk_mastery < 0:
-            if ns.negzerk == "full":
-                mul = 1.0
-            elif ns.negzerk == "half":
-                mul = 0.5
-            else:
-                mul = 0.0
-
-            score += item.berserk_mastery * mul
-
-        if ns.rear and ns.negrear not in {"full", "half"}:
-            score += item.rear_mastery
-        elif item.rear_mastery < 0:
-            if ns.negrear == "full":
-                mul = 1.0
-            elif ns.negrear == "half":
-                mul = 0.5
-            else:
-                mul = 0.0
-
-            score += item.rear_mastery * mul
-
-        if ns.heal:
-            score += item.healing_mastery
-
-        if ns.num_mastery == 1:
-            score += item.mastery_1_element * elemental_modifier
-        if ns.num_mastery <= 2:
-            score += item.mastery_2_elements * elemental_modifier
-        if ns.num_mastery <= 3:
-            score += item.mastery_3_elements * elemental_modifier
-
-        # This isn't perfect, Doziak epps are weird.
-        if (n := ns.elements.bit_count()) and not isinstance(item, Stats):
-            element_vals = 0
-            if ElementsEnum.air in ns.elements:
-                element_vals += item.air_mastery
-            if ElementsEnum.earth in ns.elements:
-                element_vals += item.earth_mastery
-            if ElementsEnum.water in ns.elements:
-                element_vals += item.water_mastery
-            if ElementsEnum.fire in ns.elements:
-                element_vals += item.fire_mastery
-            score += element_vals / n * elemental_modifier
-
-        return score
-
-    score_key = _score_key
+    score_key, _csk = make_score_key_funcs(ns)
 
     solve_BEST_LIST: list[tuple[float, list[EquipableItem]]] = []
 

@@ -12,7 +12,7 @@ import enum
 import traceback
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from . import __version__
 from .restructured_types import (
@@ -29,6 +29,12 @@ from .restructured_types import SetMinimums as RealSetMins
 from .solver import ImpossibleStatError, SolveError, solve, v1Config
 from .wakforge_buildcodes import Buildv1 as WFBuild
 from .wakforge_buildcodes import build_to_code
+
+if TYPE_CHECKING:
+    IntList = list[int]
+    ItemSourceList = list[Literal["arch", "horde", "pvp", "ultimate_boss", "blueprints"]]
+else:
+    IntList = ItemSourceList = list
 
 ClassNames = Literal[
     "Feca",
@@ -168,11 +174,9 @@ class v2Config:
     target_stats: SetMinimums = field(default_factory=SetMinimums)
     dry_run: bool = False
     objectives: StatPriority = field(default_factory=StatPriority)
-    forbidden_items: list[int] = field(default_factory=list)
+    forbidden_items: IntList = field(default_factory=IntList)
     ignore_existing_items: bool = False
-    forbidden_sources: list[
-        Literal["arch", "horde", "pvp", "ultimate_boss", "blueprints"]
-    ] = field(default_factory=list)
+    forbidden_sources: ItemSourceList = field(default_factory=ItemSourceList)
     stats_maxs: SetMaximums = field(default_factory=SetMaximums)
     enable_testing_features: bool = False
     solve_type: SolveType = SolveType.OPTIMIZE
@@ -185,7 +189,7 @@ v3Config = v2Config
 class v2Result:
     build_code: str | None = None
     error_code: str | None = None
-    item_ids: list[int] = field(default_factory=list)
+    item_ids: IntList = field(default_factory=IntList)
     debug_info: str | None = None
 
 

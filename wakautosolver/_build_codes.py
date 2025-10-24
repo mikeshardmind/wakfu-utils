@@ -119,7 +119,7 @@ def stats_from_code(s: str) -> Stats | None:
     kwargs = {}
     for stat in components:
         k, v = stat.split(":")
-        key = statc_map.get(int(k), None)
+        key = statc_map.get(int(k))
         if key is None:
             return None
         if key.startswith("bool_"):

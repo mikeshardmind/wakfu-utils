@@ -20,14 +20,22 @@ from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass, field, replace
 from functools import lru_cache
 from itertools import starmap
-from typing import Literal, NamedTuple, TypedDict, final
+from typing import TYPE_CHECKING, Literal, NamedTuple, TypedDict, final
+
+if TYPE_CHECKING:
+    StrList = list[str]
+    IntList = list[int]
+else:
+    StrList = list
+    IntList = list
+
 
 if "pyodide" in sys.modules:
     import asyncio
 
-    import micropip  # type: ignore
+    import micropip  # type: ignore  # noqa: PGH003
 
-    tsk = asyncio.create_task(micropip.install("lzma"))  # type: ignore
+    tsk = asyncio.create_task(micropip.install("lzma"))  # type: ignore  # noqa: PGH003, RUF006
 
 
 _locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar(
@@ -479,7 +487,7 @@ class StatPriority:
         )
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
 class Stats:
     ap: int = 0
     mp: int = 0
@@ -503,6 +511,13 @@ class Stats:
     lock: int = 0
     dodge: int = 0
     armor_given: int = 0
+
+    def __hash__(self) -> int:
+        return object.__hash__(self)
+        # despite the fact that we can compare equal without hashing equal
+        # the cheaper hash (identity, on cpython) is such a significant gain
+        # that the potential cache misses are noise compared to the cost of the
+        # hash function what would otherwise be generated.
 
     def __sub__(self, other: Stats | EquipableItem) -> Stats:
         return Stats(
@@ -803,9 +818,9 @@ class v1Config:
     bcrit: int = 0
     bmast: int = 0
     bcmast: int = 0
-    forbid: list[str] = field(default_factory=list)
-    idforbid: list[int] = field(default_factory=list)
-    idforce: list[int] = field(default_factory=list)
+    forbid: StrList = field(default_factory=StrList)
+    idforbid: IntList = field(default_factory=IntList)
+    idforce: IntList = field(default_factory=IntList)
     twoh: bool = False
     skiptwo_hand: bool = False
     locale: Literal["en", "fr", "pt", "es"] = "en"
@@ -813,9 +828,9 @@ class v1Config:
     hard_cap_depth: int = 25
     negzerk: Literal["full", "half", "none"] = "none"
     negrear: Literal["full", "half", "none"] = "none"
-    forbid_rarity: list[int] = field(default_factory=list)
+    forbid_rarity: IntList = field(default_factory=IntList)
     allowed_rarities: list[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6, 7])
-    nameforce: list[str] = field(default_factory=list)
+    nameforce: StrList = field(default_factory=StrList)
     tolerance: int = 30
     # Don't modify the below in wakforge, too slow
     exhaustive: bool = False

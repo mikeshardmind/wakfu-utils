@@ -14,7 +14,7 @@ from dataclasses import astuple, dataclass, field
 from functools import partial
 from itertools import compress, count
 from operator import eq
-from typing import Literal, NamedTuple
+from typing import TYPE_CHECKING, Literal, NamedTuple
 
 from . import b2048
 from ._build_codes import Stats as AllocatedStats
@@ -22,6 +22,11 @@ from ._compat import decode, encode
 from .restructured_types import ClassesEnum as WFClasses
 from .restructured_types import ElementsEnum as WFElements
 from .restructured_types import EquipableItem
+
+if TYPE_CHECKING:
+    ObjectList = list[object]
+else:
+    ObjectList = list
 
 
 class Rune(NamedTuple):
@@ -107,20 +112,20 @@ class Buildv1:
     s_major_control: int = 0
     s_major_damage: int = 0
     s_major_res: int = 0
-    item_1: Item | list[object] = field(default_factory=list)
-    item_2: Item | list[object] = field(default_factory=list)
-    item_3: Item | list[object] = field(default_factory=list)
-    item_4: Item | list[object] = field(default_factory=list)
-    item_5: Item | list[object] = field(default_factory=list)
-    item_6: Item | list[object] = field(default_factory=list)
-    item_7: Item | list[object] = field(default_factory=list)
-    item_8: Item | list[object] = field(default_factory=list)
-    item_9: Item | list[object] = field(default_factory=list)
-    item_10: Item | list[object] = field(default_factory=list)
-    item_11: Item | list[object] = field(default_factory=list)
-    item_12: Item | list[object] = field(default_factory=list)
-    item_13: Item | list[object] = field(default_factory=list)
-    item_14: Item | list[object] = field(default_factory=list)
+    item_1: Item | ObjectList = field(default_factory=ObjectList)
+    item_2: Item | ObjectList = field(default_factory=ObjectList)
+    item_3: Item | ObjectList = field(default_factory=ObjectList)
+    item_4: Item | ObjectList = field(default_factory=ObjectList)
+    item_5: Item | ObjectList = field(default_factory=ObjectList)
+    item_6: Item | ObjectList = field(default_factory=ObjectList)
+    item_7: Item | ObjectList = field(default_factory=ObjectList)
+    item_8: Item | ObjectList = field(default_factory=ObjectList)
+    item_9: Item | ObjectList = field(default_factory=ObjectList)
+    item_10: Item | ObjectList = field(default_factory=ObjectList)
+    item_11: Item | ObjectList = field(default_factory=ObjectList)
+    item_12: Item | ObjectList = field(default_factory=ObjectList)
+    item_13: Item | ObjectList = field(default_factory=ObjectList)
+    item_14: Item | ObjectList = field(default_factory=ObjectList)
     active_1: int = -1
     active_2: int = -1
     active_3: int = -1
@@ -154,6 +159,8 @@ class Buildv1:
             else:
                 item_id, elements, runes, sub = item
                 # ankama deleted some duplicates
+                if TYPE_CHECKING:
+                    assert isinstance(item_id, int)
                 item_id = ITEM_REPLACEMENT_MAP.get(item_id, item_id)
                 if elements == [0, 0, 0]:
                     elements = WFElements.empty.value
