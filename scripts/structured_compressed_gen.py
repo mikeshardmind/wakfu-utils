@@ -10,12 +10,15 @@ import bz2
 import json
 import lzma
 import struct
+from collections.abc import Generator
 from io import BytesIO
 from itertools import chain, starmap
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, TypeVar
 
 import apsw
+
+T = TypeVar("T")
 
 
 class Item(NamedTuple):
@@ -145,16 +148,25 @@ def unpack_sourcedata(packed: bytes) -> SourceData:
     return SourceData(*sets)
 
 
+STRUCT_FMT = "!IHBH37h"
+
+
+def batched(sequence: list[T], max_size: int) -> Generator[list[T], None, None]:
+    for i in range(0, len(sequence), max_size):
+        yield list(sequence[i : i + max_size])
+
+
 def pack_items(items: list[Item]) -> bytes:
-    buffer = BytesIO()
-    for item in items:
-        buffer.write(struct.pack("!IHBH37h", *item))
-    buffer.seek(0)
-    return buffer.read()
+    data: list[list[int]] = [list(struct.pack(STRUCT_FMT, *item)) for item in items]
+    transposed = zip(*data, strict=True)
+    return bytes(chain.from_iterable(transposed))
 
 
 def unpack_items(packed: bytes) -> list[Item]:
-    return list(starmap(Item, struct.iter_unpack("!IHBH37h", packed)))
+    ssize = struct.calcsize(STRUCT_FMT)
+    ilen = len(packed) // ssize
+    transposed = batched(list(packed), ilen)
+    return [Item(*struct.unpack(STRUCT_FMT, bytes(item))) for item in zip(*transposed, strict=True)]
 
 
 def main() -> None:

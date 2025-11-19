@@ -139,3 +139,4 @@ include = [
     "/wakautosolver",
     "/LICENSE",
 ]
+exclude = ["*.sql", "*.db"]

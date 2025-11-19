@@ -16,11 +16,12 @@ import enum
 import pathlib
 import struct
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from dataclasses import asdict, astuple, dataclass, field, replace
 from functools import lru_cache
-from itertools import starmap
-from typing import TYPE_CHECKING, Literal, NamedTuple, TypedDict, final
+from typing import TYPE_CHECKING, Literal, NamedTuple, TypedDict, TypeVar, final
+
+T = TypeVar("T")
 
 if TYPE_CHECKING:
     StrList = list[str]
@@ -871,8 +872,19 @@ def get_item_name(item: EquipableItem) -> str:
     return getattr(i, _locale.get())
 
 
+STRUCT_FMT = "!IHBH37h"
+
+
+def batched(sequence: list[T], max_size: int) -> Generator[list[T], None, None]:
+    for i in range(0, len(sequence), max_size):
+        yield list(sequence[i : i + max_size])
+
+
 def unpack_items(packed: bytes) -> list[EquipableItem]:
-    return list(starmap(EquipableItem, struct.iter_unpack("!IHBH37h", packed)))
+    ssize = struct.calcsize(STRUCT_FMT)
+    ilen = len(packed) // ssize
+    transposed = batched(list(packed), ilen)
+    return [EquipableItem(*struct.unpack(STRUCT_FMT, bytes(item))) for item in zip(*transposed, strict=True)]
 
 
 @lru_cache
