@@ -122,12 +122,12 @@ def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC
         ops.append(lambda s, i: s + min(0, i.rear_mastery) / 2)
 
     elemental_lookup: dict[tuple[int, bool], Callable[[float, EquipableItem | Stats], float]] = {
-        (1, True): lambda s, i: s + i.mastery_1_element * 1.2,
-        (1, False): lambda s, i: s + i.mastery_1_element,
-        (2, True): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements) * 1.2,
-        (2, False): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements),
-        (3, True): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements + i.mastery_3_elements) * 1.2,
-        (3, False): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements + i.mastery_3_elements),
+        (3, True): lambda s, i: s + i.mastery_3_elements * 1.2,
+        (3, False): lambda s, i: s + i.mastery_3_elements,
+        (2, True): lambda s, i: s + (i.mastery_2_elements + i.mastery_3_elements) * 1.2,
+        (2, False): lambda s, i: s + (i.mastery_2_elements + i.mastery_3_elements),
+        (1, True): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements + i.mastery_3_elements) * 1.2,
+        (1, False): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements + i.mastery_3_elements),
     }
 
     if num := max(3, ns.num_mastery):
