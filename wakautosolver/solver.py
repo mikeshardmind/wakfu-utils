@@ -95,7 +95,6 @@ CRIT_SCORE_FUNC_TYPE: TypeAlias = Callable[[EquipableItem | None], float]
 
 
 def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC_TYPE]:
-
     ops: list[Callable[[float, EquipableItem | Stats], float]] = []
 
     is_hupper = ns.wakfu_class == ClassesEnum.Huppermage
@@ -121,6 +120,7 @@ def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC
     if ns.negrear == "half":
         ops.append(lambda s, i: s + min(0, i.rear_mastery) / 2)
 
+    # fmt: off
     elemental_lookup: dict[tuple[int, bool], Callable[[float, EquipableItem | Stats], float]] = {
         (3, True): lambda s, i: s + i.mastery_3_elements * 1.2,
         (3, False): lambda s, i: s + i.mastery_3_elements,
@@ -129,13 +129,15 @@ def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC
         (1, True): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements + i.mastery_3_elements) * 1.2,
         (1, False): lambda s, i: s + (i.mastery_1_element + i.mastery_2_elements + i.mastery_3_elements),
     }
+    #: fmt: on
 
     if num := max(3, ns.num_mastery):
         ops.append(elemental_lookup[num, is_hupper])
 
     if n := ns.elements.bit_count():
         names = [
-            name for ev, name in (
+            name
+            for ev, name in (
                 (ElementsEnum.air, "air_mastery"),
                 (ElementsEnum.earth, "earth_mastery"),
                 (ElementsEnum.fire, "fire_mastery"),
@@ -143,16 +145,21 @@ def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC
             )
             if ev in ns.elements
         ]
-        getter = attrgetter(*names)
+
         if n == 1:
+            getter = attrgetter(names[0])
             if is_hupper:
-                ops.append(lambda s, i: s + getter(i) * 1.2 if isinstance(i, EquipableItem) else s)  # pyright: ignore[reportOperatorIssue, reportUnknownLambdaType]
+                ops.append(lambda s, i: s + getter(i) * 1.2)
             else:
-                ops.append(lambda s, i: s + getter(i) if isinstance(i, EquipableItem) else s)  # pyright: ignore[reportOperatorIssue, reportUnknownLambdaType]
-        elif is_hupper:
-            ops.append(lambda s, i: s + sum(getter(i)) / n * 1.2 if isinstance(i, EquipableItem) else s)
+                ops.append(lambda s, i: s + getter(i))
+
         else:
-            ops.append(lambda s, i: s + sum(getter(i)) / n if isinstance(i, EquipableItem) else s)
+            getter = attrgetter(*names)
+
+            if is_hupper:
+                ops.append(lambda s, i: s + min(getter(i)) * 0.2)
+            else:
+                ops.append(lambda s, i: s + min(getter(i)))
 
     def _base_sc(item: EquipableItem | Stats | None) -> float:
         if item is None:
@@ -167,9 +174,7 @@ def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC
             if item is None:
                 return 0
             base_score = base_sc(item)
-            return (
-                base_score + ((item.critical_hit + _v) / 80) * base_score
-            )
+            return base_score + ((item.critical_hit + _v) / 80) * base_score
 
         return base_sc, lru_cache(512)(_crit_sc)
 
