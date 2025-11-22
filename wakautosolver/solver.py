@@ -149,17 +149,17 @@ def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC
         if n == 1:
             getter = attrgetter(names[0])
             if is_hupper:
-                ops.append(lambda s, i: s + getter(i) * 1.2)
+                ops.append(lambda s, i: s + getter(i) * 1.2 if isinstance(i, EquipableItem) else s)
             else:
-                ops.append(lambda s, i: s + getter(i))
+                ops.append(lambda s, i: s + getter(i) if isinstance(i, EquipableItem) else s)
 
         else:
             getter = attrgetter(*names)
 
             if is_hupper:
-                ops.append(lambda s, i: s + min(getter(i)) * 0.2)
+                ops.append(lambda s, i: s + min(getter(i)) * 0.2 if isinstance(i, EquipableItem) else s)
             else:
-                ops.append(lambda s, i: s + min(getter(i)))
+                ops.append(lambda s, i: s + min(getter(i)) if isinstance(i, EquipableItem) else s)
 
     def _base_sc(item: EquipableItem | Stats | None) -> float:
         if item is None:
