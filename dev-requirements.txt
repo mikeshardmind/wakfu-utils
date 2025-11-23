@@ -1,5 +1,3 @@
-# needed for solver
-msgspec>=0.18.4
 # needed for dev scripts
 apsw>=3.43.1.1
 aiohttp>=3.9.3

@@ -5,6 +5,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
+# pyright: reportUnknownMemberType=false
 
 import bz2
 import json
@@ -154,6 +155,9 @@ STRUCT_FMT = "!IHBH37h"
 def batched(sequence: list[T], max_size: int) -> Generator[list[T], None, None]:
     for i in range(0, len(sequence), max_size):
         yield list(sequence[i : i + max_size])
+
+# Transposed for the sake of wheel size.
+# Allows standard compression libraries to see runs of identical data
 
 
 def pack_items(items: list[Item]) -> bytes:

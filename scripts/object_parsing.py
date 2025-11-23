@@ -580,7 +580,7 @@ class EquipableItem:
             return None
 
         if item_type_id not in ITEM_TYPE_MAP:
-            logging.warning("Unknown item type %s %s", item_type_id, str(data))
+            logging.warning("Unknown item type %s %s", item_type_id, data)
             return None
 
         ret = cls()

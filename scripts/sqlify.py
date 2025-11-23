@@ -7,6 +7,7 @@ Copyright (C) 2023 Michael Hall <https://github.com/mikeshardmind>
 """
 
 # pyright: reportPrivateUsage=none
+# pyright: reportUnknownMemberType=false
 
 import json
 import logging
@@ -14,6 +15,7 @@ import re
 from pathlib import Path
 
 import apsw
+
 from . import object_parsing
 
 log = logging.getLogger(__name__)

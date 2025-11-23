@@ -74,22 +74,11 @@ not everyone helping with this is git-savvy
 
 ### Feedback
 
-If you have something specific to the CLI use or use of this as a library
-either open an issue or hop into the High End Wakfu server
-we have a dedicated channel for it: https://discord.gg/TXNKsWhhut
+If you have something specific to the CLI use or use of this as a library open an issue.
 
 If your feedback relates to how this is incoorporated into wakforge,
 you should join their discord: https://discord.gg/k3v2fXQWJp instead
 as some issues may be wakforge specific.
-
-
-### Why can't we do better than a heuristic for stat minimums? Can't we determine on a per-slot basis the required ap, mp, wp, and range at least?
-
-Theoretically, we could. In practice, this isn't feasible
-
-See misc/better_than_heuristic_counterexample.py for an implementation
-and then note that it takes longer to run that, which only generates per slot stat possibilities
-than it does to run the current solver with a heuristic model
 
 
 ### Install and Run
