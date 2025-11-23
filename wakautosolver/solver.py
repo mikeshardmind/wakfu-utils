@@ -131,7 +131,7 @@ def make_score_key_funcs(ns: v1Config) -> tuple[SCORE_FUNC_TYPE, CRIT_SCORE_FUNC
     }
     #: fmt: on
 
-    if num := max(3, ns.num_mastery):
+    if num := ns.num_mastery:
         ops.append(elemental_lookup[num, is_hupper])
 
     if n := ns.elements.bit_count():
