@@ -29,9 +29,7 @@ code1 = "ಡƸɀИযΟԛཉÛƄΕɌॷതǐĨсఖ৶ΛѵƣਨਪɆສɓ྾྾�
 cfg1 = v2Config(
     allowed_rarities=[1, 2, 3, 4, 5, 6, 7],
     target_stats=SetMinimums(ap=12, mp=6, wp=8, ra=0),
-    objectives=StatPriority(
-        elements=ElementsEnum.fire, rear_mastery=Priority.full_negative_only
-    ),
+    objectives=StatPriority(elements=ElementsEnum.fire, rear_mastery=Priority.full_negative_only),
     dry_run=False,
     ignore_existing_items=True,
 )
@@ -150,9 +148,7 @@ def runner(*codes_and_configs: tuple[str, v2Config], loud: bool = True) -> None:
             err_print(sol.error_code)
         if sol.debug_info:
             try:
-                err: list[str] | dict[str, Any] = msgp_decode(
-                    zlib.decompress(decode(sol.debug_info), wbits=-15)
-                )
+                err: list[str] | dict[str, Any] = msgp_decode(zlib.decompress(decode(sol.debug_info), wbits=-15))
             except Exception:  # noqa: S110, BLE001
                 pass
             else:

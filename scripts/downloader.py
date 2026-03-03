@@ -45,19 +45,13 @@ async def _grab_file(
 
 
 async def networking(specific_files: list[str] | None = None) -> None:
-    file_types = (
-        _FTYPES
-        if not specific_files
-        else tuple(f for f in _FTYPES if f in specific_files)
-    )
+    file_types = _FTYPES if not specific_files else tuple(f for f in _FTYPES if f in specific_files)
 
     async with aiohttp.ClientSession() as session:
         ver = os.environ.get("WAKFU_VERSION") or None
 
         if not ver:
-            async with session.get(
-                "https://wakfu.cdn.ankama.com/gamedata/config.json"
-            ) as r:
+            async with session.get("https://wakfu.cdn.ankama.com/gamedata/config.json") as r:
                 data = await r.json()
                 ver = data["version"]
 

@@ -106,7 +106,6 @@ statc_map = {
     3: "bool_mp",
     4: "bool_ra",
     5: "bool_wp",
-    6: "bool_control",
     8: "bool_di",
     35: "bool_major_res",
 }
@@ -157,13 +156,16 @@ class Stats(NamedTuple):
     mp: bool = False
     ra: bool = False
     wp: bool = False
-    control: bool = False
     di: bool = False
     major_res: bool = False
+    major_armor_given: bool = False
+    major_heals_performed: bool = False
+    major_indirect_damage: bool = False
 
     def is_fully_allocated(self, level: int, /) -> bool:
+        # TODO: actual checking of this against each category.
         points = level - 1
-        for lv in (25, 75, 125, 175):
+        for lv in (25, 75, 125, 175, 225):
             if level >= lv:
                 points += 1
         return sum(self) == points
@@ -171,7 +173,7 @@ class Stats(NamedTuple):
     def to_stat_values(self, cl: ClassName | None) -> _Stats:
         e_mast = self.elemental_mastery * 5
         e_mast += self.mp * 20
-        e_mast += (self.ra + self.control) * 40
+        e_mast += (self.ra + self.major_indirect_damage) * 40
         wp = 6 + 2 * self.wp
         crit = self.crit
         ra = self.ra
@@ -195,11 +197,12 @@ class Stats(NamedTuple):
             rear_mastery=6 * self.rear_mastery,
             berserk_mastery=8 * self.berserk_mastery,
             healing_mastery=6 * self.healing_mastery,
-            control=2 * self.control,
             fd=10 * self.di,
             lock=6 * self.lock + 4 * self.lockdodge,
             dodge=6 * self.dodge + 4 * self.lockdodge,
             block=self.block,
+            armor_given=20 * self.major_armor_given,
+            heals_performed=10 * self.major_heals_performed,
         )
 
 
@@ -222,20 +225,38 @@ class Build(NamedTuple):
     deck: list[int]
 
 
-def pack_stats(stats: Stats) -> bytes:
-    *int_stats, ap, mp, ra, wp, control, di, major_res = stats
+def pack_stats_v1(stats: Stats) -> bytes:
+    # obsolete as of game version 1.91
+    *int_stats, ap, mp, ra, wp, di, major_res, _, _, _ = stats
 
     packed_bools = 0
-    for index, val in enumerate((ap, mp, ra, wp, control, di, major_res)):
+    for index, val in enumerate((ap, mp, ra, wp, False, di, major_res)):
         if val:
             packed_bools |= 1 << index
 
     return struct.pack("!23B", *int_stats, packed_bools)
 
 
-def unpack_stats(packed: bytes) -> Stats:
+def pack_stats_v2(stats: Stats) -> bytes:
+    int_stats, majors = stats[:22], stats[22:]
+
+    packed_bools = 0
+    for index, val in enumerate(majors):
+        if val:
+            packed_bools |= 1 << index
+
+    return struct.pack("!22BH", *int_stats, packed_bools)
+
+
+def unpack_stats_v1(packed: bytes) -> Stats:
     *int_stats, packed_bools = struct.unpack("!23B", packed)
-    unpacked_bools = (bool(packed_bools & (1 << index)) for index in range(7))
+    unpacked_bools = [bool(packed_bools & (1 << index)) for index in range(7) if index != 4] + [False, False, False]
+    return Stats(*int_stats, *unpacked_bools)
+
+
+def unpack_stats_v2(packed: bytes) -> Stats:
+    *int_stats, packed_bools = struct.unpack("!22BH", packed)
+    unpacked_bools = [bool(packed_bools & (1 << index)) for index in range(9)]
     return Stats(*int_stats, *unpacked_bools)
 
 
@@ -277,9 +298,7 @@ def unpack_items(packed: bytes) -> list[Item]:
     offset = 1
     ret: list[Item] = []
     for _ in range(s_len):
-        item_id, packed_resmastery, sublimation_id, slot_len = struct.unpack_from(
-            "!iBiB", packed, offset
-        )
+        item_id, packed_resmastery, sublimation_id, slot_len = struct.unpack_from("!iBiB", packed, offset)
         offset += struct.calcsize("!iBiB")
         assigned_mastery = Elements(packed_resmastery & 15)
         assigned_res = Elements(packed_resmastery >> 4)
@@ -294,7 +313,7 @@ def unpack_items(packed: bytes) -> list[Item]:
     return ret
 
 
-def pack_build(build: Build) -> bytes:
+def pack_build_v1(build: Build) -> bytes:
     # version: B (1)
     # classname.value: B (1)
     # level: H (2)
@@ -306,7 +325,7 @@ def pack_build(build: Build) -> bytes:
     # items: variable, see pack_items
 
     packed_items = pack_items(build.items)
-    packed_stats = pack_stats(build.stats)
+    packed_stats = pack_stats_v1(build.stats)
 
     fmt_str = "!BBH23siiB%di%ds" % (len(build.deck), len(packed_items))
 
@@ -324,17 +343,45 @@ def pack_build(build: Build) -> bytes:
     )
 
 
-def unpack_build(packed: bytes) -> Build:
-    base = "!BBH23siiB"
-    version, classnum, level, packed_stats, relic, epic, deck_len = struct.unpack_from(
-        base, packed, 0
+def pack_build_v2(build: Build) -> bytes:
+    # version: B (1)
+    # classname.value: B (1)
+    # level: H (2)
+    # stats: 24s (24)
+    # relic_sub: i (4)
+    # epic sub: 1 (4)
+    # deck: length prefixed: B (1)
+    #    # repeated: active/passive id: i (4)
+    # items: variable, see pack_items
+
+    packed_items = pack_items(build.items)
+    packed_stats = pack_stats_v2(build.stats)
+
+    fmt_str = "!BBH24siiB%di%ds" % (len(build.deck), len(packed_items))
+
+    return struct.pack(
+        fmt_str,
+        build.version_number,
+        build.classname,
+        build.level,
+        packed_stats,
+        build.relic_sub,
+        build.epic_sub,
+        len(build.deck),
+        *build.deck,
+        packed_items,
     )
+
+
+def unpack_build_v1(packed: bytes) -> Build:
+    base = "!BBH23siiB"
+    version, classnum, level, packed_stats, relic, epic, deck_len = struct.unpack_from(base, packed, 0)
     if version != 1:
         msg = "Unknown version Number"
         raise RuntimeError(msg)
     offset = struct.calcsize(base)
 
-    stats = unpack_stats(packed_stats)
+    stats = unpack_stats_v1(packed_stats)
 
     deck: list[int] = []
 
@@ -348,8 +395,56 @@ def unpack_build(packed: bytes) -> Build:
     return Build(version, ClassesEnum(classnum), level, stats, relic, epic, items, deck)
 
 
-def build_as_b2048(build: Build) -> str:
-    packed = pack_build(build)
+def unpack_build_v2(packed: bytes) -> Build:
+    base = "!BBH24siiB"
+    version, classnum, level, packed_stats, relic, epic, deck_len = struct.unpack_from(base, packed, 0)
+    if version != 2:
+        msg = "Unknown version Number"
+        raise RuntimeError(msg)
+    offset = struct.calcsize(base)
+
+    stats = unpack_stats_v2(packed_stats)
+
+    deck: list[int] = []
+
+    deckfmt = "!%di" % deck_len
+    deck.extend(struct.unpack_from(deckfmt, packed, offset))
+    offset += struct.calcsize(deckfmt)
+
+    packed_items = packed[offset:]
+    items = unpack_items(packed_items)
+
+    return Build(version, ClassesEnum(classnum), level, stats, relic, epic, items, deck)
+
+
+def unpack_build(packed: bytes) -> Build:
+    version: int
+
+    (version,) = struct.unpack_from("!B", packed, 0)
+
+    match version:
+        case 1:
+            return unpack_build_v1(packed)
+        case 2:
+            return unpack_build_v2(packed)
+        case _:
+            msg = "Unknown version."
+            raise RuntimeError(msg)
+
+
+def pack_build(build: Build, /, *, version: int = 2) -> bytes:
+    match version:
+        case 1:
+            return pack_build_v1(build)
+        case 2:
+            return pack_build_v2(build)
+        case _:
+            msg = "Unknown version."
+            raise RuntimeError(msg)
+
+
+def build_as_b2048(build: Build, /, *, version: int = 2) -> str:
+    packed = pack_build(build, version=version)
     compressor = zlib.compressobj(level=9, wbits=-15)
     return base2048.encode(compressor.compress(packed) + compressor.flush())
 

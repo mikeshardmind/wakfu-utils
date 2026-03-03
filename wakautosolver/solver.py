@@ -60,9 +60,7 @@ def setup_logging(output: SupportsWrite[str]) -> None:
     log.setLevel(logging.INFO)
 
 
-def ordered_keep_by_key(
-    it: Iterable[T], key: Callable[[T], Hashable], k: int = 1
-) -> list[T]:
+def ordered_keep_by_key(it: Iterable[T], key: Callable[[T], Hashable], k: int = 1) -> list[T]:
     seen_counts: collections.Counter[Hashable] = collections.Counter()
     ret: list[T] = []
     for i in it:
@@ -73,9 +71,7 @@ def ordered_keep_by_key(
     return ret
 
 
-def inplace_ordered_keep_by_key(
-    it: list[T], key: Callable[[T], Hashable], k: int = 1
-) -> None:
+def inplace_ordered_keep_by_key(it: list[T], key: Callable[[T], Hashable], k: int = 1) -> None:
     uniq = ordered_keep_by_key(it, key, k)
     for v in it[::-1]:
         if v not in uniq:
@@ -300,10 +296,7 @@ def solve(
         _mins, maxs = get_item_conditions(item)
         if not maxs:
             return False
-        return any(
-            smin > smax
-            for smin, smax in zip(*map(astuple, (stat_mins, maxs)), strict=False)
-        )
+        return any(smin > smax for smin, smax in zip(*map(astuple, (stat_mins, maxs)), strict=False))
 
     def level_filter(item: EquipableItem) -> bool:
         if item.item_slot in {"MOUNT", "PET"}:
@@ -333,9 +326,7 @@ def solve(
         # Handle names a little differently to avoid an issue with duplicate names
         forced_by_name = [i for i in ALL_OBJS if i.name in f_ns]
         forced_by_name.sort(key=lambda i: (score_key(i), i.item_rarity), reverse=True)
-        forced_by_name = ordered_keep_by_key(
-            forced_by_name, key=attrgetter("name", "item_slot"), k=1
-        )
+        forced_by_name = ordered_keep_by_key(forced_by_name, key=attrgetter("name", "item_slot"), k=1)
         forced_items.extend(forced_by_name)
 
         if any(item_condition_conflicts_requested_stats(item) for item in forced_items):
@@ -440,17 +431,11 @@ def solve(
 
         return item.ap + item.mp < req
 
-    afitems_ = ordered_keep_by_key(
-        [*forced_epics, *forced_relics, *forced_items], attrgetter("item_id"), 1
-    )
+    afitems_ = ordered_keep_by_key([*forced_epics, *forced_relics, *forced_items], attrgetter("item_id"), 1)
     afstats_: Stats = reduce(add, afitems_, Stats())
     afslots_ = [i.item_slot for i in afitems_]
     FINDABLE_AP_MP_NEEDED = sum(attrgetter("ap", "mp")(stat_mins - base_stats - afstats_))
-    findableAP_MP = sum(
-        1
-        for islot, lv in common_ap_mp_sum_gt_0.items()
-        if islot not in afslots_ and lv <= ns.lv
-    )
+    findableAP_MP = sum(1 for islot, lv in common_ap_mp_sum_gt_0.items() if islot not in afslots_ and lv <= ns.lv)
 
     # TODO: dynamic from sql to not need re-checking/expanding each time
     # TODO: Both of these are technically still possible to be impossible if forced slots preclude
@@ -595,9 +580,7 @@ def solve(
         for slot, lvs in data_dict.items():
             if afslots_.count(slot) >= (2 if slot == "LEFT_HAND" else 1):
                 continue
-            if slot == "SECOND_WEAPON" and any(
-                i.disables_second_weapon for i in afitems_
-            ):
+            if slot == "SECOND_WEAPON" and any(i.disables_second_weapon for i in afitems_):
                 continue
 
             s = sum(1 for lv in lvs if lv <= ns.lv)
@@ -615,10 +598,7 @@ def solve(
             (item.item_id not in FORBIDDEN)
             and (item.name not in FORBIDDEN_NAMES)
             and (not has_currently_unhandled_item_condition(item))
-            and (
-                (item.item_rarity in allowed_rarities)
-                or (item.item_slot in {"MOUNT", "PET"})
-            )
+            and ((item.item_rarity in allowed_rarities) or (item.item_slot in {"MOUNT", "PET"}))
             and (findableAP_MP > FINDABLE_AP_MP_NEEDED or not missing_common_major(item))
             and not item_condition_conflicts_requested_stats(item)
         )
@@ -626,9 +606,7 @@ def solve(
     OBJS: Final[list[EquipableItem]] = list(filter(initial_filter, ALL_OBJS))
     del ALL_OBJS
 
-    AOBJS: collections.defaultdict[str, list[EquipableItem]] = collections.defaultdict(
-        list
-    )
+    AOBJS: collections.defaultdict[str, list[EquipableItem]] = collections.defaultdict(list)
 
     log.info("Culling items that aren't up to scratch.")
 
@@ -643,10 +621,7 @@ def solve(
         if c >= (2 if item.item_slot == "LEFT_HAND" else 1):
             return False
         if item.item_slot == "SECOND_WEAPON":  # noqa: SIM102
-            if any(
-                i.disables_second_weapon
-                for i in (*forced_items, *forced_epics, *forced_relics)
-            ):
+            if any(i.disables_second_weapon for i in (*forced_items, *forced_epics, *forced_relics)):
                 return False
         return True
 
@@ -676,8 +651,7 @@ def solve(
     }
 
     solve_CANIDATES: dict[str, list[EquipableItem]] = {
-        k: [item for item in v if item.item_id not in soft_unobtainable]
-        for k, v in AOBJS.items()
+        k: [item for item in v if item.item_id not in soft_unobtainable] for k, v in AOBJS.items()
     }
 
     sim_keys = {"disables_second_weapon", *ALWAYS_SIMMED}
@@ -698,9 +672,7 @@ def solve(
 
     if original_forced_counts:
         for slot, count in original_forced_counts.items():
-            if (slot != "LEFT_HAND" and count == 1) or (
-                slot == "LEFT_HAND" and count == 2
-            ):
+            if (slot != "LEFT_HAND" and count == 1) or (slot == "LEFT_HAND" and count == 2):
                 solve_CANIDATES.pop(slot, None)
             elif slot == "LEFT_HAND" and count == 1:
                 names = {i.name for i in forced_items if i.name}
@@ -726,9 +698,7 @@ def solve(
     if ns.skipshields or "SECOND_WEAPON" not in solve_CANIDATES:
         solve_SHIELDS = []
     else:
-        solve_SHIELDS = [
-            i for i in solve_CANIDATES["SECOND_WEAPON"] if i.item_type == 189
-        ]
+        solve_SHIELDS = [i for i in solve_CANIDATES["SECOND_WEAPON"] if i.item_type == 189]
 
     for key in ("FIRST_WEAPON", "SECOND_WEAPON"):
         solve_CANIDATES.pop(key, None)
@@ -739,9 +709,7 @@ def solve(
             continue
         slot = items[0].item_slot
 
-        rarity_handler = attrgetter(
-            "item_rarity", "name", "is_souvenir", "is_relic", "is_epic"
-        )
+        rarity_handler = attrgetter("item_rarity", "name", "is_souvenir", "is_relic", "is_epic")
         items.sort(key=rarity_handler, reverse=True)
         uniq_handler = attrgetter("name", "is_souvenir", "is_relic", "is_epic")
         inplace_ordered_keep_by_key(items, uniq_handler)
@@ -764,9 +732,7 @@ def solve(
                     for stat in ("ap", "mp", "ra", "wp"):
                         x = attrgetter(stat)
                         c_added = 0
-                        for item in ordered_keep_by_key(
-                            [i for i in bck if i not in items], x, k
-                        ):
+                        for item in ordered_keep_by_key([i for i in bck if i not in items], x, k):
                             if x(item) >= val:
                                 items.append(item)
                                 added = True
@@ -777,22 +743,9 @@ def solve(
                     if not added:
                         break
 
-                    tc_items = [
-                        i
-                        for i in items
-                        if get_item_conditions(i) == (SetMinimums(), SetMaximums())
-                    ]
+                    tc_items = [i for i in items if get_item_conditions(i) == (SetMinimums(), SetMaximums())]
 
-                    if (
-                        len([
-                            i
-                            for i in tc_items
-                            if all(
-                                s >= val for s in attrgetter("ap", "mp", "ra", "wp")(i)
-                            )
-                        ])
-                        >= k
-                    ):
+                    if len([i for i in tc_items if all(s >= val for s in attrgetter("ap", "mp", "ra", "wp")(i))]) >= k:
                         break
 
         items.sort(key=crit_score_key, reverse=True)
@@ -804,9 +757,7 @@ def solve(
     inplace_ordered_keep_by_key(epics, needs_full_sim_key)
 
     if ns.lwx:
-        solve_DAGGERS.append(
-            EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * 1.5))
-        )
+        solve_DAGGERS.append(EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * 1.5)))
     elif sublimations:
         c = 0
         for sub in sublimations:
@@ -818,9 +769,7 @@ def solve(
                 c += 3
         x = 0.25 * min(c, 6)
         if x > 0:
-            solve_DAGGERS.append(
-                EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * x))
-            )
+            solve_DAGGERS.append(EquipableItem(-2, ns.lv, 4, 112, elemental_mastery=int(ns.lv * x)))
 
     # Tt be reused below
 
@@ -837,18 +786,14 @@ def solve(
                 solve_ONEH = [item]
 
     if ns.skipshields:
-        canidate_weapons = (
-            *itertools.product(solve_ONEH, (solve_DAGGERS + solve_SHIELDS)),
-        )
+        canidate_weapons = (*itertools.product(solve_ONEH, (solve_DAGGERS + solve_SHIELDS)),)
     else:
         canidate_weapons = (
             *((two_hander,) for two_hander in solve_TWOH),
             *itertools.product(solve_ONEH, (solve_DAGGERS + solve_SHIELDS)),
         )
 
-    weapon_key_func: Callable[
-        [Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable
-    ]
+    weapon_key_func: Callable[[Iterable[tuple[EquipableItem, EquipableItem] | EquipableItem]], Hashable]
 
     weapon_key_func = lambda w: (
         isinstance(w, tuple),
@@ -891,9 +836,7 @@ def solve(
 
     def re_key_func(
         pair: tuple[EquipableItem | None, EquipableItem | None],
-        _as_attrgetter: Callable[
-            [EquipableItem | Stats | None], tuple[float, ...]
-        ] = AS_ATTR_GETTER,
+        _as_attrgetter: Callable[[EquipableItem | Stats | None], tuple[float, ...]] = AS_ATTR_GETTER,
     ) -> Hashable:
         if not any(pair):
             return 0
@@ -908,27 +851,19 @@ def solve(
         return (pos_key, disables_second, *ks)
 
     distribs = {
-        k: statistics.NormalDist.from_samples(crit_score_key(i) for i in v)
-        if len(v) > 1
-        else None
+        k: statistics.NormalDist.from_samples(crit_score_key(i) for i in v) if len(v) > 1 else None
         for k, v in solve_CANIDATES.items()
     }
 
     ONEH_distrib = (
-        statistics.NormalDist.from_samples(crit_score_key(i) for i in solve_ONEH)
-        if len(solve_ONEH) > 1
-        else None
+        statistics.NormalDist.from_samples(crit_score_key(i) for i in solve_ONEH) if len(solve_ONEH) > 1 else None
     )
     TWOH_distrib = (
-        statistics.NormalDist.from_samples(crit_score_key(i) for i in solve_TWOH)
-        if len(solve_TWOH) > 1
-        else None
+        statistics.NormalDist.from_samples(crit_score_key(i) for i in solve_TWOH) if len(solve_TWOH) > 1 else None
     )
     OFF_HANDS = solve_DAGGERS + solve_SHIELDS
     OFF_HAND_distrib = (
-        statistics.NormalDist.from_samples(crit_score_key(i) for i in OFF_HANDS)
-        if len(OFF_HANDS) > 1
-        else None
+        statistics.NormalDist.from_samples(crit_score_key(i) for i in OFF_HANDS) if len(OFF_HANDS) > 1 else None
     )
 
     @lru_cache
@@ -979,11 +914,7 @@ def solve(
                         return False
         return True
 
-    pairs = [
-        pair
-        for pair in (*itertools.product(relics or [None], epics or [None]), *extra_pairs)
-        if valid(pair)
-    ]
+    pairs = [pair for pair in (*itertools.product(relics or [None], epics or [None]), *extra_pairs) if valid(pair)]
 
     pairs.sort(key=re_score_key, reverse=True)
     canidate_re_pairs = ordered_keep_by_key(pairs, re_key_func)
@@ -1161,9 +1092,7 @@ def inner_solve(
     solve_DAGGERS: Sequence[EquipableItem],
     solve_SHIELDS: Sequence[EquipableItem],
     solve_ONEH: Sequence[EquipableItem],
-    canidate_weapons: Sequence[
-        tuple[EquipableItem] | tuple[EquipableItem, EquipableItem]
-    ],
+    canidate_weapons: Sequence[tuple[EquipableItem] | tuple[EquipableItem, EquipableItem]],
     ns: v1Config,
     base_stats: Stats,
     stat_mins: SetMinimums,
@@ -1171,7 +1100,6 @@ def inner_solve(
     passives: Sequence[int] | None,
     sublimations: Sequence[int] | None,
 ) -> list[tuple[float, list[EquipableItem]]]:
-
     score_key, _csk = make_score_key_funcs(ns)
 
     solve_BEST_LIST: list[tuple[float, list[EquipableItem]]] = []
@@ -1199,10 +1127,7 @@ def inner_solve(
 
     # This is a slot we allow building without, sets without will be worse ofc...
     if "ACCESSORY" not in solve_CANIDATES:  # noqa: SIM102
-        if not (
-            (relic and relic.item_slot == "ACCESSORY")
-            or (epic and epic.item_slot == "ACCESSORY")
-        ):
+        if not ((relic and relic.item_slot == "ACCESSORY") or (epic and epic.item_slot == "ACCESSORY")):
             try:
                 REM_SLOTS.remove("ACCESSORY")
             except ValueError:
@@ -1245,16 +1170,9 @@ def inner_solve(
         if main_hand_disabled:
             s = [*solve_DAGGERS, *solve_SHIELDS]
             s.sort(key=score_key, reverse=True)
-            weapons = [
-                (i,) for i in ordered_keep_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))
-            ]
+            weapons = [(i,) for i in ordered_keep_by_key(s, lambda i: (i.ap, i.mp, i.ra, i.wp))]
         elif off_hand_disabled:
-            weapons = [
-                (i,)
-                for i in ordered_keep_by_key(
-                    solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp)
-                )
-            ]
+            weapons = [(i,) for i in ordered_keep_by_key(solve_ONEH, lambda i: (i.ap, i.mp, i.ra, i.wp))]
         else:
             weapons = list(canidate_weapons)
 
@@ -1262,9 +1180,7 @@ def inner_solve(
 
     try:
         k = REM_SLOTS.count("LEFT_HAND")
-        ring_pairs = (
-            list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k > 0 else ()
-        )
+        ring_pairs = list(itertools.combinations(solve_CANIDATES["LEFT_HAND"], k)) if k > 0 else ()
         cans = [
             ring_pairs,
             *(solve_CANIDATES[k] for k in REM_SLOTS if k not in {"LEFT_HAND", "WEAPONS"}),
@@ -1317,23 +1233,13 @@ def inner_solve(
         # Note: keep the class here even if it isn't needed for ease of reference
 
         # Bravery
-        if (
-            ns.wakfu_class == ClassesEnum.Iop
-            and passives
-            and 5100 in passives
-            and ns.lv >= 90
-        ):
+        if ns.wakfu_class == ClassesEnum.Iop and passives and 5100 in passives and ns.lv >= 90:
             block_mod = min(max(0, statline.block // 2), 20)
             if block_mod:
                 statline += Stats(critical_hit=block_mod)
 
         # Sram to the bone
-        if (
-            ns.wakfu_class == ClassesEnum.Sram
-            and passives
-            and 4610 in passives
-            and ns.lv >= 100
-        ):
+        if ns.wakfu_class == ClassesEnum.Sram and passives and 4610 in passives and ns.lv >= 100:
             # TODO: (?) We assume shards will make up any missing lock/dodge right now
             statline += Stats(critical_hit=20 if ns.lv < 200 else 30)
 
@@ -1368,9 +1274,7 @@ def inner_solve(
         base_score = score_key(iter_stats)
 
         if UNRAVEL_ACTIVE:
-            base_score += statline.critical_mastery * (
-                1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1
-            )
+            base_score += statline.critical_mastery * (1.2 if ns.wakfu_class == ClassesEnum.Huppermage else 1)
             non_crit_score = base_score * (100 - crit_chance) / 100
             crit_score = base_score * (crit_chance) / 100
             crit_score *= 1.25
@@ -1385,9 +1289,7 @@ def inner_solve(
 
         score = crit_score + non_crit_score
 
-        worst_kept = (
-            min(i[0] for i in solve_BEST_LIST) if 0 < len(solve_BEST_LIST) < 3 else 0
-        )
+        worst_kept = min(i[0] for i in solve_BEST_LIST) if 0 < len(solve_BEST_LIST) < 3 else 0
 
         if score > worst_kept:
             filtered = [i for i in (*items, relic, epic) if i]

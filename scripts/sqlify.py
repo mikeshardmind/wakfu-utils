@@ -79,7 +79,6 @@ CREATE TABLE IF NOT EXISTS items (
     mp INTEGER DEFAULT 0,
     wp INTEGER DEFAULT 0,
     ra INTEGER DEFAULT 0,
-    control INTEGER DEFAULT 0,
     block INTEGER DEFAULT 0,
     critical_hit INTEGER DEFAULT 0,
     dodge INTEGER DEFAULT 0,
@@ -149,7 +148,6 @@ keys = [
     "mp",
     "wp",
     "ra",
-    "control",
     "block",
     "critical_hit",
     "dodge",
@@ -223,13 +221,8 @@ def main() -> None:
         with (json_data_path / "blueprints.json").open(mode="rb") as bp:
             bpdata = json.load(bp)
 
-        with (json_data_path / "recipeResults.json").open(
-            mode="rb"
-        ) as results_are_why_ankama:
-            recresults = {
-                i["recipeId"]: i["productedItemId"]
-                for i in json.load(results_are_why_ankama)
-            }
+        with (json_data_path / "recipeResults.json").open(mode="rb") as results_are_why_ankama:
+            recresults = {i["recipeId"]: i["productedItemId"] for i in json.load(results_are_why_ankama)}
 
         blueprints: set[int] = set()
         for blueprint in bpdata:
@@ -263,12 +256,8 @@ def main() -> None:
         ):
             item_ids: list[int] = []
             with (com_path / path).open(encoding="utf-8") as ub_data:
-                lines = [
-                    stripped for line in ub_data.readlines() if (stripped := line.strip())
-                ]
-                item_ids.extend(
-                    int(m.group(1)) for line in lines if (m := item_id_regex.match(line))
-                )
+                lines = [stripped for line in ub_data.readlines() if (stripped := line.strip())]
+                item_ids.extend(int(m.group(1)) for line in lines if (m := item_id_regex.match(line)))
 
             conn.executemany(
                 f"""INSERT INTO [{table_name}] (item_id) VALUES(?)""",

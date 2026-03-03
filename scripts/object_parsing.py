@@ -240,9 +240,7 @@ ITEM_TYPE_MAP: dict[int, PosData] = {
 }
 
 
-_locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar(
-    "_locale", default="en"
-)
+_locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar("_locale", default="en")
 
 
 _T39_EFFECT_LOOKUP: dict[int, str] = {
@@ -387,7 +385,6 @@ _EFFECT_MAP: dict[int, Callable[[list[int]], list[tuple[str, int]]]] = {
     177: lambda d: [("_force_of_will", d[0])],
     180: lambda d: [("_rear_mastery", d[0])],
     181: lambda d: [("_rear_mastery", 0 - d[0])],
-    184: lambda d: [("_control", d[0])],
     191: lambda d: [("_wp", d[0])],
     192: lambda d: [("_wp", 0 - d[0])],
     # 194 intetionally omitted, no items
@@ -453,9 +450,7 @@ class Effect:
             item.update(prop, val)
 
     @classmethod
-    def from_raw(
-        cls, raw: RawEffectType, *, is_pet: bool = False, id_: int = 0
-    ) -> Effect:
+    def from_raw(cls, raw: RawEffectType, *, is_pet: bool = False, id_: int = 0) -> Effect:
         ret = cls()
 
         try:
@@ -500,7 +495,6 @@ class EquipableItem:
         self._mp: int = 0
         self._wp: int = 0
         self._ra: int = 0
-        self._control: int = 0
         self._block: int = 0
         self._critical_hit: int = 0
         self._dodge: int = 0
@@ -594,9 +588,7 @@ class EquipableItem:
         ret._is_shop_item = 7 in base_details.get("properties", [])
 
         for effect_dict in data["definition"]["equipEffects"]:
-            Effect.from_raw(
-                effect_dict, is_pet=item_type_id in {582, 611}, id_=ret._item_id
-            ).apply_to(ret)
+            Effect.from_raw(effect_dict, is_pet=item_type_id in {582, 611}, id_=ret._item_id).apply_to(ret)
 
         if ret.name is None:
             if ret._item_id not in {27700, 27701, 27702, 27703}:

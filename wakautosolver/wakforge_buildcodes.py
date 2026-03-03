@@ -170,14 +170,20 @@ class Buildv1:
         return cls(*s)
 
     def get_allocated_stats(self) -> AllocatedStats:
-        tup = astuple(self)
-        return AllocatedStats(*tup[3:32])
+        tup = astuple(self)[3:32]
+        intstats, v1majors = tup[:22], tup[22:]
+
+        # game update 1.91
+        (ap, mp, ra, wp, _control, di, major_res) = v1majors
+
+        return AllocatedStats(*intstats, ap=ap, mp=mp, ra=ra, wp=wp, di=di, major_res=major_res)
 
     @classmethod
-    def from_allocated_stats(
-        cls: type[Buildv1], stats: AllocatedStats, wcls: WFClasses = WFClasses.EMPTY
-    ) -> Buildv1:
-        return Buildv1(1, wcls, *stats)
+    def from_allocated_stats(cls: type[Buildv1], stats: AllocatedStats, wcls: WFClasses = WFClasses.EMPTY) -> Buildv1:
+        # game update 1.91
+        intstats, majors = stats[:22], stats[22:]
+        v1majors = majors[:4] + majors[5:7]
+        return Buildv1(1, wcls, *intstats, *v1majors)
 
     def clear_items(self) -> None:
         empty = Item()
@@ -206,9 +212,7 @@ class Buildv1:
                 setattr(self, f"item_{idx}", item)
                 break
 
-    def add_item(
-        self, item: EquipableItem, elements: WFElements = WFElements.empty, /
-    ) -> None:
+    def add_item(self, item: EquipableItem, elements: WFElements = WFElements.empty, /) -> None:
         indices = compress(count(1), map(partial(eq, item.item_slot), v1BuildSlotsOrder))
         for index in indices:
             if not getattr(self, f"item_{index}", None):

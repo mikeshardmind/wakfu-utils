@@ -23,7 +23,7 @@ T = TypeVar("T")
 
 
 class Item(NamedTuple):
-    # !IHBH37h
+    # !IHBH36h
     item_id: int
     item_lv: int
     item_rarity: int
@@ -33,7 +33,6 @@ class Item(NamedTuple):
     mp: int = 0
     wp: int = 0
     ra: int = 0
-    control: int = 0
     block: int = 0
     critical_hit: int = 0
     dodge: int = 0
@@ -94,11 +93,7 @@ def pack_locale_data(locs: LocaleBundle) -> bytes:
         item_id, *strs = item
         bys = [s.encode() for s in strs]
         fmt = "!IB%dsB%dsB%dsB%ds" % tuple(map(len, bys))
-        buffer.write(
-            struct.pack(
-                fmt, item_id, *chain.from_iterable(zip(map(len, bys), bys, strict=False))
-            )
-        )
+        buffer.write(struct.pack(fmt, item_id, *chain.from_iterable(zip(map(len, bys), bys, strict=False))))
 
     buffer.seek(0)
     return buffer.read()
@@ -149,12 +144,13 @@ def unpack_sourcedata(packed: bytes) -> SourceData:
     return SourceData(*sets)
 
 
-STRUCT_FMT = "!IHBH37h"
+STRUCT_FMT = "!IHBH36h"
 
 
 def batched(sequence: list[T], max_size: int) -> Generator[list[T], None, None]:
     for i in range(0, len(sequence), max_size):
         yield list(sequence[i : i + max_size])
+
 
 # Transposed for the sake of wheel size.
 # Allows standard compression libraries to see runs of identical data
@@ -187,9 +183,7 @@ def main() -> None:
     )
     items = list(starmap(Item, rows))
     data = pack_items(items)
-    compressed = lzma.compress(
-        data, preset=lzma.PRESET_EXTREME, format=lzma.FORMAT_XZ, check=lzma.CHECK_NONE
-    )
+    compressed = lzma.compress(data, preset=lzma.PRESET_EXTREME, format=lzma.FORMAT_XZ, check=lzma.CHECK_NONE)
     with (base_path / "stat_only_bundle.xz").open(mode="wb") as fp:
         fp.write(compressed)
 
@@ -227,9 +221,7 @@ def main() -> None:
 
     datastruct = SourceData(*data)
     data = pack_sourcedata(datastruct)
-    compressed = lzma.compress(
-        data, preset=lzma.PRESET_EXTREME, format=lzma.FORMAT_XZ, check=lzma.CHECK_NONE
-    )
+    compressed = lzma.compress(data, preset=lzma.PRESET_EXTREME, format=lzma.FORMAT_XZ, check=lzma.CHECK_NONE)
     with (base_path / "source_info.xz").open(mode="wb") as fp:
         fp.write(compressed)
 

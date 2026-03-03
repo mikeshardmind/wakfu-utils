@@ -75,11 +75,6 @@ crit_lt_eq_25 = [rst.SetMaximums(critical_hit=25)]
 for item_id in (26303, 26323):
     conditions[item_id] = crit_lt_eq_25
 
-# worn to a shadow
-control_eq_4 = [rst.SetMinimums(control=4), rst.SetMaximums(control=4)]
-for item_id in (26293, 26314):
-    conditions[item_id] = control_eq_4
-
 # hazepaulettes, krock tails, hooklettes, white crow hackle (souv)
 mp_lt_eq_5 = [rst.SetMaximums(mp=5)]
 for item_id in (27449, 27450, 26997, 26998, 26289, 26310, 27693):

@@ -19,7 +19,7 @@ reportUnnecessaryTypeIgnoreComment = "warning"
 
 [tool.ruff]
 
-line-length = 90
+line-length = 120
 target-version = "py311"
 preview = true
 

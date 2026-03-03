@@ -39,9 +39,7 @@ if "pyodide" in sys.modules:
     tsk = asyncio.create_task(micropip.install("lzma"))  # type: ignore  # noqa: PGH003, RUF006
 
 
-_locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar(
-    "_locale", default="en"
-)
+_locale: contextvars.ContextVar[Literal["en", "es", "pt", "fr"]] = contextvars.ContextVar("_locale", default="en")
 
 
 def get_locale() -> Literal["en", "es", "pt", "fr"]:
@@ -251,7 +249,6 @@ class EquipableItem(NamedTuple):
     mp: int = 0
     wp: int = 0
     ra: int = 0
-    control: int = 0
     block: int = 0
     critical_hit: int = 0
     dodge: int = 0
@@ -379,7 +376,6 @@ def _item_to_stats(item: EquipableItem) -> Stats:
         healing_mastery=item.healing_mastery,
         berserk_mastery=item.berserk_mastery,
         melee_mastery=item.melee_mastery,
-        control=item.control,
         block=item.block,
         lock=item.lock,
         dodge=item.dodge,
@@ -450,10 +446,7 @@ ClassElements: dict[ClassesEnum, ElementsEnum] = {
     ClassesEnum.Ougi: ElementsEnum.water | ElementsEnum.earth | ElementsEnum.air,
     ClassesEnum.Fog: ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.water,
     ClassesEnum.Elio: ElementsEnum.water | ElementsEnum.earth | ElementsEnum.air,
-    ClassesEnum.Hupper: ElementsEnum.water
-    | ElementsEnum.fire
-    | ElementsEnum.earth
-    | ElementsEnum.air,
+    ClassesEnum.Hupper: ElementsEnum.water | ElementsEnum.fire | ElementsEnum.earth | ElementsEnum.air,
 }
 
 
@@ -483,9 +476,7 @@ class StatPriority:
 
     @property
     def is_valid(self) -> bool:
-        return all(
-            x < 2 for x in (self.distance_mastery, self.melee_mastery, self.heal_mastery)
-        )
+        return all(x < 2 for x in (self.distance_mastery, self.melee_mastery, self.heal_mastery))
 
 
 @dataclass
@@ -505,7 +496,6 @@ class Stats:
     healing_mastery: int = 0
     berserk_mastery: int = 0
     melee_mastery: int = 0
-    control: int = 0
     block: int = 0
     fd: float = 0
     heals_performed: int = 0
@@ -537,7 +527,6 @@ class Stats:
             self.healing_mastery - other.healing_mastery,
             self.berserk_mastery - other.berserk_mastery,
             self.melee_mastery - other.melee_mastery,
-            self.control - other.control,
             self.block - other.block,
             self.fd - other.fd,
             self.heals_performed - other.heals_performed,
@@ -563,7 +552,6 @@ class Stats:
             self.healing_mastery + other.healing_mastery,
             self.berserk_mastery + other.berserk_mastery,
             self.melee_mastery + other.melee_mastery,
-            self.control + other.control,
             self.block + other.block,
             self.fd + other.fd,
             self.heals_performed + other.heals_performed,
@@ -589,7 +577,6 @@ class Stats:
             self.healing_mastery <= other.healing_mastery,
             self.berserk_mastery <= other.berserk_mastery,
             self.melee_mastery <= other.melee_mastery,
-            self.control <= other.control,
             self.block <= other.block,
             self.fd <= other.fd,
             self.heals_performed <= other.heals_performed,
@@ -621,7 +608,6 @@ class SetMinimums(Stats):
     healing_mastery: int = DUMMY_MIN
     berserk_mastery: int = DUMMY_MIN
     melee_mastery: int = DUMMY_MIN
-    control: int = DUMMY_MIN
     block: int = DUMMY_MIN
     fd: float = DUMMY_MIN
     heals_performed: int = DUMMY_MIN
@@ -656,7 +642,6 @@ class SetMinimums(Stats):
             max(self.healing_mastery, other.healing_mastery),
             max(self.berserk_mastery, other.berserk_mastery),
             max(self.melee_mastery, other.melee_mastery),
-            max(self.control, other.control),
             max(self.block, other.block),
             max(self.fd, other.fd),
             max(self.heals_performed, other.heals_performed),
@@ -682,7 +667,6 @@ class SetMinimums(Stats):
             self.healing_mastery <= other.healing_mastery,
             self.berserk_mastery <= other.berserk_mastery,
             self.melee_mastery <= other.melee_mastery,
-            self.control <= other.control,
             self.block <= other.block,
             self.fd <= other.fd,
             self.heals_performed <= other.heals_performed,
@@ -708,7 +692,6 @@ class SetMaximums(Stats):
     healing_mastery: int = DUMMY_MAX
     berserk_mastery: int = DUMMY_MAX
     melee_mastery: int = DUMMY_MAX
-    control: int = DUMMY_MAX
     block: int = DUMMY_MAX
     fd: float = DUMMY_MAX
     heals_performed: int = DUMMY_MAX
@@ -737,7 +720,6 @@ class SetMaximums(Stats):
             min(self.healing_mastery, other.healing_mastery),
             min(self.berserk_mastery, other.berserk_mastery),
             min(self.melee_mastery, other.melee_mastery),
-            min(self.control, other.control),
             min(self.block, other.block),
             min(self.fd, other.fd),
             min(self.heals_performed, other.heals_performed),
@@ -787,12 +769,8 @@ def apply_unravel(stats: Stats) -> Stats:
 
 
 def apply_elementalism(stats: Stats) -> Stats:
-    if (
-        stats.mastery_1_element == stats.mastery_2_elements == 0
-    ) and stats.mastery_3_elements != 0:
-        return replace(
-            stats, fd=stats.fd + 30, heals_performed=stats.heals_performed + 30
-        )
+    if (stats.mastery_1_element == stats.mastery_2_elements == 0) and stats.mastery_3_elements != 0:
+        return replace(stats, fd=stats.fd + 30, heals_performed=stats.heals_performed + 30)
     return stats
 
 
@@ -872,7 +850,7 @@ def get_item_name(item: EquipableItem) -> str:
     return getattr(i, _locale.get())
 
 
-STRUCT_FMT = "!IHBH37h"
+STRUCT_FMT = "!IHBH36h"
 
 
 def batched(sequence: list[T], max_size: int) -> Generator[list[T], None, None]:

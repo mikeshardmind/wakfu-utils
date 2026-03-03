@@ -33,6 +33,10 @@ jobs:
         run: |
           python update.py
 
+      - name: Update db dump
+        run: |
+          python -m apsw -nocolour wakautosolver/data/items.db .dump | sed '/^\s*--/ d' > wakautosolver/data/items.sql
+
       - name: Check if item data has been updated
         id: diff-check
         run: |

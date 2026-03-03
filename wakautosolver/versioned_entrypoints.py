@@ -97,7 +97,6 @@ class SetMinimums:
     heal_mastery: int = DUMMY_MIN
     beserk_mastery: int = DUMMY_MIN
     melee_mastery: int = DUMMY_MIN
-    control: int = DUMMY_MIN
     block: int = DUMMY_MIN
     fd: int = DUMMY_MIN
     heals_performed: int = DUMMY_MIN
@@ -138,7 +137,6 @@ class SetMaximums:
     heal_mastery: int = DUMMY_MAX
     beserk_mastery: int = DUMMY_MAX
     melee_mastery: int = DUMMY_MAX
-    control: int = DUMMY_MAX
     block: int = DUMMY_MAX
     fd: int = DUMMY_MAX
     heals_performed: int = DUMMY_MAX
@@ -216,9 +214,7 @@ def partial_solve_v2(
         forbidden_ids |= getattr(item_sources, source)
 
     allowed_sources = [
-        s
-        for s in ("arch", "horde", "pvp", "ultimate_boss")
-        if s not in config.forbidden_sources
+        s for s in ("arch", "horde", "pvp", "ultimate_boss") if s not in config.forbidden_sources
     ]  # The only blueprint that overlaps another category is tal-kasha's broadsowrd.
     # This is not to be unexcluded right now, as the recipe also is ub dependent.
 
@@ -230,9 +226,7 @@ def partial_solve_v2(
 
     if not config.objectives.is_valid:
         msg = ("objectives", config.objectives)
-        return v2Result(
-            None, "Invalid config (get debug info if opening an issue)", debug_info=None
-        )
+        return v2Result(None, "Invalid config (get debug info if opening an issue)", debug_info=None)
 
     build = WFBuild.from_code(build_code)
     sublimations = build.get_sublimations()  # TODO: consider this + below line
