@@ -1,11 +1,6 @@
 [tool.pyright]
-include = ["async_utils"]
-exclude = [
-    "**/__pycache__",
-    "build",
-    "dist",
-    "docs",
-]
+include = ["wakautosolver"]
+
 
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
@@ -35,8 +30,6 @@ select = [
     "Q", "Q003", "RET", "RSE", "RUF", "S", "SIM", "SLOT", "T20", "TC", "TID",
     "TRY", "UP", "W", "YTT"
 ]
-
-typing-modules = ["async_utils._typings"]
 
 ignore = [
     "LOG015",
