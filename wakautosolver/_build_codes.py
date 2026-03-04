@@ -106,8 +106,11 @@ statc_map = {
     3: "bool_mp",
     4: "bool_ra",
     5: "bool_wp",
+    6: "bool_major_armor_given",
     8: "bool_di",
     35: "bool_major_res",
+    38: "bool_major_heals_performed",
+    39: "bool_major_indirect_damage",
 }
 
 
