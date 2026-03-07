@@ -96,7 +96,7 @@ statc_map = {
     37: "fow",
     9: "crit",
     10: "block",
-    11: "critical_mastery",
+    11: "crit_mastery",
     12: "rear_mastery",
     13: "berserk_mastery",
     14: "healing_mastery",
@@ -180,8 +180,7 @@ class Stats(NamedTuple):
         wp = 6 + 2 * self.wp
         crit = self.crit
         ra = self.ra
-        if cl is ClassName.Ecaflip:
-            crit += 20
+        # Innate crit isn't applied out of combat, don't adjust classes with it
         if cl is ClassName.Xelor:
             wp += 6
         if cl is ClassName.Cra:

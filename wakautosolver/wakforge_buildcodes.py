@@ -45,7 +45,7 @@ class Item(NamedTuple):
         return self.item_id > 0
 
 
-SupportedVersions = Literal[1]
+SupportedVersions = Literal[1, 2]
 
 
 v1BuildSlotsOrder = [

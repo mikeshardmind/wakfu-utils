@@ -1238,10 +1238,9 @@ def inner_solve(
             if block_mod:
                 statline += Stats(critical_hit=block_mod)
 
-        # Sram to the bone
-        if ns.wakfu_class == ClassesEnum.Sram and passives and 4610 in passives and ns.lv >= 100:
-            # TODO: (?) We assume shards will make up any missing lock/dodge right now
-            statline += Stats(critical_hit=20 if ns.lv < 200 else 30)
+        if ns.wakfu_class == ClassesEnum.Sram:
+            # Assume isolated for purposes of opti
+            statline += Stats(critical_hit=20, fd=.5)
 
         if ns.wakfu_class == ClassesEnum.Masq and passives:
             # TODO: (?) We assume shards will make up any missing lock/dodge right now

@@ -181,7 +181,7 @@ if __name__ == "__main__":
             forbidden_items=[],  # the item ids
         )
 
-        runner((code1, cfg1), loud=True)
+        runner((code, cfg), loud=True)
         # )
     #   *((co, cf) for co, cf in zip(all_codes, all_configs, strict=False)), loud=True
     except KeyboardInterrupt:
